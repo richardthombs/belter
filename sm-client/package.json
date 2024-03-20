@@ -1,0 +1,27 @@
+{
+	"name": "sm-client",
+	"version": "0.0.1",
+	"description": "Server meshing client",
+	"scripts": {
+		"dev": "webpack-dev-server -d",
+		"build": "webpack"
+	},
+	"author": "Richard Thombs <stonyuk@gmail.com>",
+	"license": "MIT",
+	"devDependencies": {
+		"clean-webpack-plugin": "^3.0.0",
+		"copy-webpack-plugin": "5.1.2",
+		"html-webpack-plugin": "^4.5.2",
+		"ts-loader": "6.2.2",
+		"typescript": "3.8.3",
+		"webpack": "4.42.1",
+		"webpack-cli": "3.3.12",
+		"webpack-dev-server": "^3.11.3"
+	},
+	"dependencies": {
+		"@microsoft/signalr": "^7.0.3",
+		"pixi.js": "5.2.1",
+		"socket.io": "^4.6.1",
+		"socket.io-client": "^4.6.1"
+	}
+}
