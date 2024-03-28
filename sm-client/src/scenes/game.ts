@@ -24,7 +24,7 @@ type GameState = {
 export class Game extends Container {
 	app: Application;
 	state: GameState = {
-		view: { x: 0, y: 0, zoom: 1 },
+		view: { x: 0, y: 0, zoom: 0.1 },
 		entities: [],
 		playerEntityId: "",
 		keys: {
@@ -89,7 +89,7 @@ export class Game extends Container {
 
 		// Create a connection to the game hub
 		let connection = new signalR.HubConnectionBuilder()
-			.withUrl("http://localhost:5291/hub", { accessTokenFactory: () => username })
+			.withUrl("http://localhost:8080/hub", { accessTokenFactory: () => username })
 			.withAutomaticReconnect()
 			.build();
 
@@ -136,6 +136,10 @@ export class Game extends Container {
 
 		if (!this.state.entities[0]) return;
 
+		for (let i = 0; i < this.children.length; i++) {
+			this.children[i].renderable = false;
+		}
+
 		for (let i = 0; i < this.state.entities.length; i++) {
 			const entity = this.state.entities[i];
 			let thing = this.getChildByName(entity.id) as Graphics;
@@ -161,7 +165,7 @@ export class Game extends Container {
 
 					let points = [];
 					let radius = entity.radius;
-					let sides = 50;
+					let sides = 12;
 					for (let angle = 0; angle < Math.PI * 2; angle += (Math.PI * 2 / sides) + (Math.random() * Math.PI * 2) / 10) {
 						let r = radius + Math.floor(Math.random() * (radius * 0.5));
 						let x = Math.cos(angle) * r;
@@ -173,12 +177,13 @@ export class Game extends Container {
 					thing.drawPolygon(points);
 					thing.endFill();
 
-					thing.pivot = new Point(0, -2.5);
+					thing.pivot = new Point(0, 0);
 				}
 			}
 
 			thing.position.set(entity.x, entity.y);
 			thing.angle = entity.r;
+			thing.renderable = true;
 		}
 	}
 }

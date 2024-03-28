@@ -8,6 +8,7 @@ builder.Services.AddSignalR(x => x.EnableDetailedErrors = true);
 builder.Services.AddSingleton<IUserIdProvider, DodgyUserIdProvider>();
 builder.Services.AddHostedService<GameEngine>();
 builder.Services.AddCors();
+builder.Services.AddSingleton<GameWorld>();
 
 // Build and configure
 var app = builder.Build();

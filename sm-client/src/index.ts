@@ -1,14 +1,5 @@
 import * as PIXI from "pixi.js";
-import { Point } from "pixi.js";
 import { Game } from "./scenes/game";
-
-const load = (app: PIXI.Application) => {
-	return new Promise<void>((resolve) => {
-		app.loader.add('assets/hello-world.png').load(() => {
-			resolve();
-		});
-	});
-};
 
 const main = async () => {
 	// Main app
@@ -29,7 +20,6 @@ const main = async () => {
 	window.addEventListener('resize', (e) => fitToContainer(window.innerWidth, window.innerHeight));
 
 	// Load assets
-	await load(app);
 	document.body.appendChild(app.view);
 
 	// Set scene

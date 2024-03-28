@@ -1,4 +1,4 @@
-public class GameObject
+public class GameObject : IPoint
 {
 	public ulong Id { get; set; }
 	public long X { get; set; }
@@ -9,4 +9,10 @@ public class GameObject
 	public double dR { get; set; }
 	public string Type { get; set; } = "?";
 	public ulong Radius { get; set; }
+}
+
+public interface IPoint
+{
+	long X { get; }
+	long Y { get; }
 }

@@ -3,23 +3,27 @@ using Microsoft.AspNetCore.SignalR;
 public class GameHub : Hub
 {
 	ILogger<GameHub> logger;
+	GameWorld world;
 	static List<string> users = new();
 
-	public GameHub(ILogger<GameHub> logger)
+
+	public GameHub(ILogger<GameHub> logger, GameWorld world)
 	{
 		this.logger = logger;
+		this.world = world;
 	}
 
 	public override Task OnConnectedAsync()
 	{
 		logger.LogInformation($"Connected: {Context.UserIdentifier} / {Context.ConnectionId}");
-
+		world.SpawnPlayer(Context.UserIdentifier ?? "Foobar");
 		return base.OnConnectedAsync();
 	}
 
 	public override Task OnDisconnectedAsync(Exception? exception)
 	{
 		logger.LogInformation($"Disconnected: {Context.UserIdentifier} / {Context.ConnectionId} - {exception?.Message ?? "Uknown"}");
+
 		return base.OnDisconnectedAsync(exception);
 	}
 

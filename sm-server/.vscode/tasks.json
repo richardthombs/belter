@@ -7,7 +7,7 @@
 			"type": "process",
 			"args": [
 				"build",
-				"${workspaceFolder}/sm-server.csproj",
+				"${workspaceFolder}/src/Belter.Server/sm-server.csproj",
 				"/property:GenerateFullPaths=true",
 				"/consoleloggerparameters:NoSummary"
 			],
@@ -19,7 +19,7 @@
 			"type": "process",
 			"args": [
 				"publish",
-				"${workspaceFolder}/sm-server.csproj",
+				"${workspaceFolder}/src/Belter.Server/sm-server.csproj",
 				"/property:GenerateFullPaths=true",
 				"/consoleloggerparameters:NoSummary"
 			],
@@ -33,7 +33,7 @@
 				"watch",
 				"run",
 				"--project",
-				"${workspaceFolder}/sm-server.csproj"
+				"${workspaceFolder}/src/Belter.Server/sm-server.csproj"
 			],
 			"problemMatcher": "$msCompile"
 		}
