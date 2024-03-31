@@ -3,44 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.AspNetCore.SignalR;
 
-public class GameWorld
-{
-	public const long WORLD_WIDTH = 1 << 20;
-	public const long WORLD_HEIGHT = 1 << 20;
-	public List<GameObject> objects = [];
-	public Dictionary<string, GameObject> players = [];
-	ulong nextEntityId = 1;
-
-	public readonly Rectangle WorldRectangle = new Rectangle(-WORLD_WIDTH / 2, -WORLD_HEIGHT / 2, WORLD_WIDTH, WORLD_HEIGHT);
-
-	public void AddObject(GameObject obj)
-	{
-		obj.Id = nextEntityId++;
-		objects.Add(obj);
-	}
-
-	public void AddPlayer(string playerName, GameObject obj)
-	{
-		obj.Id = nextEntityId++;
-		if (!players.ContainsKey(playerName)) players.Add(playerName, obj);
-	}
-
-	public void SpawnPlayer(string playerName)
-	{
-		var player = new GameObject
-		{
-			X = 0, //rnd.NextInt64((long)WORLD_WIDTH),
-			Y = 0, //rnd.NextInt64((long)WORLD_HEIGHT),
-			R = 180, //rnd.Next(360),
-			dX = 0, //rnd.Next(-5, 5) * 20,
-			dY = 0, //rnd.Next(-5, 5) * 20,
-			dR = 0, //(rnd.NextDouble() * 90 - 45) * 3,
-			Type = "p"
-		};
-		AddPlayer(playerName, player);
-	}
-}
-
 public class GameEngine : BackgroundService
 {
 	public GameWorld world;
@@ -71,21 +33,6 @@ public class GameEngine : BackgroundService
 			};
 			world.AddObject(asteroid);
 		}
-
-		for (int i = 0; i < 1; i++)
-		{
-			var player = new GameObject
-			{
-				X = 0, //rnd.NextInt64((long)WORLD_WIDTH),
-				Y = 0, //rnd.NextInt64((long)WORLD_HEIGHT),
-				R = 180, //rnd.Next(360),
-				dX = 0, //rnd.Next(-5, 5) * 20,
-				dY = 0, //rnd.Next(-5, 5) * 20,
-				dR = 0, //(rnd.NextDouble() * 90 - 45) * 3,
-				Type = "p"
-			};
-			world.AddObject(player);
-		}
 	}
 
 	public void SpawnPlayer(string playerName)
@@ -104,27 +51,28 @@ public class GameEngine : BackgroundService
 
 	protected override async Task ExecuteAsync(CancellationToken cancellationToken)
 	{
-		var framesPerSecond = 30d;
-		double secondsPerFrame = 1 / framesPerSecond;
-		double msPerFrame = (long)(1000 * secondsPerFrame);
+		var targetFps = 5d;
+		double msPerFrame = 1000 / targetFps;
 		var watch = new Stopwatch();
 		var fps = new MovingAverage(60);
 		var frame = 0;
 
 		logger.LogInformation("Game engine startup");
-		logger.LogInformation("Target FPS = {targetFps}, ms per frame = {msPerFrame}, scale = {scale}", framesPerSecond, msPerFrame, secondsPerFrame);
+		logger.LogInformation("Target FPS = {targetFps}, ({msPerFrame}ms per frame)", targetFps, msPerFrame);
 
 		while (!cancellationToken.IsCancellationRequested)
 		{
+			var dt = frame == 0? 1 : (watch.ElapsedMilliseconds/1000f);
+			Console.WriteLine(dt);
 			watch.Restart();
 
 			var tree = new QuadTreeNode { Bounds = world.WorldRectangle, Capacity = 100000 };
 
 			foreach (var obj in world.objects)
 			{
-				obj.X += (long)(obj.dX * secondsPerFrame);
-				obj.Y += (long)(obj.dY * secondsPerFrame);
-				obj.R = Clamp(obj.R + obj.dR * secondsPerFrame, 0, 360);
+				obj.X += (long)(obj.dX * dt);
+				obj.Y += (long)(obj.dY * dt);
+				obj.R = Clamp(obj.R + obj.dR * dt, 0, 360);
 				tree.Add(obj);
 			}
 
@@ -132,9 +80,9 @@ public class GameEngine : BackgroundService
 			{
 				var playerObj = player.Value;
 
-				playerObj.X = Clamp((long)(playerObj.X + playerObj.dX * secondsPerFrame), long.MinValue, long.MaxValue);
-				playerObj.Y = Clamp((long)(playerObj.Y + playerObj.dY * secondsPerFrame), long.MinValue, long.MaxValue);
-				playerObj.R = Clamp(playerObj.R + playerObj.dR * secondsPerFrame, 0, 360);
+				playerObj.X = Clamp((long)(playerObj.X + playerObj.dX * dt), long.MinValue, long.MaxValue);
+				playerObj.Y = Clamp((long)(playerObj.Y + playerObj.dY * dt), long.MinValue, long.MaxValue);
+				playerObj.R = Clamp(playerObj.R + playerObj.dR * dt, 0, 360);
 				tree.Add(playerObj);
 			}
 
@@ -142,7 +90,20 @@ public class GameEngine : BackgroundService
 			{
 				var user = hub.Clients.User(player.Key);
 
-				var visibleRect = new Rectangle(player.Value.X - 1000, player.Value.Y - 1000, 2000, 2000);
+				if (!world.subs.TryGetValue(player.Key, out var playerSub))
+				{
+					//logger.LogWarning("Can't find subscription for {player}", player.Key);
+					continue;
+				}
+
+				var scale = 1/playerSub.Z;
+				var visibleRect = new Rectangle(
+					(long)(playerSub.X*scale),
+					(long)(playerSub.Y*scale),
+					(ulong)(playerSub.W*scale),
+					(ulong)(playerSub.H*scale)
+				);
+				//logger.LogInformation("Visible rect {player}, {rect}", player.Key, visibleRect);
 				var updates = tree.FindWithin(visibleRect);
 
 				await user.SendAsync("PositionUpdate", updates);
@@ -156,7 +117,10 @@ public class GameEngine : BackgroundService
 
 			fps.ComputeAverage(1000 / watch.ElapsedMilliseconds);
 
-			if (frame % 1000 == 0) Console.WriteLine($"{fps.Average:n0}fps : {msUpdate:n0}ms to update, {free:n0}ms free");
+			//if (frame % 1000 == 0)
+			{
+				Console.WriteLine($"{fps.Average:n0}fps : {msUpdate:n0}ms to update, {free:n0}ms free");
+			}
 			frame++;
 		}
 	}

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR;
 
 public class GameHub : Hub
@@ -16,7 +17,7 @@ public class GameHub : Hub
 	public override Task OnConnectedAsync()
 	{
 		logger.LogInformation($"Connected: {Context.UserIdentifier} / {Context.ConnectionId}");
-		world.SpawnPlayer(Context.UserIdentifier ?? "Foobar");
+		world.SpawnPlayer(Context.UserIdentifier ?? throw new ArgumentNullException());
 		return base.OnConnectedAsync();
 	}
 
@@ -43,6 +44,12 @@ public class GameHub : Hub
 		logger.LogInformation("Player index: {playerIndex}", playerIndex);
 	}
 
+	public void Subscribe(Subscription sub)
+	{
+		world.SetSubscription(Context.UserIdentifier ?? throw new ArgumentNullException(), sub);
+		logger.LogInformation("{user} subscription changed to {sub}", Context.UserIdentifier, sub);
+	}
+
 	public void KeyState(KeyState keyState)
 	{
 		if (keyState.Thrust) logger.LogInformation($"{Context.UserIdentifier} thrusting");
@@ -58,4 +65,18 @@ public record KeyState
 	public bool RotLeft { get; set; }
 	public bool RotRight { get; set; }
 	public bool Fire { get; set; }
+}
+
+public record Subscription
+{
+	public long X { get; set; }
+	public long Y { get; set; }
+	public ulong W { get; set; }
+	public ulong H { get; set; }
+	public double Z { get; set; }
+
+    public override string ToString()
+    {
+        return $"({X},{Y}) + ({W},{H})";
+    }
 }

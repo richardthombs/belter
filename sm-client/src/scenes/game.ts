@@ -5,6 +5,7 @@ type GameEntity = { id: string, x: number, y: number, r: number, type: string, r
 
 type GameState = {
 	view: { x: number, y: number, zoom: number },
+	connected: boolean,
 	entities: GameEntity[],
 	playerEntityId: string,
 	keys: {
@@ -25,6 +26,7 @@ export class Game extends Container {
 	app: Application;
 	state: GameState = {
 		view: { x: 0, y: 0, zoom: 0.1 },
+		connected: false,
 		entities: [],
 		playerEntityId: "",
 		keys: {
@@ -43,6 +45,8 @@ export class Game extends Container {
 			offset: { x: 0, y: 0 }
 		};
 
+	screenPrev: { w: number, h: number } = { w: 0, h: 0 };
+
 	public centerViewport() {
 		this.viewport.offset.x = this.viewport.width / 2 - this.state.view.x;
 		this.viewport.offset.y = this.viewport.height / 2 - this.state.view.y;
@@ -59,9 +63,6 @@ export class Game extends Container {
 		this.app = app;
 
 		this.setViewport(app.screen.width, app.screen.height);
-
-		// Ticker for screen refresh
-		app.ticker.add(() => this.drawTick());
 
 		var handleKeys = (keyCode: string, keyDown: boolean) => {
 			switch (keyCode) {
@@ -94,7 +95,21 @@ export class Game extends Container {
 			.build();
 
 		// Tell the game we've joined
-		connection.start().then(x => connection.send("ClientConnected", { message: "Hello, World!", user: username }));
+		connection.start().then(x => {
+			console.info("Connection started");
+			this.state.connected = true;
+			connection.send("ClientConnected", { message: "Hello, World!", user: username });
+			this.sendSubscription(connection);
+		});
+
+		connection.onreconnecting(() => {
+			console.info("Connection lost");
+		});
+
+		connection.onreconnected(() => {
+			console.info("Connection reconnected");
+			this.sendSubscription(connection);
+		});
 
 		// Subscribe to position updates
 		connection.on("PositionUpdate", (x: GameEntity[]) => {
@@ -105,28 +120,54 @@ export class Game extends Container {
 			this.state.playerEntityId = x;
 		});
 
+		// Ticker for screen refresh
+		app.ticker.add(() => this.drawTick());
+
 		// Ticker for local key handling
+		app.ticker.add(() => this.keyTick(connection));
+
 		app.ticker.add(() => {
-			const zoomSpeed = 0.01;
-
-			// Viewport adjustment is handling locally
-			if (this.state.keys.panUp) this.state.view.y++;
-			if (this.state.keys.panDown) this.state.view.y--;
-			if (this.state.keys.panLeft) this.state.view.x++;
-			if (this.state.keys.panRight) this.state.view.x--;
-			if (this.state.keys.zoomIn) this.state.view.zoom *= (1 + zoomSpeed);
-			if (this.state.keys.zoomOut) this.state.view.zoom *= (1 - zoomSpeed);
-
-			// Send ship controls to game for processing
-			if (connection.state == signalR.HubConnectionState.Connected) {
-				connection.send("KeyState", {
-					thrust: this.state.keys.thrust,
-					rotLeft: this.state.keys.rotLeft,
-					rotRight: this.state.keys.rotRight,
-					fire: this.state.keys.fire
-				});
+			if (this.screenPrev.w != app.screen.width || this.screenPrev.h != app.screen.height) {
+				this.sendSubscription(connection);
 			}
+			this.screenPrev = { w: app.screen.width, h: app.screen.height };
 		});
+	}
+
+	sendSubscription(connection: signalR.HubConnection) {
+		if (!this.state.connected) return;
+
+		let desiredSub = {
+			x: -this.app.screen.width / 2,
+			y: -this.app.screen.height / 2,
+			w: this.app.screen.width,
+			h: this.app.screen.height,
+			z: this.state.view.zoom
+		};
+		console.info(`Subscribing to (${desiredSub.x},${desiredSub.y}) + (${desiredSub.w}, ${desiredSub.h})`);
+		connection.send("Subscribe", desiredSub);
+	}
+
+	keyTick(connection: signalR.HubConnection) {
+		const zoomSpeed = 0.01;
+
+		// Viewport adjustment is handling locally
+		if (this.state.keys.panUp) this.state.view.y++;
+		if (this.state.keys.panDown) this.state.view.y--;
+		if (this.state.keys.panLeft) this.state.view.x++;
+		if (this.state.keys.panRight) this.state.view.x--;
+		if (this.state.keys.zoomIn) this.state.view.zoom *= (1 + zoomSpeed);
+		if (this.state.keys.zoomOut) this.state.view.zoom *= (1 - zoomSpeed);
+
+		// Send ship controls to game for processing
+		if (connection.state == signalR.HubConnectionState.Connected) {
+			connection.send("KeyState", {
+				thrust: this.state.keys.thrust,
+				rotLeft: this.state.keys.rotLeft,
+				rotRight: this.state.keys.rotRight,
+				fire: this.state.keys.fire
+			});
+		}
 	}
 
 	drawTick() {

@@ -14,6 +14,7 @@ const main = async () => {
 	const fitToContainer = (w: number, h: number) => {
 		app.renderer.resize(w, h);
 		gameScene.setViewport(w, h);
+		console.info(`screen ${app.screen.width}x${app.screen.height}`);
 	};
 
 	fitToContainer(window.innerWidth, window.innerHeight);
