@@ -39,7 +39,7 @@ public class GameHub : Hub
 		foreach (var u in users) Console.WriteLine(u);
 
 		var playerIndex = users.IndexOf(Context.UserIdentifier);
-		Clients.User(Context.UserIdentifier).SendAsync("Welcome", playerIndex);
+		Clients.User(Context.UserIdentifier).SendAsync("Welcome", new { PlayerIndex = playerIndex, Context.ConnectionId, Context.UserIdentifier });
 
 		logger.LogInformation("Player index: {playerIndex}", playerIndex);
 	}
@@ -75,8 +75,8 @@ public record Subscription
 	public ulong H { get; set; }
 	public double Z { get; set; }
 
-    public override string ToString()
-    {
-        return $"({X},{Y}) + ({W},{H})";
-    }
+	public override string ToString()
+	{
+		return $"({X},{Y}) + ({W},{H})";
+	}
 }

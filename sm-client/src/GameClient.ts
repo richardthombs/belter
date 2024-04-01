@@ -1,39 +1,26 @@
-import { Application, Circle, Container, Graphics, Point } from "pixi.js";
+import { Application, Container, Graphics, Point } from "pixi.js";
 import * as signalR from "@microsoft/signalr";
+import { SubscriptionService, ClientSubscription } from "./SubscriptionService";
+import { GameState, KeyState } from "./GameState";
+import { GameEntity } from "./GameEntity";
 
-type GameEntity = { id: string, x: number, y: number, r: number, type: string, radius: number };
+export class GameClient extends Container {
 
-type GameState = {
-	view: { x: number, y: number, zoom: number },
-	connected: boolean,
-	entities: GameEntity[],
-	playerEntityId: string,
-	keys: {
-		panUp: boolean,
-		panDown: boolean,
-		panLeft: boolean,
-		panRight: boolean,
-		zoomIn: boolean,
-		zoomOut: boolean,
-		thrust: boolean,
-		rotLeft: boolean,
-		rotRight: boolean,
-		fire: boolean
-	}
-}
-
-export class Game extends Container {
 	app: Application;
 	state: GameState = {
 		view: { x: 0, y: 0, zoom: 0.1 },
-		connected: false,
 		entities: [],
-		playerEntityId: "",
 		keys: {
-			panUp: false, panDown: false, panLeft: false, panRight: false, zoomIn: false, zoomOut: false,
 			thrust: false, rotLeft: false, rotRight: false, fire: false
+		},
+		clientKeys: {
+			panUp: false, panDown: false, panLeft: false, panRight: false, zoomIn: false, zoomOut: false
 		}
 	};
+
+	prevKeys: KeyState = {
+		thrust: false, rotLeft: false, rotRight: false, fire: false
+	}
 
 	viewport: {
 		width: number,
@@ -47,36 +34,28 @@ export class Game extends Container {
 
 	screenPrev: { w: number, h: number } = { w: 0, h: 0 };
 
-	public centerViewport() {
-		this.viewport.offset.x = this.viewport.width / 2 - this.state.view.x;
-		this.viewport.offset.y = this.viewport.height / 2 - this.state.view.y;
-	}
-
-	public setViewport(width: number, height: number) {
-		this.viewport.width = width;
-		this.viewport.height = height;
-		this.centerViewport();
-	}
+	subscriptionService: SubscriptionService;
 
 	constructor(app: Application) {
 		super();
 		this.app = app;
 
-		this.setViewport(app.screen.width, app.screen.height);
+		this.resizeViewport(app.screen.width, app.screen.height);
 
 		var handleKeys = (keyCode: string, keyDown: boolean) => {
 			switch (keyCode) {
-				case "Numpad8": this.state.keys.panUp = keyDown; break;
-				case "Numpad2": this.state.keys.panDown = keyDown; break;
-				case "Numpad4": this.state.keys.panLeft = keyDown; break;
-				case "Numpad6": this.state.keys.panRight = keyDown; break;
-				case "NumpadSubtract": this.state.keys.zoomOut = keyDown; break;
-				case "NumpadAdd": this.state.keys.zoomIn = keyDown; break;
+				case "Numpad8": this.state.clientKeys.panUp = keyDown; break;
+				case "Numpad2": this.state.clientKeys.panDown = keyDown; break;
+				case "Numpad4": this.state.clientKeys.panLeft = keyDown; break;
+				case "Numpad6": this.state.clientKeys.panRight = keyDown; break;
+				case "NumpadSubtract": this.state.clientKeys.zoomOut = keyDown; break;
+				case "NumpadAdd": this.state.clientKeys.zoomIn = keyDown; break;
 
 				case "KeyW": this.state.keys.thrust = keyDown; break;
 				case "KeyA": this.state.keys.rotLeft = keyDown; break;
 				case "KeyD": this.state.keys.rotRight = keyDown; break;
 				case "Space": this.state.keys.fire = keyDown; break;
+
 				default: console.log(keyCode);
 			}
 		};
@@ -94,21 +73,20 @@ export class Game extends Container {
 			.withAutomaticReconnect()
 			.build();
 
+		this.subscriptionService = new SubscriptionService(connection);
+
 		// Tell the game we've joined
 		connection.start().then(x => {
-			console.info("Connection started");
-			this.state.connected = true;
+			console.info("GameClient: Connection started");
 			connection.send("ClientConnected", { message: "Hello, World!", user: username });
-			this.sendSubscription(connection);
 		});
 
 		connection.onreconnecting(() => {
-			console.info("Connection lost");
+			console.info("GameClient: Connection lost");
 		});
 
 		connection.onreconnected(() => {
-			console.info("Connection reconnected");
-			this.sendSubscription(connection);
+			console.info("GameClient: Connection reconnected");
 		});
 
 		// Subscribe to position updates
@@ -116,8 +94,8 @@ export class Game extends Container {
 			this.state.entities = x;
 		});
 
-		connection.on("Welcome", (x: string) => {
-			this.state.playerEntityId = x;
+		connection.on("Welcome", (x: { playerIndex: number, connectionId: string, userIdentifier: string }) => {
+			console.info(`GameClient: Received Welcome (PlayerIndex: ${x.playerIndex}, ConnectionId: ${x.connectionId}, UserIdentifier: ${x.userIdentifier})`);
 		});
 
 		// Ticker for screen refresh
@@ -127,51 +105,66 @@ export class Game extends Container {
 		app.ticker.add(() => this.keyTick(connection));
 
 		app.ticker.add(() => {
-			if (this.screenPrev.w != app.screen.width || this.screenPrev.h != app.screen.height) {
-				this.sendSubscription(connection);
-			}
-			this.screenPrev = { w: app.screen.width, h: app.screen.height };
+			this.sendSubscription();
 		});
 	}
 
-	sendSubscription(connection: signalR.HubConnection) {
-		if (!this.state.connected) return;
+	public resizeViewport(width: number, height: number) {
+		this.viewport.width = width;
+		this.viewport.height = height;
+		this.viewport.offset.x = this.viewport.width / 2 - this.state.view.x;
+		this.viewport.offset.y = this.viewport.height / 2 - this.state.view.y;
+	}
 
-		let desiredSub = {
-			x: -this.app.screen.width / 2,
-			y: -this.app.screen.height / 2,
-			w: this.app.screen.width,
-			h: this.app.screen.height,
+	sendSubscription() {
+		let desiredSub = new ClientSubscription({
+			rect: {
+				x: -this.app.screen.width / 2,
+				y: -this.app.screen.height / 2,
+				w: this.app.screen.width,
+				h: this.app.screen.height
+			},
 			z: this.state.view.zoom
-		};
-		console.info(`Subscribing to (${desiredSub.x},${desiredSub.y}) + (${desiredSub.w}, ${desiredSub.h})`);
-		connection.send("Subscribe", desiredSub);
+		});
+
+		this.subscriptionService.subscribeToUpdates(desiredSub);
 	}
 
 	keyTick(connection: signalR.HubConnection) {
 		const zoomSpeed = 0.01;
 
 		// Viewport adjustment is handling locally
-		if (this.state.keys.panUp) this.state.view.y++;
-		if (this.state.keys.panDown) this.state.view.y--;
-		if (this.state.keys.panLeft) this.state.view.x++;
-		if (this.state.keys.panRight) this.state.view.x--;
-		if (this.state.keys.zoomIn) this.state.view.zoom *= (1 + zoomSpeed);
-		if (this.state.keys.zoomOut) this.state.view.zoom *= (1 - zoomSpeed);
+		if (this.state.clientKeys.panUp) this.state.view.y++;
+		if (this.state.clientKeys.panDown) this.state.view.y--;
+		if (this.state.clientKeys.panLeft) this.state.view.x++;
+		if (this.state.clientKeys.panRight) this.state.view.x--;
+		if (this.state.clientKeys.zoomIn) this.state.view.zoom *= (1 + zoomSpeed);
+		if (this.state.clientKeys.zoomOut) this.state.view.zoom *= (1 - zoomSpeed);
 
-		// Send ship controls to game for processing
+		// Send ship controls to server for processing
 		if (connection.state == signalR.HubConnectionState.Connected) {
+			if (this.state.keys.fire == this.prevKeys.fire &&
+				this.state.keys.rotLeft == this.prevKeys.rotLeft &&
+				this.state.keys.rotRight == this.prevKeys.rotRight &&
+				this.state.keys.thrust == this.prevKeys.thrust) return;
+
 			connection.send("KeyState", {
 				thrust: this.state.keys.thrust,
 				rotLeft: this.state.keys.rotLeft,
 				rotRight: this.state.keys.rotRight,
 				fire: this.state.keys.fire
 			});
+
+			this.prevKeys = {
+				thrust: this.state.keys.thrust,
+				rotLeft: this.state.keys.rotLeft,
+				rotRight: this.state.keys.rotRight,
+				fire: this.state.keys.fire
+			};
 		}
 	}
 
 	drawTick() {
-		//this.centerViewport();
 		this.position.set(this.viewport.offset.x, this.viewport.offset.y);
 		this.scale.set(this.state.view.zoom, this.state.view.zoom);
 

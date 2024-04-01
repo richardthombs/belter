@@ -1,10 +1,10 @@
 import * as PIXI from "pixi.js";
-import { Game } from "./scenes/game";
+import { GameClient } from "./GameClient";
 
 const main = async () => {
 	// Main app
 	let app = new PIXI.Application({ antialias: true });
-	let gameScene = new Game(app);
+	let gameClient = new GameClient(app);
 
 	// Display application properly
 	document.body.style.margin = '0';
@@ -13,7 +13,7 @@ const main = async () => {
 
 	const fitToContainer = (w: number, h: number) => {
 		app.renderer.resize(w, h);
-		gameScene.setViewport(w, h);
+		gameClient.resizeViewport(w, h);
 		console.info(`screen ${app.screen.width}x${app.screen.height}`);
 	};
 
@@ -24,7 +24,7 @@ const main = async () => {
 	document.body.appendChild(app.view);
 
 	// Set scene
-	gameScene.app.stage.addChild(gameScene);
+	gameClient.app.stage.addChild(gameClient);
 };
 
 main();

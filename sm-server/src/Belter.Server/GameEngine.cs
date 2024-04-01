@@ -51,7 +51,7 @@ public class GameEngine : BackgroundService
 
 	protected override async Task ExecuteAsync(CancellationToken cancellationToken)
 	{
-		var targetFps = 5d;
+		var targetFps = 1d;
 		double msPerFrame = 1000 / targetFps;
 		var watch = new Stopwatch();
 		var fps = new MovingAverage(60);
@@ -63,7 +63,6 @@ public class GameEngine : BackgroundService
 		while (!cancellationToken.IsCancellationRequested)
 		{
 			var dt = frame == 0? 1 : (watch.ElapsedMilliseconds/1000f);
-			Console.WriteLine(dt);
 			watch.Restart();
 
 			var tree = new QuadTreeNode { Bounds = world.WorldRectangle, Capacity = 100000 };
@@ -115,7 +114,7 @@ public class GameEngine : BackgroundService
 			var delay = free <= 0? 1 : (int)free;
 			await Task.Delay(delay, cancellationToken);
 
-			fps.ComputeAverage(1000 / watch.ElapsedMilliseconds);
+			fps.ComputeAverage(1000m / watch.ElapsedMilliseconds);
 
 			//if (frame % 1000 == 0)
 			{
