@@ -2,6 +2,7 @@ import * as PIXI from "pixi.js";
 import { GameClient } from "./GameClient";
 
 const main = async () => {
+	console.log("Hello, World!");
 	// Main app
 	let app = new PIXI.Application({ antialias: true });
 	let gameClient = new GameClient(app);
