@@ -1,3 +1,5 @@
+namespace Belter.Server;
+
 public class QuadTreeNode
 {
     public Rectangle Bounds { get; init; } = new Rectangle ( 0, 0, 0, 0 );

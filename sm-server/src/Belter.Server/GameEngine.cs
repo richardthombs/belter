@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.AspNetCore.SignalR;
 
+namespace Belter.Server;
+
 public class GameEngine : BackgroundService
 {
 	public GameWorld world;
@@ -35,30 +37,16 @@ public class GameEngine : BackgroundService
 		}
 	}
 
-	public void SpawnPlayer(string playerName)
-	{
-		world.AddPlayer(playerName, new GameObject
-		{
-			X = rnd.NextInt64(GameWorld.WORLD_WIDTH),
-			Y = rnd.NextInt64(GameWorld.WORLD_HEIGHT),
-			R = rnd.Next(360),
-			dX = rnd.Next(-5, 5) * 20,
-			dY = rnd.Next(-5, 5) * 20,
-			dR = (rnd.NextDouble() * 90 - 45) * 3,
-			Type = "p"
-		});
-	}
-
 	protected override async Task ExecuteAsync(CancellationToken cancellationToken)
 	{
-		var targetFps = 1d;
+		var targetFps = 10d;
 		double msPerFrame = 1000 / targetFps;
 		var watch = new Stopwatch();
 		var fps = new MovingAverage(60);
 		var frame = 0;
 
 		logger.LogInformation("Game engine startup");
-		logger.LogInformation("Target FPS = {targetFps}, ({msPerFrame}ms per frame)", targetFps, msPerFrame);
+		logger.LogInformation("Target FPS = {targetFps} ({msPerFrame}ms per frame)", targetFps, msPerFrame);
 
 		while (!cancellationToken.IsCancellationRequested)
 		{
@@ -116,9 +104,9 @@ public class GameEngine : BackgroundService
 
 			fps.ComputeAverage(1000m / watch.ElapsedMilliseconds);
 
-			//if (frame % 1000 == 0)
+			if (frame > 0 && frame % (targetFps * 60) == 0)
 			{
-				Console.WriteLine($"{fps.Average:n0}fps : {msUpdate:n0}ms to update, {free:n0}ms free");
+				logger.LogTrace("{fpsAverage:n0}fps : {msUpdate:n0}ms to update, {free:n0}ms free", fps.Average, msUpdate, free);
 			}
 			frame++;
 		}

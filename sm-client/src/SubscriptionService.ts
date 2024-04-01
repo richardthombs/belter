@@ -60,7 +60,6 @@ export class ClientSubscription implements clientSubscription {
 export class SubscriptionService {
 
 	private current: ClientSubscription;
-	private clientConnected: boolean = false;
 
 	constructor(private connection: signalR.HubConnection) {
 		this.current = ClientSubscription.Blank;
@@ -76,7 +75,6 @@ export class SubscriptionService {
 		});
 
 		connection.onreconnected(() => {
-			this.clientConnected = true;
 			if (this.current.equals(ClientSubscription.Blank)) return;
 
 			console.info(`SubscriptionService: Reconnected (${connection.state})`);
@@ -86,21 +84,32 @@ export class SubscriptionService {
 	}
 
 	public subscribeToUpdates(sub: ClientSubscription) {
-		if (sub.equals(this.current)) return;
+		if (sub.equals(this.current)) {
+			//console.info("Already requested updates for this area");
+			return;
+		}
 
-		console.info(`SubscriptionService: Subscribing to (${sub.rect.x},${sub.rect.y}) + (${sub.rect.w}, ${sub.rect.h}) @ ${sub.z}`);
+		console.info(`SubscriptionService: Subscribing to updates for (${sub.rect.x},${sub.rect.y}) + (${sub.rect.w}, ${sub.rect.h}) @ ${sub.z}`);
 		this.subscribe(sub);
 
-		this.current = sub;
 	}
 
 	public invalidateSubscription() {
 		this.current = ClientSubscription.Blank;
 	}
 
-	private subscribe(sub: clientSubscription) {
-		if (this.connection.state != signalR.HubConnectionState.Connected) return;
+	private subscribe(sub: ClientSubscription) {
+		if (this.connection.state != signalR.HubConnectionState.Connected) {
+			console.info(`SubscriptionService: Unable to send subscription request (${this.connection.state})`);
+			return;
+		}
 
-		this.connection.send("Subscribe", { x: sub.rect.x, y: sub.rect.y, w: sub.rect.w, h: sub.rect.h, z: sub.z });
+		var payload = { x: sub.rect.x, y: sub.rect.y, w: sub.rect.w, h: sub.rect.h, z: sub.z };
+
+		this.connection.send("Subscribe", payload);
+
+		console.info("SubscriptionService: Sent subscription request to server", payload);
+
+		this.current = sub;
 	}
 }

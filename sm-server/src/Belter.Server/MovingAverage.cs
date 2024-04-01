@@ -1,3 +1,5 @@
+namespace Belter.Server;
+
 public class MovingAverage  
     {
         private Queue<Decimal> samples = new Queue<Decimal>();

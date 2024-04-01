@@ -1,9 +1,13 @@
 using Microsoft.AspNetCore.SignalR;
 
+namespace Belter.Server;
+
 public class DodgyUserIdProvider : IUserIdProvider
 {
 	public virtual string GetUserId(HubConnectionContext connection)
 	{
-		return (connection.GetHttpContext()?.Request?.Query["access_token"]) ?? "Anonymous";
+		var userValues = connection.GetHttpContext()?.Request?.Query;
+		if (userValues == null) return "Anonymous";
+		return userValues["access_token"][0] ?? "Anonymous";
 	}
 }

@@ -1,4 +1,6 @@
 
+namespace Belter.Server;
+
 public record Rectangle
 {
     public Rectangle(long x, long y, ulong w, ulong h)

@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR;
+
+namespace Belter.Server;
 
 public class GameHub : Hub
 {
@@ -36,12 +37,15 @@ public class GameHub : Hub
 
 		if (!users.Contains(Context.UserIdentifier)) users.Add(Context.UserIdentifier);
 
-		foreach (var u in users) Console.WriteLine(u);
+		var userList = new List<string>();
+		for (int i = 0; i < users.Count; i++)
+		{
+			userList.Add($"{i}: {users[i]}");
+		}
+		logger.LogInformation("User list\n{userList}", String.Join("\n", userList));
 
 		var playerIndex = users.IndexOf(Context.UserIdentifier);
 		Clients.User(Context.UserIdentifier).SendAsync("Welcome", new { PlayerIndex = playerIndex, Context.ConnectionId, Context.UserIdentifier });
-
-		logger.LogInformation("Player index: {playerIndex}", playerIndex);
 	}
 
 	public void Subscribe(Subscription sub)

@@ -1,3 +1,5 @@
+namespace Belter.Server;
+
 public class PositionUpdate
 {
 	public ulong X { get; set; }

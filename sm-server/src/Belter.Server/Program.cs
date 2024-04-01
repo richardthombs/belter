@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using Belter.Server;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders().AddConsole();

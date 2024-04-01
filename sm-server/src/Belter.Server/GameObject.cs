@@ -1,3 +1,5 @@
+namespace Belter.Server;
+
 public class GameObject : IPoint
 {
 	public ulong Id { get; set; }
