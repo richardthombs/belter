@@ -1,31 +1,29 @@
-import * as PIXI from "pixi.js";
+import { Application } from "pixi.js";
 import { GameClient } from "./GameClient";
 
-const main = async () => {
-	console.log("Hello, World!");
-	// Main app
-	let app = new PIXI.Application({ antialias: true });
-	let gameClient = new GameClient(app);
+let app = new Application();
 
-	// Display application properly
+
+(async () => {
+	await app.init({
+		antialias: true
+	});
+
 	document.body.style.margin = '0';
-	app.renderer.view.style.position = 'absolute';
-	app.renderer.view.style.display = 'block';
+	document.body.appendChild(app.canvas);
 
-	const fitToContainer = (w: number, h: number) => {
+	let gameClient = new GameClient(app);
+	app.stage.addChild(gameClient);
+
+	window.addEventListener('resize', (e) => fitToContainer(window.innerWidth, window.innerHeight));
+	fitToContainer(window.innerWidth, window.innerHeight);
+
+	return;
+
+	function fitToContainer(w: number, h: number) {
 		app.renderer.resize(w, h);
 		gameClient.resizeViewport(w, h);
 		console.info(`screen ${app.screen.width}x${app.screen.height}`);
 	};
-
-	fitToContainer(window.innerWidth, window.innerHeight);
-	window.addEventListener('resize', (e) => fitToContainer(window.innerWidth, window.innerHeight));
-
-	// Load assets
-	document.body.appendChild(app.view);
-
-	// Set scene
-	gameClient.app.stage.addChild(gameClient);
-};
-
-main();
+	
+})();

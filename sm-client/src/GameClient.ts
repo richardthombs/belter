@@ -1,5 +1,5 @@
 import { Application, Container, Graphics, Point } from "pixi.js";
-import * as signalR from "@microsoft/signalr";
+import { HubConnection, HubConnectionBuilder, HubConnectionState } from "@microsoft/signalr";
 import { SubscriptionService, ClientSubscription } from "./SubscriptionService";
 import { GameState, KeyState } from "./GameState";
 import { GameEntity } from "./GameEntity";
@@ -68,7 +68,7 @@ export class GameClient extends Container {
 		let username = queryString.get("user") || "Anonymous";
 
 		// Create a connection to the game hub
-		let connection = new signalR.HubConnectionBuilder()
+		let connection = new HubConnectionBuilder()
 			.withUrl("http://localhost:8080/hub", { accessTokenFactory: () => username })
 			.withAutomaticReconnect()
 			.build();
@@ -130,7 +130,7 @@ export class GameClient extends Container {
 		this.subscriptionService.subscribeToUpdates(desiredSub);
 	}
 
-	keyTick(connection: signalR.HubConnection) {
+	keyTick(connection: HubConnection) {
 		const zoomSpeed = 0.01;
 
 		// Viewport adjustment is handling locally
@@ -142,7 +142,7 @@ export class GameClient extends Container {
 		if (this.state.clientKeys.zoomOut) this.state.view.zoom *= (1 - zoomSpeed);
 
 		// Send ship controls to server for processing
-		if (connection.state == signalR.HubConnectionState.Connected) {
+		if (connection.state == HubConnectionState.Connected) {
 			if (this.state.keys.fire == this.prevKeys.fire &&
 				this.state.keys.rotLeft == this.prevKeys.rotLeft &&
 				this.state.keys.rotRight == this.prevKeys.rotRight &&
@@ -176,48 +176,52 @@ export class GameClient extends Container {
 
 		for (let i = 0; i < this.state.entities.length; i++) {
 			const entity = this.state.entities[i];
-			let thing = this.getChildByName(entity.id) as Graphics;
+			let thing = this.getChildByLabel(entity.id) as Graphics;
 			if (!thing) {
-				thing = new Graphics();
-				thing.name = entity.id;
+				thing = entity.type == "p" ? this.createShipGraphic(entity) : this.createAsteroidGraphic(entity);
+				thing.label = entity.id;
 				this.addChild(thing);
-
-				if (entity.type == "p") {
-					thing.lineStyle(2, 0x0081c6);
-					thing.beginFill(0x0081c6);
-					thing.moveTo(0, 20);
-					thing.lineTo(20, -25);
-					thing.lineTo(0, -15);
-					thing.lineTo(-20, -25);
-					thing.closePath();
-					thing.endFill();
-					thing.pivot = new Point(0, -2.5);
-				}
-				else {
-					thing.lineStyle(2, 0xffffff, 1);
-					thing.beginFill(0xffffff, 0.8);
-
-					let points = [];
-					let radius = entity.radius;
-					let sides = 12;
-					for (let angle = 0; angle < Math.PI * 2; angle += (Math.PI * 2 / sides) + (Math.random() * Math.PI * 2) / 10) {
-						let r = radius + Math.floor(Math.random() * (radius * 0.5));
-						let x = Math.cos(angle) * r;
-						let y = Math.sin(angle) * r;
-						points.push(x);
-						points.push(y);
-					}
-
-					thing.drawPolygon(points);
-					thing.endFill();
-
-					thing.pivot = new Point(0, 0);
-				}
 			}
 
 			thing.position.set(entity.x, entity.y);
 			thing.angle = entity.r;
 			thing.renderable = true;
 		}
+	}
+
+	createShipGraphic(entity: GameEntity): Graphics {
+		let thing = new Graphics();
+
+		thing.moveTo(0, 20);
+		thing.lineTo(20, -25);
+		thing.lineTo(0, -15);
+		thing.lineTo(-20, -25);
+		thing.closePath();
+		thing.stroke({ color: "0x0081c6", width: 2 });
+		thing.fill("0x0081c6");
+		thing.pivot = new Point(0, -2.5);
+
+		return thing;
+	}
+
+	createAsteroidGraphic(entity: GameEntity): Graphics {
+		var thing = new Graphics();
+
+		let points = [];
+		let radius = entity.radius;
+		let sides = 12;
+		for (let angle = 0; angle < Math.PI * 2; angle += (Math.PI * 2 / sides) + (Math.random() * Math.PI * 2) / 10) {
+			let r = radius + Math.floor(Math.random() * (radius * 0.5));
+			let x = Math.cos(angle) * r;
+			let y = Math.sin(angle) * r;
+			points.push(x);
+			points.push(y);
+		}
+
+		thing.poly(points);
+		thing.fill({ color: "white", alpha: 0.8 });
+		thing.pivot = new Point(0, 0);
+
+		return thing;
 	}
 }

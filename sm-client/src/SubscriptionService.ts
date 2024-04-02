@@ -1,4 +1,4 @@
-import * as signalR from "@microsoft/signalr";
+import { HubConnection, HubConnectionState } from "@microsoft/signalr";
 
 type rect = {
 	x: number,
@@ -61,7 +61,7 @@ export class SubscriptionService {
 
 	private current: ClientSubscription;
 
-	constructor(private connection: signalR.HubConnection) {
+	constructor(private connection: HubConnection) {
 		this.current = ClientSubscription.Blank;
 
 		console.info(`SubscriptionService: Started (${connection.state})`);
@@ -99,7 +99,7 @@ export class SubscriptionService {
 	}
 
 	private subscribe(sub: ClientSubscription) {
-		if (this.connection.state != signalR.HubConnectionState.Connected) {
+		if (this.connection.state != HubConnectionState.Connected) {
 			console.info(`SubscriptionService: Unable to send subscription request (${this.connection.state})`);
 			return;
 		}
