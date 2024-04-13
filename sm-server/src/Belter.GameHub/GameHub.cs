@@ -5,20 +5,18 @@ namespace Belter.Server;
 public class GameHub : Hub
 {
 	ILogger<GameHub> logger;
-	GameWorld world;
 	static List<string> users = new();
 
 
-	public GameHub(ILogger<GameHub> logger, GameWorld world)
+	public GameHub(ILogger<GameHub> logger)
 	{
 		this.logger = logger;
-		this.world = world;
 	}
 
 	public override Task OnConnectedAsync()
 	{
 		logger.LogInformation($"Connected: {Context.UserIdentifier} / {Context.ConnectionId}");
-		world.SpawnPlayer(Context.UserIdentifier ?? throw new ArgumentNullException());
+		//world.SpawnPlayer(Context.UserIdentifier ?? throw new ArgumentNullException());
 		return base.OnConnectedAsync();
 	}
 
@@ -50,7 +48,7 @@ public class GameHub : Hub
 
 	public void Subscribe(Subscription sub)
 	{
-		world.SetSubscription(Context.UserIdentifier ?? throw new ArgumentNullException(), sub);
+		//world.SetSubscription(Context.UserIdentifier ?? throw new ArgumentNullException(), sub);
 		logger.LogInformation("{user} subscription changed to {sub}", Context.UserIdentifier, sub);
 	}
 

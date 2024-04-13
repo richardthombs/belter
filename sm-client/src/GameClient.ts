@@ -8,7 +8,7 @@ export class GameClient extends Container {
 
 	app: Application;
 	state: GameState = {
-		view: { x: 0, y: 0, zoom: 0.1 },
+		view: { x: 0, y: 0, zoom: 0.5 },
 		entities: [],
 		keys: {
 			thrust: false, rotLeft: false, rotRight: false, fire: false

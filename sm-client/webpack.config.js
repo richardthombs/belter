@@ -24,10 +24,12 @@ module.exports = {
 		// This line is VERY important for VS Code debugging to attach properly
 		// Tamper with it at your own risks
 		devtoolModuleFilenameTemplate: '[absolute-resource-path]',
-		clean: true
+		clean: true,
 	},
 	plugins: [
-		new HtmlWebpackPlugin()
+		new HtmlWebpackPlugin({
+			title: "Belter"
+		})
 	],
 	devServer: {
 		//contentBase: path.join(__dirname, 'dist'),

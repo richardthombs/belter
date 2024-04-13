@@ -7,7 +7,7 @@
 		"build": "webpack"
 	},
 	"author": "Richard Thombs <stonyuk@gmail.com>",
-	"license": "MIT",
+	"license": "GPLv3",
 	"devDependencies": {
 		"@microsoft/signalr": "^8.0.0",
 		"copy-webpack-plugin": "5.1.2",

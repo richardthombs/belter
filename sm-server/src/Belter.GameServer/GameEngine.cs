@@ -24,8 +24,8 @@ public class GameEngine : BackgroundService
 		{
 			var asteroid = new GameObject
 			{
-				X = rnd.NextInt64(-GameWorld.WORLD_WIDTH / 2, GameWorld.WORLD_WIDTH / 2),
-				Y = rnd.NextInt64(-GameWorld.WORLD_HEIGHT / 2, GameWorld.WORLD_HEIGHT / 2),
+				X = rnd.NextInt64(-GameWorld.WORLD_WIDTH / 5, GameWorld.WORLD_WIDTH / 5), // Start off near the centre of the map
+				Y = rnd.NextInt64(-GameWorld.WORLD_HEIGHT / 5, GameWorld.WORLD_HEIGHT / 5),
 				R = rnd.Next(360),
 				dX = RandomInt(-20, 20, true) * 5,
 				dY = RandomInt(-20, 20, true) * 5,
@@ -39,7 +39,7 @@ public class GameEngine : BackgroundService
 
 	protected override async Task ExecuteAsync(CancellationToken cancellationToken)
 	{
-		var targetFps = 10d;
+		var targetFps = 30d;
 		double msPerFrame = 1000 / targetFps;
 		var watch = new Stopwatch();
 		var fps = new MovingAverage(60);
@@ -50,7 +50,7 @@ public class GameEngine : BackgroundService
 
 		while (!cancellationToken.IsCancellationRequested)
 		{
-			var dt = frame == 0? 1 : (watch.ElapsedMilliseconds/1000f);
+			var dt = frame == 0 ? 1 : (watch.ElapsedMilliseconds / 1000f);
 			watch.Restart();
 
 			var tree = new QuadTreeNode { Bounds = world.WorldRectangle, Capacity = 100000 };
@@ -83,12 +83,12 @@ public class GameEngine : BackgroundService
 					continue;
 				}
 
-				var scale = 1/playerSub.Z;
+				var scale = 1 / playerSub.Z;
 				var visibleRect = new Rectangle(
-					(long)(playerSub.X*scale),
-					(long)(playerSub.Y*scale),
-					(ulong)(playerSub.W*scale),
-					(ulong)(playerSub.H*scale)
+					(long)(playerSub.X * scale),
+					(long)(playerSub.Y * scale),
+					(ulong)(playerSub.W * scale),
+					(ulong)(playerSub.H * scale)
 				);
 				//logger.LogInformation("Visible rect {player}, {rect}", player.Key, visibleRect);
 				var updates = tree.FindWithin(visibleRect);
@@ -99,7 +99,7 @@ public class GameEngine : BackgroundService
 			var msUpdate = watch.ElapsedMilliseconds;
 
 			var free = msPerFrame - msUpdate;
-			var delay = free <= 0? 1 : (int)free;
+			var delay = free <= 0 ? 1 : (int)free;
 			await Task.Delay(delay, cancellationToken);
 
 			fps.ComputeAverage(1000m / watch.ElapsedMilliseconds);
