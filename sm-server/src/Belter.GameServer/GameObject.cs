@@ -1,4 +1,4 @@
-namespace Belter.Server;
+namespace Belter.GameServer;
 
 public class GameObject : IPoint
 {

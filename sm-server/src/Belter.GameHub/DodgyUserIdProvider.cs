@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 
-namespace Belter.Server;
+namespace Belter.GameHub;
 
 public class DodgyUserIdProvider : IUserIdProvider
 {

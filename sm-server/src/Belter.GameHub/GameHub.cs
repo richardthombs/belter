@@ -1,12 +1,11 @@
 using Microsoft.AspNetCore.SignalR;
 
-namespace Belter.Server;
+namespace Belter.GameHub;
 
 public class GameHub : Hub
 {
 	ILogger<GameHub> logger;
 	static List<string> users = new();
-
 
 	public GameHub(ILogger<GameHub> logger)
 	{

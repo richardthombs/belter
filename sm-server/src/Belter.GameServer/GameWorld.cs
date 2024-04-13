@@ -1,4 +1,4 @@
-namespace Belter.Server;
+namespace Belter.GameServer;
 
 public class GameWorld
 {
@@ -35,7 +35,7 @@ public class GameWorld
 			dR = 0, //(rnd.NextDouble() * 90 - 45) * 3,
 			Type = "p"
 		};
-		
+
 		AddPlayer(playerName, player);
 	}
 
