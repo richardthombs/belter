@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Belter.GameServer;
@@ -72,7 +70,7 @@ public class GameEngine : BackgroundService
 
 			foreach (var player in world.players)
 			{
-				//var user = hub.Clients.User(player.Key);
+				// TODO: var user = hub.Clients.User(player.Key);
 
 				if (!world.subs.TryGetValue(player.Key, out var playerSub))
 				{
@@ -90,7 +88,7 @@ public class GameEngine : BackgroundService
 				//logger.LogInformation("Visible rect {player}, {rect}", player.Key, visibleRect);
 				var updates = tree.FindWithin(visibleRect);
 
-				//await user.SendAsync("PositionUpdate", updates);
+				// TODO: await user.SendAsync("PositionUpdate", updates);
 			}
 
 			var msUpdate = watch.ElapsedMilliseconds;
@@ -101,7 +99,7 @@ public class GameEngine : BackgroundService
 
 			fps.ComputeAverage(1000m / watch.ElapsedMilliseconds);
 
-			if (/*frame > 0 &&*/ frame % (targetFps * 60) == 0)
+			if (frame > 0 && frame % (targetFps * 60) == 0)
 			{
 				logger.LogTrace("{fpsAverage:n0}fps : {msUpdate:n0}ms to update, {free:n0}ms free", fps.Average, msUpdate, free);
 			}

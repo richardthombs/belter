@@ -15,7 +15,7 @@ public class GameHub : Hub
 	public override Task OnConnectedAsync()
 	{
 		logger.LogInformation($"Connected: {Context.UserIdentifier} / {Context.ConnectionId}");
-		//world.SpawnPlayer(Context.UserIdentifier ?? throw new ArgumentNullException());
+		// TODO: world.SpawnPlayer(Context.UserIdentifier ?? throw new ArgumentNullException());
 		return base.OnConnectedAsync();
 	}
 
@@ -47,7 +47,7 @@ public class GameHub : Hub
 
 	public void Subscribe(Subscription sub)
 	{
-		//world.SetSubscription(Context.UserIdentifier ?? throw new ArgumentNullException(), sub);
+		// TODO: world.SetSubscription(Context.UserIdentifier ?? throw new ArgumentNullException(), sub);
 		logger.LogInformation("{user} subscription changed to {sub}", Context.UserIdentifier, sub);
 	}
 
