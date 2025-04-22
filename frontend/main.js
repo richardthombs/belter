@@ -29,6 +29,47 @@ const ws = new WebSocket("ws://localhost:5000/ws");
 ws.onopen = () => {
     console.log("WebSocket connected");
 };
+
+// Track currently pressed keys
+const relevantKeys = [
+    'KeyW', 'KeyA', 'KeyS', 'KeyD', // WASD
+    'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'
+];
+const pressedKeys = new Set();
+
+window.addEventListener('keydown', (e) => {
+    if (relevantKeys.includes(e.code)) {
+        pressedKeys.add(e.code);
+    }
+});
+window.addEventListener('keyup', (e) => {
+    if (relevantKeys.includes(e.code)) {
+        pressedKeys.delete(e.code);
+    }
+});
+
+// Send all currently pressed keys every 33ms (30fps), but only send empty once
+let sentEmpty = false;
+setInterval(() => {
+    if (ws.readyState !== WebSocket.OPEN) return;
+    const keysArray = Array.from(pressedKeys);
+    if (keysArray.length > 0) {
+        ws.send(JSON.stringify({ type: 'keys', keys: keysArray }));
+        sentEmpty = false;
+    } else if (!sentEmpty) {
+        ws.send(JSON.stringify({ type: 'keys', keys: [] }));
+        sentEmpty = true;
+    }
+}, 33);
+
+// Reset sentEmpty when a key is pressed again
+window.addEventListener('keydown', (e) => {
+    if (relevantKeys.includes(e.code)) {
+        pressedKeys.add(e.code);
+        sentEmpty = false;
+    }
+});
+
 ws.onmessage = (msg) => {
     // Remove old asteroids
     asteroidGraphics.forEach((g) => app.stage.removeChild(g));

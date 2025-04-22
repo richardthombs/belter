@@ -66,7 +66,7 @@ app.Map("/ws", async context =>
     var remoteIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     var remotePort = context.Connection.RemotePort;
     Console.WriteLine($"[WS] Client connected: {remoteIp}:{remotePort}");
-    var buffer = new byte[1];
+    var buffer = new byte[1024];
     while (ws.State == WebSocketState.Open)
     {
         var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
@@ -74,6 +74,26 @@ app.Map("/ws", async context =>
         {
             await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
             Console.WriteLine($"[WS] Client disconnected: {remoteIp}:{remotePort}");
+        }
+        else if (result.MessageType == WebSocketMessageType.Text)
+        {
+            string msg = System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count);
+            try
+            {
+                var doc = System.Text.Json.JsonDocument.Parse(msg);
+                if (doc.RootElement.TryGetProperty("type", out var typeElem) && typeElem.GetString() == "keys")
+                {
+                    if (doc.RootElement.TryGetProperty("keys", out var keysElem) && keysElem.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        var keys = keysElem.EnumerateArray().Select(k => k.GetString()).Where(s => s != null).ToArray();
+                        Console.WriteLine($"[WS] Keys from {remoteIp}:{remotePort}: [{string.Join(", ", keys)}]");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[WS] Invalid client message: {msg} ({ex.Message})");
+            }
         }
     }
 });
