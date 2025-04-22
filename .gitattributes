@@ -1,0 +1,27 @@
+# Ensure consistent line endings and diff behavior
+* text=auto
+
+# Treat these as binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.exe binary
+*.dll binary
+*.pdf binary
+
+# Mark common source files for linguist language stats
+*.cs linguist-language=C#
+*.js linguist-language=JavaScript
+*.json linguist-language=JSON
+*.md linguist-language=Markdown
+*.html linguist-language=HTML
+
+# Handle lockfiles as text
+package-lock.json text
+npm-shrinkwrap.json text
+
+# Force LF for shell and config files
+*.sh text eol=lf
+*.env text eol=lf
