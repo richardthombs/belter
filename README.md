@@ -1,6 +1,7 @@
-# Multiplayer Asteroids Game Scaffold
+# Multiplayer Asteroids Game
+Roadmap: https://github.com/richardthombs/belter/wiki/roadmap
 
-This repository contains a basic scaffold for a multiplayer Asteroids game.
+This repository contains a multiplayer Asteroids game.
 
 - `frontend/` — PixiJS + Vite + WebSocket client
 - `backend/` — .NET minimal API + WebSocket server
