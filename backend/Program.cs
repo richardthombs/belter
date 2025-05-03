@@ -8,8 +8,8 @@ using System.Threading;
 public class Program
 {
     // Configuration
-    private const float WORLD_WIDTH = 1_000_000f;
-    private const float WORLD_HEIGHT = 1_000_000f;
+    public const float WORLD_WIDTH = 1_000_000f;
+    public const float WORLD_HEIGHT = 1_000_000f;
     private const int ASTEROID_COUNT = 200;
     private const int ASTEROID_POINTS = 12;
     private const float ASTEROID_MIN_SIZE = 30f;
@@ -23,16 +23,16 @@ public class Program
         rng ??= new Random();
         float[] polygon = new float[ASTEROID_POINTS * 2];
         double angleStep = 2 * Math.PI / ASTEROID_POINTS;
-        
+
         for (int j = 0; j < ASTEROID_POINTS; j++)
         {
             double angle = j * angleStep;
             // Vary radius between 60% and 100% of size/2 (the asteroid's radius)
-            float radius = (size/2) * (0.6f + 0.4f * rng.NextSingle());
+            float radius = (size / 2) * (0.6f + 0.4f * rng.NextSingle());
             polygon[j * 2] = radius * (float)Math.Cos(angle);
             polygon[j * 2 + 1] = radius * (float)Math.Sin(angle);
         }
-        
+
         return polygon;
     }
 
@@ -68,8 +68,11 @@ public class Program
         var asteroids = GenerateAsteroids(ASTEROID_COUNT);
         Console.WriteLine($"[Asteroids] Created initial {asteroids.Count} asteroids");
 
-
-        var sockets = new ConcurrentBag<WebSocket>();
+        // Ship management
+        var ships = new ConcurrentDictionary<string, Ship>();
+        var socketToShipId = new ConcurrentDictionary<WebSocket, string>();
+        var playerInputs = new ConcurrentDictionary<string, HashSet<string>>();
+        var rng = new Random();
 
         // WebSocket Endpoint
         app.Map("/ws", async context =>
@@ -79,11 +82,25 @@ public class Program
                 context.Response.StatusCode = 400;
                 return;
             }
+
             var ws = await context.WebSockets.AcceptWebSocketAsync();
-            sockets.Add(ws);
+            var shipId = Guid.NewGuid().ToString();
             var remoteIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             var remotePort = context.Connection.RemotePort;
-            Console.WriteLine($"[WS] Client connected: {remoteIp}:{remotePort}");
+
+            // Create ship at random position near the center
+            double theta = rng.NextDouble() * 2 * Math.PI;
+            double spawnRadius = ASTEROID_SPAWN_RADIUS * Math.Sqrt(rng.NextDouble());
+            float x = WORLD_WIDTH / 2 + (float)(spawnRadius * Math.Cos(theta));
+            float y = WORLD_HEIGHT / 2 + (float)(spawnRadius * Math.Sin(theta));
+            var ship = new Ship(shipId, new Vector2(x, y));
+
+            ships.TryAdd(shipId, ship);
+            socketToShipId.TryAdd(ws, shipId);
+            playerInputs.TryAdd(shipId, new HashSet<string>());
+
+            Console.WriteLine($"[WS] Client connected: {remoteIp}:{remotePort} (Ship: {shipId})");
+
             var buffer = new byte[1024];
             while (ws.State == WebSocketState.Open)
             {
@@ -91,7 +108,10 @@ public class Program
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
                     await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
-                    Console.WriteLine($"[WS] Client disconnected: {remoteIp}:{remotePort}");
+                    Console.WriteLine($"[WS] Client disconnected: {remoteIp}:{remotePort} (Ship: {shipId})");
+                    ships.TryRemove(shipId, out _);
+                    socketToShipId.TryRemove(ws, out _);
+                    playerInputs.TryRemove(shipId, out _);
                 }
                 else if (result.MessageType == WebSocketMessageType.Text)
                 {
@@ -101,10 +121,13 @@ public class Program
                         var doc = System.Text.Json.JsonDocument.Parse(msg);
                         if (doc.RootElement.TryGetProperty("type", out var typeElem) && typeElem.GetString() == "keys")
                         {
-                            if (doc.RootElement.TryGetProperty("keys", out var keysElem) && keysElem.ValueKind == System.Text.Json.JsonValueKind.Array)
+                            if (doc.RootElement.TryGetProperty("keys", out var keysElem) && keysElem.ValueKind == JsonValueKind.Array)
                             {
-                                var keys = keysElem.EnumerateArray().Select(k => k.GetString()).Where(s => s != null).ToArray();
-                                Console.WriteLine($"[WS] Keys from {remoteIp}:{remotePort}: [{string.Join(", ", keys)}]");
+                                var keys = keysElem.EnumerateArray()
+                                    .Select(k => k.GetString())
+                                    .Where(s => s != null)
+                                    .ToHashSet();
+                                playerInputs[shipId] = keys;
                             }
                         }
                     }
@@ -116,15 +139,13 @@ public class Program
             }
         });
 
-
         app.UseWebSockets();
 
-        // Asteroid Update & Broadcast Loop
+        // Game Update & Broadcast Loop
         var updateLock = new object();
         var updateInProgress = false;
         var timer = new Timer(async _ =>
         {
-            // Prevent overlapping updates
             if (Interlocked.CompareExchange(ref updateInProgress, true, false))
             {
                 Console.WriteLine("[Warning] Update loop taking longer than 33ms, skipping update");
@@ -135,11 +156,20 @@ public class Program
             {
                 float centerX = WORLD_WIDTH / 2f;
                 float centerY = WORLD_HEIGHT / 2f;
-                double maxDistance = ASTEROID_SPAWN_RADIUS * 2.0; // Destroy asteroids that get too far from center
+                double maxDistance = ASTEROID_SPAWN_RADIUS * 2.0;
 
-                lock (updateLock) // Synchronize access to asteroids list
+                // Update ships
+                foreach (var (shipId, ship) in ships)
                 {
-                    // Update positions
+                    if (playerInputs.TryGetValue(shipId, out var keys))
+                    {
+                        ship.Update(keys);
+                    }
+                }
+
+                lock (updateLock)
+                {
+                    // Update asteroids positions and handle collisions
                     for (int i = 0; i < asteroids.Count; i++)
                     {
                         var a = asteroids[i];
@@ -199,21 +229,33 @@ public class Program
                     }
                 }
 
-                // Prepare update message outside the lock
-                var asteroidDtos = asteroids.Select(a => new {
-                    a.Id,
-                    Position = new { X = a.Position.X, Y = a.Position.Y },
-                    Velocity = new { X = a.Velocity.X, Y = a.Velocity.Y },
-                    a.Size,
-                    a.Polygon
-                });
+                // Prepare game state update
+                var gameState = new
+                {
+                    Ships = ships.Values.Select(s => new
+                    {
+                        s.Id,
+                        Position = new { X = s.Position.X, Y = s.Position.Y },
+                        Velocity = new { X = s.Velocity.X, Y = s.Velocity.Y },
+                        s.Rotation,
+                        s.Polygon
+                    }),
+                    Asteroids = asteroids.Select(a => new
+                    {
+                        a.Id,
+                        Position = new { X = a.Position.X, Y = a.Position.Y },
+                        Velocity = new { X = a.Velocity.X, Y = a.Velocity.Y },
+                        a.Size,
+                        a.Polygon
+                    })
+                };
 
-                var msg = JsonSerializer.Serialize(asteroidDtos);
+                var msg = JsonSerializer.Serialize(gameState);
                 var msgBytes = System.Text.Encoding.UTF8.GetBytes(msg);
 
                 // Send updates to all connected clients
                 var sendTasks = new List<Task>();
-                foreach (var ws in sockets)
+                foreach (var ws in socketToShipId.Keys)
                 {
                     if (ws.State == WebSocketState.Open)
                     {
@@ -232,7 +274,6 @@ public class Program
                     }
                 }
 
-                // Wait for all sends to complete
                 if (sendTasks.Any())
                 {
                     await Task.WhenAll(sendTasks);

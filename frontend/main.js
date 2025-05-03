@@ -1,7 +1,6 @@
 import * as PIXI from "pixi.js";
 
 // Create PixiJS Application
-// Create PixiJS Application that fills the window
 const app = new PIXI.Application({
     resizeTo: window,
     backgroundColor: 0x000000,
@@ -15,7 +14,10 @@ window.addEventListener("resize", () => {
 
 // Game state
 let asteroids = [];
-let asteroidGraphics = new Map(); // Map of asteroid ID to graphics
+let ships = [];
+let myShipId = null;
+let asteroidGraphics = new Map();
+let shipGraphics = new Map();
 
 // Camera parameters (centered on middle of map)
 const WORLD_WIDTH = 1_000_000;
@@ -71,13 +73,13 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// Cache for asteroid graphics data
+// Cache for graphics data
 const graphicsCache = new Map();
 
 // Create initial graphics for an asteroid
 function createAsteroidGraphics(asteroid) {
     const g = new PIXI.Graphics();
-    
+
     // Draw asteroid polygon in white
     g.lineStyle(2, 0xffffff);
     if (asteroid.Polygon && asteroid.Polygon.length === 24) {
@@ -87,7 +89,26 @@ function createAsteroidGraphics(asteroid) {
         }
         g.closePath();
     }
-    
+
+    app.stage.addChild(g);
+    return g;
+}
+
+// Create initial graphics for a ship
+function createShipGraphics(ship) {
+    const g = new PIXI.Graphics();
+
+    // Draw ship polygon in blue for other players, green for local player
+    g.lineStyle(2, 0xffffff)
+        .beginFill(ship.Id === myShipId ? 0x00ff00 : 0x0000ff, 0.5)
+        .moveTo(ship.Polygon[0], ship.Polygon[1])
+        .lineTo(ship.Polygon[2], ship.Polygon[3])
+        .lineTo(ship.Polygon[4], ship.Polygon[5])
+        .lineTo(ship.Polygon[6], ship.Polygon[7])
+        .lineTo(ship.Polygon[8], ship.Polygon[9])
+        .closePath()
+        .endFill();
+
     app.stage.addChild(g);
     return g;
 }
@@ -96,7 +117,7 @@ function createAsteroidGraphics(asteroid) {
 function updateAsteroidGraphics(asteroid) {
     let g = asteroidGraphics.get(asteroid.Id);
     let cache = graphicsCache.get(asteroid.Id);
-    
+
     // Create new graphics if needed
     if (!g) {
         g = createAsteroidGraphics(asteroid);
@@ -104,11 +125,10 @@ function updateAsteroidGraphics(asteroid) {
         cache = {};
         graphicsCache.set(asteroid.Id, cache);
     }
-    
+
     // Check if asteroid data has changed
     if (cache.size !== asteroid.Size) {
         g.clear();
-
         g.lineStyle(2, 0xffffff);
         if (asteroid.Polygon && asteroid.Polygon.length === 24) {
             g.moveTo(asteroid.Polygon[0], asteroid.Polygon[1]);
@@ -117,75 +137,139 @@ function updateAsteroidGraphics(asteroid) {
             }
             g.closePath();
         }
-        
         cache.size = asteroid.Size;
     }
-    
-    // Always update position
-    g.x = asteroid.Position.X - camera.x + app.renderer.width / 2;
-    g.y = asteroid.Position.Y - camera.y + app.renderer.height / 2;
+
+    // Update position and set visibility
+    const screenX = asteroid.Position.X - camera.x + app.renderer.width / 2;
+    const screenY = asteroid.Position.Y - camera.y + app.renderer.height / 2;
+    g.x = screenX;
+    g.y = screenY;
+    g.visible = true;
 
     return g;
 }
 
-// Track which asteroids need cleanup
+// Update ship graphics
+function updateShipGraphics(ship) {
+    let g = shipGraphics.get(ship.Id);
+
+    // Create new graphics if needed
+    if (!g) {
+        g = createShipGraphics(ship);
+        shipGraphics.set(ship.Id, g);
+    }
+
+    // Always update position and rotation
+    const screenX = ship.Position.X - camera.x + app.renderer.width / 2;
+    const screenY = ship.Position.Y - camera.y + app.renderer.height / 2;
+    g.x = screenX;
+    g.y = screenY;
+    g.rotation = ship.Rotation;
+    g.visible = true;
+
+    return g;
+}
+
+// Track which objects need cleanup
 let pendingCleanup = false;
 let lastAsteroidIds = new Set();
+let lastShipIds = new Set();
 
-// WebSocket message handler - just updates asteroid data
+// WebSocket message handler
 ws.onmessage = (msg) => {
     try {
-        // Quick parse of the data
-        asteroids = JSON.parse(msg.data);
-        
+        const gameState = JSON.parse(msg.data);
+        asteroids = gameState.Asteroids;
+        ships = gameState.Ships;
+
+        // If this is our first update, find our ship
+        if (!myShipId && ships.length > 0) {
+            // The first ship we see is ours (we'll receive the update right after connecting)
+            myShipId = ships[0].Id;
+            console.log("My ship ID:", myShipId);
+        }
+
         // Mark that we need to do cleanup on next frame
         pendingCleanup = true;
     } catch (e) {
-        console.error("Invalid asteroid data", e);
+        console.error("Invalid game state data", e);
     }
 };
 
 // Add render loop
 app.ticker.add(() => {
-    // Handle asteroid cleanup if needed
+    // Handle cleanup if needed
     if (pendingCleanup) {
-        const currentIds = new Set(asteroids.map(a => a.Id));
-        
-        // Remove graphics for asteroids that no longer exist
+        const currentAsteroidIds = new Set(asteroids.map(a => a.Id));
+        const currentShipIds = new Set(ships.map(s => s.Id));
+
+        // Remove graphics for objects that no longer exist
         for (const id of lastAsteroidIds) {
-            if (!currentIds.has(id) && asteroidGraphics.has(id)) {
+            if (!currentAsteroidIds.has(id) && asteroidGraphics.has(id)) {
                 const graphics = asteroidGraphics.get(id);
                 app.stage.removeChild(graphics);
                 asteroidGraphics.delete(id);
                 graphicsCache.delete(id);
             }
         }
-        
-        lastAsteroidIds = currentIds;
+
+        for (const id of lastShipIds) {
+            if (!currentShipIds.has(id) && shipGraphics.has(id)) {
+                const graphics = shipGraphics.get(id);
+                app.stage.removeChild(graphics);
+                shipGraphics.delete(id);
+            }
+        }
+
+        lastAsteroidIds = currentAsteroidIds;
+        lastShipIds = currentShipIds;
         pendingCleanup = false;
     }
-    
-    // Only update asteroids in view
+
+    // Update camera to follow player's ship
+    if (myShipId) {
+        const myShip = ships.find(s => s.Id === myShipId);
+        if (myShip) {
+            camera.x = myShip.Position.X;
+            camera.y = myShip.Position.Y;
+        }
+    }
+
+    // Only update objects in view
     const margin = 100; // pixels
     const minX = -margin;
     const minY = -margin;
     const maxX = app.renderer.width + margin;
     const maxY = app.renderer.height + margin;
-    
+
+    // Update asteroids
     asteroids.forEach(asteroid => {
         const screenX = asteroid.Position.X - camera.x + app.renderer.width / 2;
         const screenY = asteroid.Position.Y - camera.y + app.renderer.height / 2;
-        
-        // Only update if asteroid is on screen
+
         if (screenX > minX && screenX < maxX && screenY > minY && screenY < maxY) {
             updateAsteroidGraphics(asteroid);
         } else if (asteroidGraphics.has(asteroid.Id)) {
-            // Hide off-screen asteroids
             const g = asteroidGraphics.get(asteroid.Id);
             g.visible = false;
         }
     });
+
+    // Update ships
+    ships.forEach(ship => {
+        const screenX = ship.Position.X - camera.x + app.renderer.width / 2;
+        const screenY = ship.Position.Y - camera.y + app.renderer.height / 2;
+
+        if (screenX > minX && screenX < maxX && screenY > minY && screenY < maxY) {
+            updateShipGraphics(ship);
+        } else if (shipGraphics.has(ship.Id)) {
+            const g = shipGraphics.get(ship.Id);
+            g.visible = false;
+        }
+    });
 });
+
 ws.onclose = () => {
     console.log("WebSocket closed");
 };

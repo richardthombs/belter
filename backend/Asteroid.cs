@@ -23,7 +23,7 @@ public class Asteroid
                 }
                 else // Small change - just scale existing points
                 {
-                float scale = value / _size;
+                    float scale = value / _size;
                     for (int i = 0; i < Polygon.Length; i++)
                     {
                         Polygon[i] *= scale;
@@ -69,17 +69,13 @@ public class Asteroid
 
         // 2. Handle size reduction
         float collisionEnergy = 0.5f * (Mass * other.Mass / (Mass + other.Mass)) * impactSpeed * impactSpeed;
-        
+
         // Each asteroid loses size based on its share of the collision energy
         float myShare = collisionEnergy * (Mass / (Mass + other.Mass));
         float otherShare = collisionEnergy * (other.Mass / (Mass + other.Mass));
-        
+
         float myReduction = 25f * myShare / Mass;
         float otherReduction = 25f * otherShare / other.Mass;
-
-        Console.WriteLine($"[Collision] Speed: {impactSpeed:F2}, Energy: {collisionEnergy:F1}");
-        Console.WriteLine($"[Collision] Asteroid {Id}: {Size:F2} -> {Size - myReduction:F2} (-{myReduction:F2})");
-        Console.WriteLine($"[Collision] Asteroid {other.Id}: {Size:F2} -> {other.Size - otherReduction:F2} (-{otherReduction:F2})");
 
         Size -= myReduction;
         other.Size -= otherReduction;
