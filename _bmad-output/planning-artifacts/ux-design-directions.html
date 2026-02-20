@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Belter Life — UX Design Directions</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #07080d;
+    color: #e0e2ef;
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── NAV ───────────────────────────────────────────── */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #0d0f18cc;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid #1e2235;
+    padding: 12px 32px;
+    display: flex; align-items: center; gap: 24px;
+    flex-wrap: wrap;
+  }
+  .nav-title { font-size: 13px; font-weight: 600; color: #c9a040; letter-spacing: .06em; text-transform: uppercase; margin-right: 8px; }
+  .nav-btn {
+    font: 500 13px 'Inter', sans-serif;
+    background: transparent; border: 1px solid #2a2f45;
+    color: #8a90b0; padding: 6px 14px; border-radius: 6px; cursor: pointer;
+    transition: all .15s;
+  }
+  .nav-btn:hover, .nav-btn.active { background: #1e2235; border-color: #4a5070; color: #e0e2ef; }
+  .nav-btn.active { border-color: #c9a040; color: #c9a040; }
+
+  /* ── SECTION HEADERS ───────────────────────────────── */
+  .section-label {
+    padding: 48px 40px 24px;
+    border-bottom: 1px solid #1a1d2e;
+  }
+  .section-label h2 { font-size: 22px; font-weight: 600; color: #e0e2ef; }
+  .section-label p { margin-top: 6px; font-size: 14px; color: #5a6080; line-height: 1.5; }
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; letter-spacing: .05em;
+    margin-left: 10px; vertical-align: middle;
+  }
+  .badge-a { background: #1a2a3a; color: #78d4c8; border: 1px solid #2a4a58; }
+  .badge-b { background: #2a1a2a; color: #b07ad4; border: 1px solid #4a2a58; }
+  .badge-c { background: #2a200a; color: #c9a040; border: 1px solid #58400a; }
+
+  /* ── DIRECTION WRAPPER ─────────────────────────────── */
+  .direction { display: none; }
+  .direction.active { display: block; }
+
+  /* ── MOCKUP GRID ───────────────────────────────────── */
+  .mockup-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    padding: 32px 40px 48px;
+  }
+  @media (max-width: 900px) { .mockup-grid { grid-template-columns: 1fr; } }
+
+  .mockup-card {
+    border-radius: 12px; overflow: hidden;
+    border: 1px solid #1e2235;
+  }
+  .mockup-label {
+    padding: 10px 16px;
+    background: #0d0f18;
+    border-bottom: 1px solid #1e2235;
+    font-size: 12px; font-weight: 500; color: #5a6080;
+    letter-spacing: .04em;
+  }
+
+  /* ══════════════════════════════════════════════════════
+     GAME CANVAS SIMULATION
+  ══════════════════════════════════════════════════════ */
+  .canvas-sim {
+    position: relative;
+    background: #0a0b10;
+    aspect-ratio: 16/10;
+    overflow: hidden;
+  }
+  .canvas-sim svg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+  }
+
+  /* ── STAR FIELD ─────────────────────────────────────── */
+  .star { fill: white; opacity: .6; animation: twinkle 3s ease-in-out infinite; }
+  .star:nth-child(2n) { animation-delay: .7s; opacity: .4; }
+  .star:nth-child(3n) { animation-delay: 1.4s; opacity: .8; }
+  @keyframes twinkle { 0%,100% { opacity: .6; } 50% { opacity: .2; } }
+
+  /* ── HUD OVERLAY ─────────────────────────────────────── */
+  .hud {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ════════════════════════ DIRECTION A: GHOST ═══════ */
+
+  /* Ghost HUD — ultra-minimal, everything fades */
+  .hud-ghost .hud-tl {
+    position: absolute; top: 16px; left: 16px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .hud-ghost .hud-stat {
+    font: 500 11px 'DM Mono', monospace;
+    color: #5a6080;
+    letter-spacing: .04em;
+  }
+  .hud-ghost .hud-stat span { color: #c9a040; }
+
+  .hud-ghost .hud-tr {
+    position: absolute; top: 16px; right: 16px;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+  }
+  .hud-ghost .cargo-bar-wrap {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hud-ghost .cargo-label { font: 500 10px 'DM Mono', monospace; color: #3a4560; }
+  .hud-ghost .cargo-bar {
+    width: 60px; height: 3px; background: #1e2235; border-radius: 2px; overflow: hidden;
+  }
+  .hud-ghost .cargo-fill {
+    height: 100%; background: #78d4c8; border-radius: 2px;
+  }
+
+  /* Ghost context panel */
+  .panel-ghost {
+    position: absolute; right: 0; top: 0; bottom: 0;
+    width: 220px;
+    background: linear-gradient(to left, #0d0f18f0, #0d0f18cc 70%, transparent);
+    padding: 16px 16px 16px 32px;
+    display: flex; flex-direction: column; gap: 12px;
+    border-left: 1px solid #1e2235;
+  }
+  .panel-ghost .obj-name {
+    font: 600 13px 'DM Mono', monospace;
+    color: #78d4c8; letter-spacing: .06em;
+  }
+  .panel-ghost .obj-sub {
+    font: 400 11px 'DM Mono', monospace;
+    color: #3a4560; margin-top: 2px;
+  }
+  .panel-ghost .obj-stat-row {
+    display: flex; justify-content: space-between;
+    font-size: 11px;
+  }
+  .panel-ghost .obj-stat-key { color: #3a4560; }
+  .panel-ghost .obj-stat-val { color: #8a90b0; font-family: 'DM Mono', monospace; }
+  .panel-ghost .divider { height: 1px; background: #1a1d2e; }
+  .panel-ghost .range-note {
+    font: 400 10px 'Inter', sans-serif;
+    color: #3a4560;
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+  .panel-ghost .action-btn {
+    display: block; width: 100%;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font: 500 12px 'Inter', sans-serif;
+    text-align: center; cursor: pointer;
+    border: 1px solid;
+    transition: all .15s;
+  }
+  .panel-ghost .action-btn.primary {
+    background: #1a2a3a; border-color: #2a4a58; color: #78d4c8;
+  }
+  .panel-ghost .action-btn.secondary {
+    background: transparent; border-color: #1e2235; color: #4a5070;
+  }
+  .panel-ghost .action-btn.dim {
+    background: transparent; border-color: #141620; color: #2a3050;
+  }
+
+  /* ════════════════════════ DIRECTION B: NAVIGATOR ═══ */
+
+  .hud-nav .hud-bottom-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, #0d0f18f0, transparent);
+    padding: 20px 20px 14px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+  }
+  .hud-nav .stat-cluster {
+    display: flex; gap: 20px; align-items: flex-end;
+  }
+  .hud-nav .stat-block { display: flex; flex-direction: column; gap: 2px; }
+  .hud-nav .stat-key {
+    font: 500 10px 'DM Mono', monospace;
+    color: #3a4560; text-transform: uppercase; letter-spacing: .08em;
+  }
+  .hud-nav .stat-val {
+    font: 600 15px 'Inter', sans-serif; color: #c9a040;
+  }
+  .hud-nav .stat-val.neutral { color: #8a90b0; }
+
+  .hud-nav .sector-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: #0d0f18cc;
+    border: 1px solid #1e2235; border-radius: 20px;
+    padding: 6px 14px;
+    font: 500 11px 'DM Mono', monospace;
+    color: #5a6080;
+  }
+  .hud-nav .sector-dot { width: 6px; height: 6px; border-radius: 50%; background: #78d4c8; }
+
+  /* Nav context panel — slides in from right, chrome frame */
+  .panel-nav {
+    position: absolute; right: 0; top: 0; bottom: 0;
+    width: 240px;
+    background: #0d0f18f0;
+    border-left: 1px solid #1e2235;
+    display: flex; flex-direction: column;
+  }
+  .panel-nav .panel-header {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid #1a1d2e;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-nav .panel-title { font: 600 13px 'Inter', sans-serif; color: #e0e2ef; }
+  .panel-nav .panel-close {
+    width: 20px; height: 20px; border-radius: 4px;
+    background: #1a1d2e; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #3a4560;
+  }
+  .panel-nav .panel-body { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .panel-nav .info-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 12px;
+  }
+  .panel-nav .info-key { color: #4a5070; }
+  .panel-nav .info-val { font-family: 'DM Mono', monospace; color: #8a90b0; font-size: 11px; }
+  .panel-nav .info-val.highlight { color: #78d4c8; }
+  .panel-nav .section-divider {
+    height: 1px; background: #1a1d2e; margin: 4px 0;
+  }
+  .panel-nav .range-badge {
+    background: #1a1d2e; border-radius: 4px;
+    padding: 3px 8px; font-size: 10px; color: #3a4560;
+    font-family: 'DM Mono', monospace;
+    align-self: flex-start;
+  }
+  .panel-nav .panel-actions {
+    padding: 12px 16px;
+    border-top: 1px solid #1a1d2e;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .panel-nav .pnav-btn {
+    padding: 9px 12px; border-radius: 6px;
+    font: 500 12px 'Inter', sans-serif; text-align: center;
+    border: 1px solid;
+  }
+  .panel-nav .pnav-btn.primary { background: #1e3040; border-color: #2a5060; color: #78d4c8; }
+  .panel-nav .pnav-btn.ghost { background: transparent; border-color: #1e2235; color: #4a5070; }
+
+  /* ════════════════════════ DIRECTION C: PROSPECTOR ══ */
+
+  .hud-pro .hud-left {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 48px;
+    background: linear-gradient(to right, #0d0f18e8, transparent);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px 0; gap: 16px;
+  }
+  .hud-pro .sidebar-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: #12141e; border: 1px solid #1e2235;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; cursor: pointer;
+  }
+  .hud-pro .sidebar-icon.active { border-color: #c9a040; background: #1e180a; }
+
+  .hud-pro .hud-top {
+    position: absolute; top: 0; left: 48px; right: 0;
+    background: linear-gradient(to bottom, #0d0f18cc, transparent);
+    padding: 12px 16px 20px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .hud-pro .cred-display {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .hud-pro .cred-icon { font-size: 12px; color: #c9a040; }
+  .hud-pro .cred-val { font: 600 14px 'Inter', sans-serif; color: #c9a040; }
+  .hud-pro .hud-sep { width: 1px; height: 16px; background: #1e2235; }
+  .hud-pro .hold-indicator {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hud-pro .hold-label { font: 400 10px 'DM Mono', monospace; color: #3a4560; text-transform: uppercase; }
+  .hud-pro .hold-pip-row { display: flex; gap: 3px; }
+  .hud-pro .hold-pip {
+    width: 8px; height: 8px; border-radius: 2px; background: #78d4c8;
+  }
+  .hud-pro .hold-pip.empty { background: #1e2235; }
+
+  /* Prospector panel — bottom sheet style */
+  .panel-pro {
+    position: absolute; left: 48px; right: 0; bottom: 0;
+    background: #0d0f18f0;
+    border-top: 1px solid #1e2235;
+  }
+  .panel-pro .sheet-handle {
+    width: 40px; height: 3px; background: #2a2f45; border-radius: 2px;
+    margin: 10px auto 0;
+  }
+  .panel-pro .sheet-body {
+    padding: 12px 16px 16px;
+    display: flex; gap: 16px; align-items: flex-start;
+  }
+  .panel-pro .obj-icon-box {
+    width: 48px; height: 48px; border-radius: 8px;
+    background: #12141e; border: 1px solid #1e2235;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .panel-pro .obj-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .panel-pro .obj-title { font: 600 13px 'Inter', sans-serif; color: #e0e2ef; }
+  .panel-pro .obj-meta { font: 400 11px 'DM Mono', monospace; color: #4a5070; }
+  .panel-pro .action-row {
+    display: flex; gap: 8px; margin-top: 6px;
+  }
+  .panel-pro .pro-btn {
+    flex: 1; padding: 7px 8px;
+    border-radius: 6px; font: 500 11px 'Inter', sans-serif; text-align: center;
+    border: 1px solid;
+  }
+  .panel-pro .pro-btn.on { background: #1e2a1a; border-color: #2a4a22; color: #4a9060; }
+  .panel-pro .pro-btn.teal { background: #0e2228; border-color: #1a3a48; color: #78d4c8; }
+  .panel-pro .pro-btn.dim { background: transparent; border-color: #1a1d2e; color: #2a3050; }
+  .panel-pro .range-note { font: 400 10px 'DM Mono', monospace; color: #2a3050; margin-top: 4px; }
+
+  /* ════════════════════════ CATALOGUE SCREEN ═════════ */
+  .catalogue-screen {
+    position: absolute; inset: 0;
+    background: #0a0b10;
+  }
+  .cat-overlay {
+    position: absolute; inset: 0;
+    background: #0a0b10e8;
+    display: flex; flex-direction: column;
+  }
+  .cat-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid #1a1d2e;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .cat-title { font: 600 14px 'Inter', sans-serif; color: #e0e2ef; }
+  .cat-close-btn {
+    padding: 4px 12px; border-radius: 5px;
+    background: transparent; border: 1px solid #1e2235;
+    font: 500 11px 'Inter', sans-serif; color: #3a4560; cursor: pointer;
+  }
+  .cat-body { flex: 1; display: flex; }
+  .cat-map { flex: 1; position: relative; overflow: hidden; }
+  .cat-map svg { width: 100%; height: 100%; }
+  .cat-sidebar {
+    width: 180px; border-left: 1px solid #1a1d2e;
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .cat-legend-title { font: 600 10px 'DM Mono', monospace; color: #3a4560; text-transform: uppercase; letter-spacing: .08em; }
+  .cat-legend-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #4a5070; }
+  .cat-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .cat-legend-dot.dense { background: #78d4c8; }
+  .cat-legend-dot.sparse { background: #3a4a5a; }
+  .cat-legend-dot.changed { background: #c07020; }
+  .cat-legend-dot.absent { background: #1a1d2e; border: 1px solid #2a2f45; }
+
+  .cat-sector-info {
+    margin-top: 8px; padding-top: 10px;
+    border-top: 1px solid #1a1d2e;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .cat-sector-name { font: 600 12px 'DM Mono', monospace; color: #e0e2ef; }
+  .cat-sector-stat { font: 400 11px 'Inter', sans-serif; color: #4a5070; }
+  .cat-sector-stat span { color: #8a90b0; font-family: 'DM Mono', monospace; }
+  .cat-jump-btn {
+    margin-top: 4px; padding: 8px;
+    background: #1e180a; border: 1px solid #58400a; border-radius: 6px;
+    font: 500 12px 'Inter', sans-serif; color: #c9a040; text-align: center; cursor: pointer;
+  }
+  .cat-jump-note {
+    font: 400 10px 'Inter', sans-serif; color: #3a4560; line-height: 1.4;
+  }
+
+  /* ════════════════════════ MATERIALISATION BEAT ══════ */
+  .mat-screen {
+    position: absolute; inset: 0;
+    background: #0a0b10;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mat-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid #78d4c820;
+    animation: expand 2s ease-out infinite;
+  }
+  @keyframes expand {
+    from { transform: scale(0); opacity: .8; }
+    to { transform: scale(3); opacity: 0; }
+  }
+  .mat-core {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: radial-gradient(circle, #78d4c8, #3a8a80);
+    box-shadow: 0 0 20px #78d4c840;
+    z-index: 2;
+  }
+  .mat-caption {
+    position: absolute; bottom: 30%; left: 50%; transform: translateX(-50%);
+    text-align: center;
+  }
+  .mat-caption .mat-sector { font: 500 11px 'DM Mono', monospace; color: #3a4560; letter-spacing: .1em; }
+  .mat-caption .mat-status { font: 600 13px 'Inter', sans-serif; color: #8a90b0; margin-top: 4px; }
+  .mat-caption .mat-pulse {
+    font: 400 11px 'DM Mono', monospace; color: #4a5570;
+    margin-top: 8px; letter-spacing: .06em;
+    animation: pulse-text 1s ease-in-out infinite;
+  }
+  @keyframes pulse-text { 0%,100%{opacity:.4} 50%{opacity:1} }
+
+  /* ── SECTION DIVIDER ─────────────────────────────── */
+  .feature-note {
+    padding: 0 40px 32px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  }
+  .feature-card {
+    background: #0d0f18; border: 1px solid #1a1d2e; border-radius: 10px;
+    padding: 16px;
+  }
+  .feature-card h4 { font: 600 12px 'Inter', sans-serif; color: #e0e2ef; margin-bottom: 6px; }
+  .feature-card p { font: 400 12px 'Inter', sans-serif; color: #4a5070; line-height: 1.5; }
+  .feature-card .fc-badge {
+    display: inline-block; margin-bottom: 8px;
+    padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;
+    letter-spacing: .05em;
+  }
+  .fc-a { background: #0e2228; color: #78d4c8; }
+  .fc-b { background: #1a1020; color: #b07ad4; }
+  .fc-c { background: #1e180a; color: #c9a040; }
+</style>
+</head>
+<body>
+
+<!-- ── NAVIGATION ─────────────────────────────────────── -->
+<nav class="nav">
+  <span class="nav-title">Belter Life · UX Directions</span>
+  <button class="nav-btn active" onclick="show('a')">A — Ghost Ship</button>
+  <button class="nav-btn" onclick="show('b')">B — Navigator</button>
+  <button class="nav-btn" onclick="show('c')">C — Prospector</button>
+  <button class="nav-btn" onclick="show('shared')">Shared Screens</button>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════
+     DIRECTION A: GHOST SHIP
+══════════════════════════════════════════════════════ -->
+<div class="direction active" id="dir-a">
+  <div class="section-label">
+    <h2>Direction A — Ghost Ship <span class="badge badge-a">Ultra-minimal</span></h2>
+    <p>Almost no permanent HUD. Everything appears on demand. The universe is the interface. Closest to Alto's Odyssey in restraint — the void breathes.</p>
+  </div>
+
+  <div class="mockup-grid">
+    <!-- A1: Open space -->
+    <div class="mockup-card">
+      <div class="mockup-label">Open space — no selection</div>
+      <div class="canvas-sim">
+        <svg viewBox="0 0 600 375" xmlns="http://www.w3.org/2000/svg">
+          <!-- Stars -->
+          <circle class="star" cx="45" cy="30" r="1"/>
+          <circle class="star" cx="120" cy="80" r=".8"/>
+          <circle class="star" cx="200" cy="20" r="1.2"/>
+          <circle class="star" cx="300" cy="60" r=".7"/>
+          <circle class="star" cx="450" cy="40" r="1"/>
+          <circle class="star" cx="520" cy="90" r=".9"/>
+          <circle class="star" cx="80" cy="150" r=".6"/>
+          <circle class="star" cx="380" cy="130" r="1.1"/>
+          <circle class="star" cx="560" cy="200" r=".8"/>
+          <circle class="star" cx="150" cy="250" r=".7"/>
+          <circle class="star" cx="480" cy="280" r="1"/>
+          <circle class="star" cx="240" cy="320" r=".9"/>
+          <circle class="star" cx="350" cy="340" r=".6"/>
+          <!-- Distant asteroids -->
+          <ellipse cx="180" cy="200" rx="18" ry="12" fill="#1a1e2a" stroke="#2a3040" stroke-width=".5"/>
+          <ellipse cx="390" cy="160" rx="28" ry="20" fill="#1e2230" stroke="#2a3040" stroke-width=".5"/>
+          <ellipse cx="490" cy="300" rx="14" ry="10" fill="#181b26" stroke="#252a38" stroke-width=".5"/>
+          <ellipse cx="90" cy="310" rx="10" ry="7" fill="#181b26" stroke="#222840" stroke-width=".5"/>
+          <!-- Ship -->
+          <polygon points="290,188 300,172 310,188 300,184" fill="#8a90b0" stroke="#a0a8c0" stroke-width=".8"/>
+          <!-- Thrust glow -->
+          <ellipse cx="300" cy="191" rx="3" ry="6" fill="#c9a040" opacity=".5"/>
+        </svg>
+        <!-- Ghost HUD -->
+        <div class="hud hud-ghost">
+          <div class="hud-tl">
+            <div class="hud-stat">⊕ <span>47,240 cr</span></div>
+            <div class="hud-stat">SECTOR <span>7-G</span></div>
+          </div>
+          <div class="hud-tr">
+            <div class="cargo-bar-wrap">
+              <span class="cargo-label">HOLD</span>
+              <div class="cargo-bar"><div class="cargo-fill" style="width:40%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- A2: Asteroid selected (mid range) -->
+    <div class="mockup-card">
+      <div class="mockup-label">Asteroid selected — scan range</div>
+      <div class="canvas-sim">
+        <svg viewBox="0 0 600 375" xmlns="http://www.w3.org/2000/svg">
+          <circle class="star" cx="45" cy="30" r="1"/>
+          <circle class="star" cx="120" cy="80" r=".8"/>
+          <circle class="star" cx="200" cy="20" r="1.2"/>
+          <circle class="star" cx="300" cy="60" r=".7"/>
+          <circle class="star" cx="80" cy="150" r=".6"/>
+          <circle class="star" cx="150" cy="250" r=".7"/>
+          <!-- Other asteroids -->
+          <ellipse cx="490" cy="300" rx="14" ry="10" fill="#181b26" stroke="#252a38" stroke-width=".5"/>
+          <ellipse cx="90" cy="310" rx="10" ry="7" fill="#181b26" stroke="#222840" stroke-width=".5"/>
+          <!-- Selected asteroid — highlighted -->
+          <ellipse cx="340" cy="180" rx="38" ry="28" fill="#1a1e2a" stroke="#78d4c8" stroke-width="1" opacity=".9"/>
+          <ellipse cx="340" cy="180" rx="38" ry="28" fill="none" stroke="#78d4c840" stroke-width="8"/>
+          <!-- Selection ring -->
+          <ellipse cx="340" cy="180" rx="52" ry="40" fill="none" stroke="#78d4c820" stroke-width="1" stroke-dasharray="4 4"/>
+          <!-- Ship -->
+          <polygon points="230,195 240,178 250,195 240,191" fill="#8a90b0" stroke="#a0a8c0" stroke-width=".8"/>
+          <ellipse cx="240" cy="198" rx="3" ry="6" fill="#c9a040" opacity=".5"/>
+        </svg>
+        <div class="hud hud-ghost">
+          <div class="hud-tl">
+            <div class="hud-stat">⊕ <span>47,240 cr</span></div>
+            <div class="hud-stat">SECTOR <span>7-G</span></div>
+          </div>
+          <div class="hud-tr">
+            <div class="cargo-bar-wrap">
+              <span class="cargo-label">HOLD</span>
+              <div class="cargo-bar"><div class="cargo-fill" style="width:40%"></div></div>
+            </div>
+          </div>
+          <!-- Ghost panel -->
+          <div class="panel-ghost">
+            <div>
+              <div class="obj-name">AST-7G-0471</div>
+              <div class="obj-sub">Iron-nickel · ~340t</div>
+            </div>
+            <div class="obj-stat-row">
+              <span class="obj-stat-key">Distance</span>
+              <span class="obj-stat-val">1.2 km</span>
+            </div>
+            <div class="obj-stat-row">
+              <span class="obj-stat-key">Last scan</span>
+              <span class="obj-stat-val">—</span>
+            </div>
+            <div class="divider"></div>
+            <div class="range-note">WITHIN SCAN RANGE</div>
+            <button class="action-btn primary">Scan</button>
+            <button class="action-btn secondary">Set Course</button>
+            <button class="action-btn dim">Mine (approach closer)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- A3: Mining active -->
+    <div class="mockup-card">
+      <div class="mockup-label">Asteroid selected — mining range, active drill</div>
+      <div class="canvas-sim">
+        <svg viewBox="0 0 600 375" xmlns="http://www.w3.org/2000/svg">
+          <circle class="star" cx="45" cy="30" r="1"/>
+          <circle class="star" cx="300" cy="60" r=".7"/>
+          <circle class="star" cx="450" cy="40" r="1"/>
+          <circle class="star" cx="560" cy="200" r=".8"/>
+          <circle class="star" cx="480" cy="280" r="1"/>
+          <!-- Selected asteroid close up -->
+          <ellipse cx="330" cy="190" rx="55" ry="40" fill="#1e2230" stroke="#78d4c8" stroke-width="1"/>
+          <ellipse cx="330" cy="190" rx="55" ry="40" fill="none" stroke="#78d4c840" stroke-width="6"/>
+          <!-- Mining particles -->
+          <circle cx="295" cy="180" r="2" fill="#c9a040" opacity=".8"/>
+          <circle cx="290" cy="175" r="1.5" fill="#c9a040" opacity=".5"/>
+          <circle cx="285" cy="185" r="1" fill="#c9a040" opacity=".6"/>
+          <circle cx="292" cy="183" r="1.2" fill="#78d4c8" opacity=".4"/>
+          <!-- Drill beam -->
+          <line x1="230" y1="192" x2="285" y2="182" stroke="#78d4c8" stroke-width="1" opacity=".6" stroke-dasharray="4 3"/>
+          <!-- Ship -->
+          <polygon points="220,195 230,178 240,195 230,191" fill="#8a90b0" stroke="#a0a8c0" stroke-width=".8"/>
+        </svg>
+        <div class="hud hud-ghost">
+          <div class="hud-tl">
+            <div class="hud-stat">⊕ <span>47,240 cr</span></div>
+            <div class="hud-stat">SECTOR <span>7-G</span></div>
+          </div>
+          <div class="hud-tr">
+            <div class="cargo-bar-wrap">
+              <span class="cargo-label">HOLD</span>
+              <div class="cargo-bar"><div class="cargo-fill" style="width:65%;background:#c9a040"></div></div>
+            </div>
+          </div>
+          <div class="panel-ghost">
+            <div>
+              <div class="obj-name">AST-7G-0471</div>
+              <div class="obj-sub">Iron-nickel · 340t</div>
+            </div>
+            <div class="obj-stat-row">
+              <span class="obj-stat-key">Ore extracted</span>
+              <span class="obj-stat-val" style="color:#c9a040">+86t</span>
+            </div>
+            <div class="obj-stat-row">
+              <span class="obj-stat-key">Progress</span>
+              <span class="obj-stat-val">73%</span>
+            </div>
+            <div style="height:3px;background:#1a1d2e;border-radius:2px;overflow:hidden;margin:2px 0">
+              <div style="width:73%;height:100%;background:#78d4c8;border-radius:2px"></div>
+            </div>
+            <div class="divider"></div>
+            <button class="action-btn primary" style="color:#4a9060;border-color:#2a4a22;background:#1a2a1a">⬤  Mining…</button>
+            <button class="action-btn secondary">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- A4: Open space — iPad portrait feel -->
+    <div class="mockup-card">
+      <div class="mockup-label">Respawn / arrival state — sector resolving</div>
+      <div class="canvas-sim">
+        <div class="mat-screen">
+          <!-- Rings -->
+          <div class="mat-ring" style="width:80px;height:80px;animation-delay:0s"></div>
+          <div class="mat-ring" style="width:80px;height:80px;animation-delay:.6s"></div>
+          <div class="mat-ring" style="width:80px;height:80px;animation-delay:1.2s"></div>
+          <div class="mat-core"></div>
+          <div class="mat-caption">
+            <div class="mat-sector">SECTOR 7-G</div>
+            <div class="mat-status">Materialising…</div>
+            <div class="mat-pulse">scanning for hazards</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature notes -->
+  <div class="feature-note">
+    <div class="feature-card">
+      <div class="fc-badge fc-a">Direction A</div>
+      <h4>Ultra-minimal HUD</h4>
+      <p>Only credits, sector ID, and cargo bar persist. Everything else is on-demand. The universe breathes in open space.</p>
+    </div>
+    <div class="feature-card">
+      <div class="fc-badge fc-a">Direction A</div>
+      <h4>Ghost panel</h4>
+      <p>Context panel fades in from the right edge with no hard chrome frame — gradient fade, borderless. Very lightweight visual presence.</p>
+    </div>
+    <div class="feature-card">
+      <div class="fc-badge fc-a">Direction A</div>
+      <h4>Best for</h4>
+      <p>Players who want to feel alone in space. Maximises the "empty void" emotional goal. May feel too sparse for new players.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     DIRECTION B: NAVIGATOR
+══════════════════════════════════════════════════════ -->
+<div class="direction" id="dir-b">
+  <div class="section-label">
+    <h2>Direction B — Navigator <span class="badge badge-b">Structured chrome</span></h2>
+    <p>A bottom HUD bar grounds the experience with always-visible stats. Context panel has clear chrome framing. Feels more like a serious tool alongside the world.</p>
+  </div>
+
+  <div class="mockup-grid">
+    <!-- B1: Open space -->
+    <div class="mockup-card">
+      <div class="mockup-label">Open space — no selection</div>
+      <div class="canvas-sim">
+        <svg viewBox="0 0 600 375" xmlns="http://www.w3.org/2000/svg">
+          <circle class="star" cx="45" cy="30" r="1"/>
+          <circle class="star" cx="200" cy="20" r="1.2"/>
+          <circle class="star" cx="300" cy="60" r=".7"/>
+          <circle class="star" cx="450" cy="40" r="1"/>
+          <circle class="star" cx="520" cy="90" r=".9"/>
+          <circle class="star" cx="380" cy="130" r="1.1"/>
+          <circle class="star" cx="150" cy="250" r=".7"/>
+          <ellipse cx="180" cy="160" rx="18" ry="12" fill="#1a1e2a" stroke="#2a3040" stroke-width=".5"/>
+          <ellipse cx="390" cy="130" rx="28" ry="20" fill="#1e2230" stroke="#2a3040" stroke-width=".5"/>
+          <ellipse cx="490" cy="220" rx="14" ry="10" fill="#181b26" stroke="#252a38" stroke-width=".5"/>
+          <polygon points="290,168 300,152 310,168 300,164" fill="#8a90b0" stroke="#a0a8c0" stroke-width=".8"/>
+          <ellipse cx="300" cy="171" rx="3" ry="6" fill="#c9a040" opacity=".5"/>
+        </svg>
+        <div class="hud hud-nav">
+          <div class="hud-bottom-bar">
+            <div class="stat-cluster">
+              <div class="stat-block">
+                <span class="stat-key">Credits</span>
+                <span class="stat-val">47,240</span>
+              </div>
+              <div class="stat-block">
+                <span class="stat-key">Hold</span>
+                <span class="stat-val neutral">40%</span>
+              </div>
+              <div class="stat-block">
+                <span class="stat-key">Speed</span>
+                <span class="stat-val neutral">0.4 km/s</span>
+              </div>
+            </div>
+            <div class="sector-chip">
+              <div class="sector-dot"></div>
+              SECTOR 7-G
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B2: Asteroid selected -->
+    <div class="mockup-card">
+      <div class="mockup-label">Asteroid selected — interaction range</div>
+      <div class="canvas-sim">
+        <svg viewBox="0 0 600 375" xmlns="http://www.w3.org/2000/svg">
+          <circle class="star" cx="45" cy="30" r="1"/>
+          <circle class="star" cx="200" cy="20" r="1.2"/>
+          <circle class="star" cx="80" cy="150" r=".6"/>
+          <ellipse cx="90" cy="250" rx="10" ry="7" fill="#181b26" stroke="#222840" stroke-width=".5"/>
+          <!-- Selected -->
+          <ellipse cx="300" cy="160" rx="48" ry="35" fill="#1a1e2a" stroke="#78d4c8" stroke-width="1.2"/>
+          <ellipse cx="300" cy="160" rx="48" ry="35" fill="none" stroke="#78d4c820" stroke-width="10"/>
+          <ellipse cx="300" cy="160" rx="64" ry="50" fill="none" stroke="#78d4c815" stroke-width="1" stroke-dasharray="4 4"/>
+          <polygon points="158,172 168,155 178,172 168,168" fill="#8a90b0" stroke="#a0a8c0" stroke-width=".8"/>
+          <ellipse cx="168" cy="175" rx="3" ry="6" fill="#c9a040" opacity=".5"/>
+        </svg>
+        <div class="hud hud-nav">
+          <div class="hud-bottom-bar">
+            <div class="stat-cluster">
+              <div class="stat-block">
+                <span class="stat-key">Credits</span>
+                <span class="stat-val">47,240</span>
+              </div>
+              <div class="stat-block">
+                <span class="stat-key">Hold</span>
+                <span class="stat-val neutral">40%</span>
+              </div>
+            </div>
+            <div class="sector-chip">
+              <div class="sector-dot"></div>
+              SECTOR 7-G
+            </div>
+          </div>
+          <!-- Nav panel -->
+          <div class="panel-nav">
+            <div class="panel-header">
+              <span class="panel-title">AST-7G-0471</span>
+              <div class="panel-close">✕</div>
+            </div>
+            <div class="panel-body">
+              <div class="info-row">
+                <span class="info-key">Composition</span>
+                <span class="info-val highlight">Iron-nickel</span>
+              </div>
+              <div class="info-row">
+                <span class="info-key">Est. yield</span>
+                <span class="info-val">~340t</span>
+              </div>
+              <div class="info-row">
+                <span class="info-key">Distance</span>
+                <span class="info-val">0.4 km</span>
+              </div>
+              <div class="info-row">
+                <span class="info-key">Last scan</span>
+                <span class="info-val">never</span>
+              </div>
+              <div class="section-divider"></div>
+              <div class="range-badge">WITHIN MINING RANGE</div>
+            </div>
+            <div class="panel-actions">
+              <div class="pnav-btn primary">Mine</div>
+              <div class="pnav-btn primary" style="background:#1a2a3a;border-color:#2a3a5a;color:#8a90b0">Scan</div>
+              <div class="pnav-btn ghost">Claim Asteroid</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B3: Station selected -->
+    <div class="mockup-card">
+      <div class="mockup-label">Station selected — docking range</div>
+      <div class="canvas-sim">
+        <svg viewBox="0 0 600 375" xmlns="http://www.w3.org/2000/svg">
+          <circle class="star" cx="45" cy="30" r="1"/>
+          <circle class="star" cx="300" cy="20" r=".7"/>
+          <circle class="star" cx="520" cy="90" r=".9"/>
+          <circle class="star" cx="80" cy="290" r=".6"/>
+          <!-- Station -->
+          <rect x="290" y="145" width="60" height="45" rx="4" fill="#1a2030" stroke="#c9a040" stroke-width="1.2"/>
+          <rect x="270" y="158" width="20" height="18" rx="2" fill="#12161e" stroke="#c9a040" stroke-width=".8"/>
+          <rect x="350" y="158" width="20" height="18" rx="2" fill="#12161e" stroke="#c9a040" stroke-width=".8"/>
+          <circle cx="320" cy="168" r="6" fill="#1e2840" stroke="#c9a040" stroke-width=".8"/>
+          <!-- Dock ring -->
+          <ellipse cx="320" cy="168" rx="70" ry="55" fill="none" stroke="#c9a04030" stroke-width="1" stroke-dasharray="4 4"/>
+          <!-- Ship -->
+          <polygon points="220,172 230,155 240,172 230,168" fill="#8a90b0" stroke="#a0a8c0" stroke-width=".8"/>
+          <ellipse cx="230" cy="175" rx="3" ry="6" fill="#c9a040" opacity=".5"/>
+        </svg>
+        <div class="hud hud-nav">
+          <div class="hud-bottom-bar">
+            <div class="stat-cluster">
+              <div class="stat-block">
+                <span class="stat-key">Credits</span>
+                <span class="stat-val">47,240</span>
+              </div>
+              <div class="stat-block">
+                <span class="stat-key">Hold</span>
+                <span class="stat-val" style="color:#c9a040">82%</span>
+              </div>
+            </div>
+          </div>
+          <div class="panel-nav">
+            <div class="panel-header">
+              <span class="panel-title">Waystation Bravo</span>
+              <div class="panel-close">✕</div>
+            </div>
+            <div class="panel-body">
+              <div class="info-row">
+                <span class="info-key">Type</span>
+                <span class="info-val highlight">NPC Trading Post</span>
+              </div>
+              <div class="info-row">
+                <span class="info-key">Distance</span>
+                <span class="info-val">0.2 km</span>
+              </div>
+              <div class="section-divider"></div>
+              <div class="range-badge" style="color:#c9a040;background:#1e180a;border:none">DOCKING RANGE</div>
+            </div>
+            <div class="panel-actions">
+              <div class="pnav-btn" style="background:#1e180a;border-color:#58400a;color:#c9a040">Dock &amp; Trade</div>
+              <div class="pnav-btn primary">Buy Navigation Data</div>
+              <div class="pnav-btn ghost">View Prices</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B4: Info only, distant object -->
+    <div class="mockup-card">
+      <div class="mockup-label">Asteroid selected — out of range (info only)</div>
+      <div class="canvas-sim">
+        <svg viewBox="0 0 600 375" xmlns="http://www.w3.org/2000/svg">
+          <circle class="star" cx="80" cy="40" r="1"/>
+          <circle class="star" cx="400" cy="20" r=".9"/>
+          <circle class="star" cx="540" cy="120" r="1"/>
+          <circle class="star" cx="60" cy="200" r=".7"/>
+          <!-- Distant selected asteroid -->
+          <ellipse cx="420" cy="160" rx="30" ry="22" fill="#1a1e2a" stroke="#78d4c860" stroke-width=".8"/>
+          <ellipse cx="420" cy="160" rx="30" ry="22" fill="none" stroke="#78d4c820" stroke-width="5"/>
+          <!-- Distance line -->
+          <line x1="230" y1="192" x2="395" y2="165" stroke="#78d4c820" stroke-width=".8" stroke-dasharray="4 4"/>
+          <text x="290" y="182" font-family="DM Mono,monospace" font-size="9" fill="#2a3a4a">4.8 km</text>
+          <!-- Ship -->
+          <polygon points="220,195 230,178 240,195 230,191" fill="#8a90b0" stroke="#a0a8c0" stroke-width=".8"/>
+        </svg>
+        <div class="hud hud-nav">
+          <div class="hud-bottom-bar">
+            <div class="stat-cluster">
+              <div class="stat-block">
+                <span class="stat-key">Credits</span>
+                <span class="stat-val">47,240</span>
+              </div>
+            </div>
+          </div>
+          <div class="panel-nav">
+            <div class="panel-header">
+              <span class="panel-title">AST-7G-0204</span>
+              <div class="panel-close">✕</div>
+            </div>
+            <div class="panel-body">
+              <div class="info-row">
+                <span class="info-key">Composition</span>
+                <span class="info-val">unknown — unsurveyed</span>
+              </div>
+              <div class="info-row">
+                <span class="info-key">Distance</span>
+                <span class="info-val">4.8 km</span>
+              </div>
+              <div class="section-divider"></div>
+              <div class="range-badge">OUT OF RANGE</div>
+              <div style="font-size:10px;color:#2a3050;font-family:'DM Mono',monospace">Approach to scan or mine</div>
+            </div>
+            <div class="panel-actions">
+              <div class="pnav-btn primary">Set Course</div>
+              <div class="pnav-btn ghost" style="color:#2a3050;border-color:#141620">Scan (approach closer)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feature-note">
+    <div class="feature-card">
+      <div class="fc-badge fc-b">Direction B</div>
+      <h4>Persistent bottom bar</h4>
+      <p>Credits, hold, speed, and sector always visible. Grounds the player with always-present context without cluttering the canvas centre.</p>
+    </div>
+    <div class="feature-card">
+      <div class="fc-badge fc-b">Direction B</div>
+      <h4>Framed panel chrome</h4>
+      <p>Context panel has a clear header/footer structure — title, info rows, action buttons. Feels more like a precision instrument than a floating overlay.</p>
+    </div>
+    <div class="feature-card">
+      <div class="fc-badge fc-b">Direction B</div>
+      <h4>Best for</h4>
+      <p>Players who want clear information hierarchy. Easier to scan quickly. The bottom bar provides constant orientation. Slightly more "HUD" feel.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     DIRECTION C: PROSPECTOR
+══════════════════════════════════════════════════════ -->
+<div class="direction" id="dir-c">
+  <div class="section-label">
+    <h2>Direction C — Prospector <span class="badge badge-c">Warm &amp; mercantile</span></h2>
+    <p>Left sidebar for navigation actions. Bottom sheet for context panels (slides up from below). Cargo and credits more prominent. Feels like a working miner's tool.</p>
+  </div>
+
+  <div class="mockup-grid">
+    <!-- C1: Open -->
+    <div class="mockup-card">
+      <div class="mockup-label">Open space — no selection</div>
+      <div class="canvas-sim">
+        <svg viewBox="0 0 600 375" xmlns="http://www.w3.org/2000/svg">
+          <circle class="star" cx="100" cy="30" r="1"/>
+          <circle class="star" cx="250" cy="60" r=".8"/>
+          <circle class="star" cx="420" cy="25" r="1.1"/>
+          <circle class="star" cx="550" cy="80" r=".7"/>
+          <circle class="star" cx="320" cy="120" r=".9"/>
+          <circle class="star" cx="180" cy="200" r=".6"/>
+          <ellipse cx="230" cy="160" rx="20" ry="14" fill="#1a1e2a" stroke="#2a3040" stroke-width=".5"/>
+          <ellipse cx="430" cy="180" rx="30" ry="22" fill="#1e2230" stroke="#2a3040" stroke-width=".5"/>
+          <ellipse cx="520" cy="290" rx="12" ry="9" fill="#181b26" stroke="#252a38" stroke-width=".5"/>
+          <polygon points="300,175 310,158 320,175 310,171" fill="#8a90b0" stroke="#a0a8c0" stroke-width=".8"/>
+          <ellipse cx="310" cy="178" rx="3" ry="6" fill="#c9a040" opacity=".5"/>
+        </svg>
+        <div class="hud hud-pro">
+          <div class="hud-left">
+            <div class="sidebar-icon active">⛏</div>
+            <div class="sidebar-icon">🗺</div>
+            <div class="sidebar-icon">⚡</div>
+            <div class="sidebar-icon">📡</div>
+          </div>
+          <div class="hud-top">
+            <div class="cred-display">
+              <span class="cred-icon">◈</span>
+              <span class="cred-val">47,240</span>
+            </div>
+            <div class="hud-sep"></div>
+            <div class="hold-indicator">
+              <span class="hold-label">Hold</span>
+              <div class="hold-pip-row">
+                <div class="hold-pip"></div>
+                <div class="hold-pip"></div>
+                <div class="hold-pip empty"></div>
+                <div class="hold-pip empty"></div>
+                <div class="hold-pip empty"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C2: Asteroid selected, bottom sheet -->
+    <div class="mockup-card">
+      <div class="mockup-label">Asteroid selected — bottom sheet panel</div>
+      <div class="canvas-sim">
+        <svg viewBox="0 0 600 375" xmlns="http://www.w3.org/2000/svg">
+          <circle class="star" cx="100" cy="30" r="1"/>
+          <circle class="star" cx="420" cy="25" r="1.1"/>
+          <circle class="star" cx="180" cy="80" r=".6"/>
+          <!-- Selected -->
+          <ellipse cx="330" cy="150" rx="42" ry="30" fill="#1a1e2a" stroke="#78d4c8" stroke-width="1.2"/>
+          <ellipse cx="330" cy="150" rx="42" ry="30" fill="none" stroke="#78d4c820" stroke-width="10"/>
+          <ellipse cx="520" cy="200" rx="12" ry="9" fill="#181b26" stroke="#252a38" stroke-width=".5"/>
+          <polygon points="190,155 200,138 210,155 200,151" fill="#8a90b0" stroke="#a0a8c0" stroke-width=".8"/>
+          <ellipse cx="200" cy="158" rx="3" ry="6" fill="#c9a040" opacity=".5"/>
+        </svg>
+        <div class="hud hud-pro">
+          <div class="hud-left">
+            <div class="sidebar-icon active">⛏</div>
+            <div class="sidebar-icon">🗺</div>
+            <div class="sidebar-icon">⚡</div>
+            <div class="sidebar-icon">📡</div>
+          </div>
+          <div class="hud-top">
+            <div class="cred-display">
+              <span class="cred-icon">◈</span>
+              <span class="cred-val">47,240</span>
+            </div>
+            <div class="hud-sep"></div>
+            <div class="hold-indicator">
+              <span class="hold-label">Hold</span>
+              <div class="hold-pip-row">
+                <div class="hold-pip"></div>
+                <div class="hold-pip"></div>
+                <div class="hold-pip empty"></div>
+                <div class="hold-pip empty"></div>
+                <div class="hold-pip empty"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Bottom sheet -->
+          <div class="panel-pro">
+            <div class="sheet-handle"></div>
+            <div class="sheet-body">
+              <div class="obj-icon-box">🪨</div>
+              <div class="obj-info">
+                <div class="obj-title">AST-7G-0471</div>
+                <div class="obj-meta">Iron-nickel · ~340t · 0.4 km</div>
+                <div class="action-row">
+                  <div class="pro-btn teal">Mine</div>
+                  <div class="pro-btn teal" style="background:#1a1520;border-color:#2a2040;color:#8a60b0">Scan</div>
+                  <div class="pro-btn dim">Claim</div>
+                </div>
+                <div class="range-note">WITHIN MINING RANGE</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C3: Station -->
+    <div class="mockup-card">
+      <div class="mockup-label">Station selected — bottom sheet, docking</div>
+      <div class="canvas-sim">
+        <svg viewBox="0 0 600 375" xmlns="http://www.w3.org/2000/svg">
+          <circle class="star" cx="80" cy="40" r="1"/>
+          <circle class="star" cx="400" cy="20" r=".9"/>
+          <circle class="star" cx="540" cy="110" r="1"/>
+          <!-- Station -->
+          <rect x="290" y="120" width="60" height="45" rx="4" fill="#1a2030" stroke="#c9a040" stroke-width="1.2"/>
+          <rect x="270" y="133" width="20" height="18" rx="2" fill="#12161e" stroke="#c9a040" stroke-width=".8"/>
+          <rect x="350" y="133" width="20" height="18" rx="2" fill="#12161e" stroke="#c9a040" stroke-width=".8"/>
+          <circle cx="320" cy="143" r="6" fill="#1e2840" stroke="#c9a040" stroke-width=".8"/>
+          <ellipse cx="320" cy="143" rx="68" ry="52" fill="none" stroke="#c9a04025" stroke-width="1" stroke-dasharray="4 4"/>
+          <!-- Ship -->
+          <polygon points="215,145 225,128 235,145 225,141" fill="#8a90b0" stroke="#a0a8c0" stroke-width=".8"/>
+        </svg>
+        <div class="hud hud-pro">
+          <div class="hud-left">
+            <div class="sidebar-icon active">⛏</div>
+            <div class="sidebar-icon">🗺</div>
+            <div class="sidebar-icon">⚡</div>
+            <div class="sidebar-icon">📡</div>
+          </div>
+          <div class="hud-top">
+            <div class="cred-display">
+              <span class="cred-icon">◈</span>
+              <span class="cred-val">47,240</span>
+            </div>
+            <div class="hud-sep"></div>
+            <div class="hold-indicator">
+              <span class="hold-label">Hold</span>
+              <div class="hold-pip-row">
+                <div class="hold-pip"></div>
+                <div class="hold-pip"></div>
+                <div class="hold-pip"></div>
+                <div class="hold-pip"></div>
+                <div class="hold-pip empty"></div>
+              </div>
+            </div>
+          </div>
+          <div class="panel-pro">
+            <div class="sheet-handle"></div>
+            <div class="sheet-body">
+              <div class="obj-icon-box">🛸</div>
+              <div class="obj-info">
+                <div class="obj-title">Waystation Bravo</div>
+                <div class="obj-meta">NPC Trading Post · 0.2 km</div>
+                <div class="action-row">
+                  <div class="pro-btn" style="background:#1e180a;border-color:#58400a;color:#c9a040">Dock &amp; Trade</div>
+                  <div class="pro-btn teal">Buy Data</div>
+                </div>
+                <div class="range-note" style="color:#c9a04090">DOCKING RANGE</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C4: Mining active -->
+    <div class="mockup-card">
+      <div class="mockup-label">Mining active — bottom sheet progress</div>
+      <div class="canvas-sim">
+        <svg viewBox="0 0 600 375" xmlns="http://www.w3.org/2000/svg">
+          <circle class="star" cx="100" cy="30" r="1"/>
+          <circle class="star" cx="500" cy="50" r=".9"/>
+          <circle class="star" cx="60" cy="200" r=".7"/>
+          <!-- Asteroid close -->
+          <ellipse cx="340" cy="155" rx="55" ry="40" fill="#1e2230" stroke="#78d4c8" stroke-width="1"/>
+          <circle cx="302" cy="148" r="2" fill="#c9a040" opacity=".8"/>
+          <circle cx="296" cy="143" r="1.5" fill="#c9a040" opacity=".5"/>
+          <circle cx="298" cy="152" r="1" fill="#78d4c8" opacity=".6"/>
+          <line x1="228" y1="158" x2="292" y2="148" stroke="#78d4c8" stroke-width="1" opacity=".6" stroke-dasharray="4 3"/>
+          <polygon points="218,162 228,145 238,162 228,158" fill="#8a90b0" stroke="#a0a8c0" stroke-width=".8"/>
+        </svg>
+        <div class="hud hud-pro">
+          <div class="hud-left">
+            <div class="sidebar-icon active">⛏</div>
+            <div class="sidebar-icon">🗺</div>
+            <div class="sidebar-icon">⚡</div>
+            <div class="sidebar-icon">📡</div>
+          </div>
+          <div class="hud-top">
+            <div class="cred-display">
+              <span class="cred-icon">◈</span>
+              <span class="cred-val">47,240</span>
+            </div>
+            <div class="hud-sep"></div>
+            <div class="hold-indicator">
+              <span class="hold-label">Hold</span>
+              <div class="hold-pip-row">
+                <div class="hold-pip"></div>
+                <div class="hold-pip"></div>
+                <div class="hold-pip"></div>
+                <div class="hold-pip empty"></div>
+                <div class="hold-pip empty"></div>
+              </div>
+            </div>
+          </div>
+          <div class="panel-pro">
+            <div class="sheet-handle"></div>
+            <div class="sheet-body">
+              <div class="obj-icon-box">⛏</div>
+              <div class="obj-info">
+                <div class="obj-title">Mining AST-7G-0471</div>
+                <div class="obj-meta">+86t iron-nickel extracted</div>
+                <div style="height:4px;background:#1e2235;border-radius:2px;overflow:hidden;margin:6px 0">
+                  <div style="width:73%;height:100%;background:#78d4c8;border-radius:2px"></div>
+                </div>
+                <div class="action-row">
+                  <div class="pro-btn on">⬤ Mining 73%</div>
+                  <div class="pro-btn dim">Cancel</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feature-note">
+    <div class="feature-card">
+      <div class="fc-badge fc-c">Direction C</div>
+      <h4>Left sidebar + bottom sheet</h4>
+      <p>Sidebar holds persistent nav actions. Context slides up as a bottom sheet — very natural on mobile, familiar from Maps/Apple apps.</p>
+    </div>
+    <div class="feature-card">
+      <div class="fc-badge fc-c">Direction C</div>
+      <h4>Credits &amp; hold prominent</h4>
+      <p>Top bar makes economic status immediately visible. Hold shown as pip indicators — at a glance, not a number. More "merchant" feel.</p>
+    </div>
+    <div class="feature-card">
+      <div class="fc-badge fc-c">Direction C</div>
+      <h4>Best for</h4>
+      <p>Players who identify as miners or traders first. The bottom sheet pattern is the most mobile-native of the three. Highest touch ergonomics score.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SHARED SCREENS
+══════════════════════════════════════════════════════ -->
+<div class="direction" id="dir-shared">
+  <div class="section-label">
+    <h2>Shared Screens — appear in all directions</h2>
+    <p>The navigation catalogue map and marketplace use the same layout regardless of direction choice. These are design constants.</p>
+  </div>
+
+  <div class="mockup-grid">
+    <!-- Navigation catalogue map -->
+    <div class="mockup-card">
+      <div class="mockup-label">Navigation catalogue — sector map overlay</div>
+      <div class="canvas-sim">
+        <div class="cat-overlay">
+          <div class="cat-header">
+            <span class="cat-title">Navigation Catalogue</span>
+            <button class="cat-close-btn">Close  ✕</button>
+          </div>
+          <div class="cat-body">
+            <div class="cat-map">
+              <svg viewBox="0 0 380 240" xmlns="http://www.w3.org/2000/svg">
+                <!-- Grid lines -->
+                <line x1="0" y1="80" x2="380" y2="80" stroke="#1a1d2e" stroke-width=".5"/>
+                <line x1="0" y1="160" x2="380" y2="160" stroke="#1a1d2e" stroke-width=".5"/>
+                <line x1="127" y1="0" x2="127" y2="240" stroke="#1a1d2e" stroke-width=".5"/>
+                <line x1="254" y1="0" x2="254" y2="240" stroke="#1a1d2e" stroke-width=".5"/>
+
+                <!-- Sector labels -->
+                <text x="10" y="16" font-family="DM Mono,monospace" font-size="8" fill="#2a3050">7-F</text>
+                <text x="137" y="16" font-family="DM Mono,monospace" font-size="8" fill="#2a3050">7-G ●</text>
+                <text x="264" y="16" font-family="DM Mono,monospace" font-size="8" fill="#2a3050">7-H</text>
+                <text x="10" y="96" font-family="DM Mono,monospace" font-size="8" fill="#2a3050">8-F</text>
+                <text x="137" y="96" font-family="DM Mono,monospace" font-size="8" fill="#2a3050">8-G</text>
+                <text x="264" y="96" font-family="DM Mono,monospace" font-size="8" fill="#2a3050">8-H</text>
+                <text x="10" y="176" font-family="DM Mono,monospace" font-size="8" fill="#2a3050">9-F</text>
+                <text x="137" y="176" font-family="DM Mono,monospace" font-size="8" fill="#2a3050">9-G</text>
+                <text x="264" y="176" font-family="DM Mono,monospace" font-size="8" fill="#1a1d2e">9-H</text>
+
+                <!-- 7-F: dense data -->
+                <circle cx="30" cy="50" r="4" fill="#78d4c8" opacity=".9"/>
+                <circle cx="55" cy="35" r="3" fill="#78d4c8" opacity=".7"/>
+                <circle cx="70" cy="60" r="3.5" fill="#78d4c8" opacity=".8"/>
+                <circle cx="45" cy="65" r="2.5" fill="#78d4c8" opacity=".6"/>
+                <circle cx="90" cy="40" r="3" fill="#78d4c8" opacity=".7"/>
+                <circle cx="105" cy="55" r="4" fill="#78d4c8" opacity=".9"/>
+                <circle cx="80" cy="70" r="2" fill="#78d4c8" opacity=".5"/>
+                <!-- Trajectory lines in 7-F -->
+                <line x1="30" y1="50" x2="55" y2="35" stroke="#78d4c8" stroke-width=".5" opacity=".3"/>
+                <line x1="55" y1="35" x2="90" y2="40" stroke="#78d4c8" stroke-width=".5" opacity=".3"/>
+                <line x1="70" y1="60" x2="105" y2="55" stroke="#78d4c8" stroke-width=".5" opacity=".3"/>
+
+                <!-- 7-G: current sector, selected, some data -->
+                <rect x="127" y="0" width="127" height="80" fill="#78d4c808"/>
+                <circle cx="165" cy="30" r="4" fill="#78d4c8" opacity=".9"/>
+                <circle cx="195" cy="45" r="3" fill="#78d4c8" opacity=".7"/>
+                <circle cx="220" cy="25" r="3.5" fill="#78d4c8" opacity=".8"/>
+                <circle cx="175" cy="60" r="2.5" fill="#78d4c8" opacity=".6"/>
+                <!-- Stale entry — changed trajectory -->
+                <circle cx="240" cy="55" r="3" fill="#c07020" opacity=".9"/>
+                <line x1="235" y1="52" x2="245" y2="58" stroke="#c07020" stroke-width="1" opacity=".7"/>
+                <!-- Ship indicator -->
+                <polygon points="193,37 198,29 203,37 198,35" fill="#e0e2ef" opacity=".8"/>
+                <!-- Current sector border -->
+                <rect x="127" y="0" width="127" height="80" fill="none" stroke="#78d4c850" stroke-width="1" stroke-dasharray="4 3"/>
+
+                <!-- 7-H: sparse data -->
+                <circle cx="290" cy="35" r="2.5" fill="#3a4a5a" opacity=".8"/>
+                <circle cx="340" cy="55" r="2" fill="#3a4a5a" opacity=".6"/>
+                <circle cx="310" cy="65" r="2" fill="#3a4a5a" opacity=".5"/>
+                <!-- 7-H is mostly dark/unknown -->
+
+                <!-- 8-G: selected sector, some sparse data -->
+                <rect x="127" y="80" width="127" height="80" fill="#c9a04006"/>
+                <rect x="127" y="80" width="127" height="80" fill="none" stroke="#c9a04040" stroke-width="1.5" stroke-dasharray="4 3"/>
+                <circle cx="155" cy="110" r="2.5" fill="#3a4a5a" opacity=".7"/>
+                <circle cx="200" cy="125" r="2" fill="#3a4a5a" opacity=".5"/>
+                <!-- Large unknown zone -->
+
+                <!-- 8-F sparse -->
+                <circle cx="40" cy="110" r="2" fill="#3a4a5a" opacity=".5"/>
+                <circle cx="80" cy="130" r="1.5" fill="#3a4a5a" opacity=".4"/>
+
+                <!-- 9-G, 9-F: no data = empty dark -->
+              </svg>
+            </div>
+            <div class="cat-sidebar">
+              <div class="cat-legend-title">Data legend</div>
+              <div class="cat-legend-row"><div class="cat-legend-dot dense"></div>Dense / recent</div>
+              <div class="cat-legend-row"><div class="cat-legend-dot sparse"></div>Sparse / older</div>
+              <div class="cat-legend-row"><div class="cat-legend-dot changed"></div>Trajectory changed</div>
+              <div class="cat-legend-row"><div class="cat-legend-dot absent"></div>No data — unknown</div>
+
+              <div class="cat-sector-info">
+                <div class="cat-sector-name">Sector 8-G</div>
+                <div class="cat-sector-stat">Entries: <span>2</span></div>
+                <div class="cat-sector-stat">Oldest: <span>14 days</span></div>
+                <div class="cat-jump-btn">Jump to 8-G →</div>
+                <div class="cat-jump-note">The map shows what you know. The void shows what you don't.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Marketplace -->
+    <div class="mockup-card">
+      <div class="mockup-label">Information marketplace — buying sector data</div>
+      <div class="canvas-sim" style="background:#0d0f18">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column">
+          <!-- Header -->
+          <div style="padding:12px 16px;border-bottom:1px solid #1a1d2e;display:flex;align-items:center;justify-content:space-between">
+            <div style="font:600 14px 'Inter',sans-serif;color:#e0e2ef">Information Marketplace</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font:500 12px 'Inter',sans-serif;color:#c9a040">◈ 47,240 cr</span>
+              <div style="padding:4px 10px;border-radius:5px;background:transparent;border:1px solid #1e2235;font:500 11px 'Inter',sans-serif;color:#3a4560">Close ✕</div>
+            </div>
+          </div>
+          <!-- Tabs -->
+          <div style="display:flex;gap:0;border-bottom:1px solid #1a1d2e">
+            <div style="padding:8px 16px;font:500 12px 'Inter',sans-serif;color:#78d4c8;border-bottom:2px solid #78d4c8">Trajectory Data</div>
+            <div style="padding:8px 16px;font:500 12px 'Inter',sans-serif;color:#3a4560">Composition Surveys</div>
+            <div style="padding:8px 16px;font:500 12px 'Inter',sans-serif;color:#3a4560">Bundles</div>
+          </div>
+          <!-- Listings -->
+          <div style="flex:1;overflow:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+            <!-- Listing row -->
+            <div style="background:#12141e;border:1px solid #1e2235;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px">
+              <div style="flex:1">
+                <div style="font:600 12px 'Inter',sans-serif;color:#e0e2ef;margin-bottom:2px">Sector 8-G — Trajectory Survey</div>
+                <div style="font:400 11px 'DM Mono',monospace;color:#4a5070">186 entries · surveyed 2 days ago · seller: Tariq_E</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font:600 13px 'Inter',sans-serif;color:#c9a040">820 cr</div>
+                <div style="margin-top:4px;padding:5px 12px;background:#1e180a;border:1px solid #58400a;border-radius:5px;font:500 11px 'Inter',sans-serif;color:#c9a040;cursor:pointer">Buy</div>
+              </div>
+            </div>
+            <div style="background:#12141e;border:1px solid #1e2235;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px">
+              <div style="flex:1">
+                <div style="font:600 12px 'Inter',sans-serif;color:#e0e2ef;margin-bottom:2px">Sector 8-G — Trajectory Survey</div>
+                <div style="font:400 11px 'DM Mono',monospace;color:#4a5070">94 entries · surveyed 11 days ago · seller: Priya_M</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font:600 13px 'Inter',sans-serif;color:#c9a040">410 cr</div>
+                <div style="margin-top:4px;padding:5px 12px;background:#1e180a;border:1px solid #58400a;border-radius:5px;font:500 11px 'Inter',sans-serif;color:#c9a040;cursor:pointer">Buy</div>
+              </div>
+            </div>
+            <div style="background:#12141e;border:1px solid #1e2235;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px">
+              <div style="flex:1">
+                <div style="font:600 12px 'Inter',sans-serif;color:#e0e2ef;margin-bottom:2px">Sector 8-H — Trajectory Survey</div>
+                <div style="font:400 11px 'DM Mono',monospace;color:#4a5070">22 entries · surveyed 31 days ago · seller: Anon</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font:600 13px 'Inter',sans-serif;color:#c9a040">95 cr</div>
+                <div style="margin-top:4px;padding:5px 12px;background:#1e180a;border:1px solid #58400a;border-radius:5px;font:500 11px 'Inter',sans-serif;color:#c9a040;cursor:pointer">Buy</div>
+              </div>
+            </div>
+            <!-- Marketplace note -->
+            <div style="padding:10px 12px;background:#0a0c14;border:1px solid #1a1d2e;border-radius:6px;font:400 11px 'Inter',sans-serif;color:#3a4560;line-height:1.5">
+              More entries and recent surveys reduce uncertainty — but no dataset reflects the current state of the belt. The void is always moving.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feature-note">
+    <div class="feature-card" style="grid-column:span 1">
+      <div class="fc-badge" style="background:#1a1d2e;color:#5a6080">Shared</div>
+      <h4>Catalogue map</h4>
+      <p>Data density visualisation — bright teal for dense/recent, dark for absent. Void is dark canvas, not a red warning. The player reads the map and decides.</p>
+    </div>
+    <div class="feature-card" style="grid-column:span 1">
+      <div class="fc-badge" style="background:#1a1d2e;color:#5a6080">Shared</div>
+      <h4>Marketplace listings</h4>
+      <p>Entries + survey date are the decision-making data. No "quality score" — the player weighs recency vs. cost vs. coverage themselves.</p>
+    </div>
+    <div class="feature-card" style="grid-column:span 1">
+      <div class="fc-badge" style="background:#1a1d2e;color:#5a6080">Shared</div>
+      <h4>Design constant</h4>
+      <p>These screens look the same regardless of which HUD direction is chosen. The direction choice only affects the in-game HUD and context panel style.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function show(dir) {
+  document.querySelectorAll('.direction').forEach(d => d.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('dir-' + dir).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
