@@ -16,7 +16,10 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<GatewayDbContext>();
-    db.Database.Migrate();
+    if (db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
+        db.Database.Migrate();
+    else
+        db.Database.EnsureCreated();
 }
 
 app.UseRouting();

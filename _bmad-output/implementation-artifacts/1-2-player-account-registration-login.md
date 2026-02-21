@@ -1,6 +1,6 @@
 # Story 1.2: Player Account Registration & Login
 
-Status: review
+Status: done
 
 ## Story
 
@@ -320,6 +320,7 @@ GitHub Copilot (Claude Sonnet 4.5), 2026-02-21
 - `JwtSecurityTokenHandler.CanReadToken("not.a.jwt")` returns `true` (3 dot-separated segments) but `ReadJwtToken` throws `ArgumentException` on malformed base64 headers. Must wrap `ReadJwtToken` in try/catch.
 - `UserManager` test factory needs `UserValidator<IdentityUser>` in validators list for duplicate-username detection. Also needs `IdentityOptions` matching production (relaxed password) or test passwords must satisfy default validators.
 - `dotnet-ef` tool not on PATH after global install — run `export PATH="$PATH:/Users/richardthombs/.dotnet/tools"` or add to shell profile.
+- **Code review fixes**: `WebApplicationFactory<Program>` — `ConfigureAppConfiguration` runs after `AddBelterIdentity` reads config, so startup validations must be fed via `Environment.SetEnvironmentVariable` (set in factory constructor). EF Core 10 throws "multiple providers" if both Npgsql and InMemory `IDatabaseProvider` are in the app's service collection; fix: remove `DbContextOptions<GatewayDbContext>` then re-add with `UseInternalServiceProvider(new ServiceCollection().AddEntityFrameworkInMemoryDatabase().BuildServiceProvider())`. `db.Database.IsRelational()` extension throws on InMemory provider — use `db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory"` check instead.
 
 ### Completion Notes List
 
@@ -331,16 +332,18 @@ GitHub Copilot (Claude Sonnet 4.5), 2026-02-21
 - ✅ `JwtConfig` updated with `ExpiryHours` property (default 24)
 - ✅ `JwtTokenService` implemented: `GenerateToken(IdentityUser)` + `ReadToken(string)` with safe try/catch
 - ✅ `IdentitySetup.AddBelterIdentity()` extension: DbContext registration, Identity + JWT Bearer, OnMessageReceived (SignalR query param), OnTokenValidated (DB revocation check)
-- ✅ `Program.cs` updated: `AddBelterIdentity`, auto-migration on startup, correct middleware order (UseAuthentication before UseAuthorization)
+- ✅ `Program.cs` updated: `AddBelterIdentity`, auto-migration on startup (with ProviderName guard for tests), correct middleware order
 - ✅ `appsettings.json` updated with Jwt section (Key/Issuer/Audience/ExpiryHours)
 - ✅ `docker-compose.yml` fixed: `JwtKey` → `Jwt__Key`, added `Jwt__Issuer` + `Jwt__Audience`
 - ✅ `.env.example` updated with JWT_KEY comment noting 32-char minimum
-- ✅ First EF Core migration `InitialIdentitySchema` generated (2026-02-21T16:41:41) — Identity tables + revoked_tokens, all snake_case
+- ✅ First EF Core migration `InitialIdentitySchema` generated — Identity tables + revoked_tokens, all snake_case
 - ✅ `AuthController` implemented: POST register (201+token), POST login (200+token), POST logout [Authorize] (204+revoke)
 - ✅ `RegisterRequest`, `LoginRequest`, `TokenResponse` records in AuthController.cs
-- ✅ `RestClient.ts` implemented: register/login/logout/getToken/isAuthenticated + `AuthError` typed exception
-- ✅ `GameHubClient.ts` updated: `accessTokenFactory` now imports `getToken()` from RestClient (eliminates hardcoded localStorage key)
-- ✅ 11 tests passing (0 regressions): `GameHubTests` + `JwtTokenServiceTests` (4) + `AppDbContextTests` + `AuthControllerTests` (5)
+- ✅ `RestClient.ts` implemented: register/login/logout/getToken/isAuthenticated + `AuthError` typed exception; removed unused `RestClient` class
+- ✅ `GameHubClient.ts` updated: `accessTokenFactory` now imports `getToken()` from RestClient
+- ✅ `vite.config.ts` created with dev proxy for `/api` → :5080 and `/hubs` WebSocket proxy
+- ✅ `IdentitySetup.cs` updated: startup validation for empty/short `Jwt:Key` (throws on missing or <32 bytes)
+- ✅ 15 tests passing: `GameHubTests(1)` + `JwtTokenServiceTests(4)` + `AppDbContextTests(1)` + `AuthControllerTests(6)` + `AuthIntegrationTests(3)`
 
 ### File List
 
@@ -361,7 +364,9 @@ server/BelterLife.Gateway.Tests/BelterLife.Gateway.Tests.csproj
 server/BelterLife.Gateway.Tests/UnitTest1.cs
 server/BelterLife.Gateway.Tests/JwtTokenServiceTests.cs
 server/BelterLife.Gateway.Tests/AuthControllerTests.cs
+server/BelterLife.Gateway.Tests/GatewayIntegrationTests.cs
 client/src/network/RestClient.ts
 client/src/network/GameHubClient.ts
+client/vite.config.ts
 docker-compose.yml
 .env.example

@@ -81,11 +81,3 @@ export function getToken(): string | null {
 export function isAuthenticated(): boolean {
     return getToken() !== null;
 }
-
-export class RestClient {
-    register = register;
-    login = login;
-    logout = logout;
-    getToken = getToken;
-    isAuthenticated = isAuthenticated;
-}

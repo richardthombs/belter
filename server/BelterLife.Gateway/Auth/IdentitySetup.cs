@@ -45,6 +45,13 @@ public static class IdentitySetup
         var jwtConfig = configuration.GetSection("Jwt").Get<JwtConfig>()
             ?? throw new InvalidOperationException("Jwt configuration section is required");
 
+        if (string.IsNullOrWhiteSpace(jwtConfig.Key))
+            throw new InvalidOperationException(
+                "Jwt:Key is required. Set the Jwt__Key environment variable (minimum 32 characters for HMACSHA256).");
+        if (Encoding.UTF8.GetByteCount(jwtConfig.Key) < 32)
+            throw new InvalidOperationException(
+                $"Jwt:Key must be at least 32 bytes for HMACSHA256 (current: {Encoding.UTF8.GetByteCount(jwtConfig.Key)} bytes).");
+
         services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
