@@ -1,6 +1,6 @@
 # Story 1.3: Procedurally Generated Starting Sector
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -20,84 +20,84 @@ So that there is a live game world to explore from my very first session.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Fill in entity models in `BelterLife.Shared/Entities/` and add new entities (AC: 1, 2, 3, 4)
-  - [ ] Update `server/BelterLife.Shared/Entities/Player.cs` — game state fields: `Id` (string PK = IdentityUser.Id), `SectorId` (int), `ShipId` (int), `LastSeenAt` (DateTimeOffset)
-  - [ ] Update `server/BelterLife.Shared/Entities/Asteroid.cs`: `Id` (int PK), `SectorId` (int FK), `X`/`Y` (float), `Radius` (float), `VertexCount` (int), `RotationOffset` (float)
-  - [ ] Update `server/BelterLife.Shared/Entities/Ship.cs`: `Id` (int PK), `PlayerId` (string FK), `SectorId` (int FK), `X`/`Y` (float), `VelocityX`/`VelocityY` (float, default 0), `Heading` (float, default 0)
-  - [ ] Create `server/BelterLife.Shared/Entities/Sector.cs`: `Id` (int PK), `Seed` (long), `CreatedAt` (DateTimeOffset)
-  - [ ] Create `server/BelterLife.Shared/Entities/NpcStation.cs`: `Id` (int PK), `SectorId` (int FK), `X`/`Y` (float), `Name` (string)
-  - [ ] Create `server/BelterLife.Shared/Contracts/Api/SpawnRequest.cs`: `record SpawnRequest(string PlayerId)`
-  - [ ] Create `server/BelterLife.Shared/Contracts/Api/SpawnResponse.cs`: `record SpawnResponse(int SectorId, int ShipId, float SpawnX, float SpawnY)`
+- [x] Task 1 — Fill in entity models in `BelterLife.Shared/Entities/` and add new entities (AC: 1, 2, 3, 4)
+  - [x] Update `server/BelterLife.Shared/Entities/Player.cs` — game state fields: `Id` (string PK = IdentityUser.Id), `SectorId` (int), `ShipId` (int), `LastSeenAt` (DateTimeOffset)
+  - [x] Update `server/BelterLife.Shared/Entities/Asteroid.cs`: `Id` (int PK), `SectorId` (int FK), `X`/`Y` (float), `Radius` (float), `VertexCount` (int), `RotationOffset` (float)
+  - [x] Update `server/BelterLife.Shared/Entities/Ship.cs`: `Id` (int PK), `PlayerId` (string FK), `SectorId` (int FK), `X`/`Y` (float), `VelocityX`/`VelocityY` (float, default 0), `Heading` (float, default 0)
+  - [x] Create `server/BelterLife.Shared/Entities/Sector.cs`: `Id` (int PK), `Seed` (long), `CreatedAt` (DateTimeOffset)
+  - [x] Create `server/BelterLife.Shared/Entities/NpcStation.cs`: `Id` (int PK), `SectorId` (int FK), `X`/`Y` (float), `Name` (string)
+  - [x] Create `server/BelterLife.Shared/Contracts/Api/SpawnRequest.cs`: `record SpawnRequest(string PlayerId)`
+  - [x] Create `server/BelterLife.Shared/Contracts/Api/SpawnResponse.cs`: `record SpawnResponse(int SectorId, int ShipId, float SpawnX, float SpawnY)`
 
-- [ ] Task 2 — Configure `AppDbContext` and run first EF Core migration for game schema (AC: 4)
-  - [ ] Add `DbSet<Sector>`, `DbSet<Asteroid>`, `DbSet<Ship>`, `DbSet<Player>`, `DbSet<NpcStation>` to `AppDbContext.cs`
-  - [ ] Configure Fluent API in `OnModelCreating` (call `base.OnModelCreating` first): PKs, FKs, max lengths for strings, indexes on `SectorId`
-  - [ ] Add `Microsoft.EntityFrameworkCore.Design` (10.0.3, `PrivateAssets=all`) to `BelterLife.Simulation.csproj`
-  - [ ] Create `server/BelterLife.Simulation/Infrastructure/AppDbContextFactory.cs` implementing `IDesignTimeDbContextFactory<AppDbContext>` — same pattern as Story 1.2's `GatewayDbContextFactory`
-  - [ ] Run migration: `export PATH="$PATH:/Users/richardthombs/.dotnet/tools" && dotnet ef migrations add InitialGameSchema --project server/BelterLife.Simulation --startup-project server/BelterLife.Simulation`
-  - [ ] Verify generated migration SQL creates: `sectors`, `asteroids`, `ships`, `players`, `npc_stations` tables with `snake_case` columns
+- [x] Task 2 — Configure `AppDbContext` and run first EF Core migration for game schema (AC: 4)
+  - [x] Add `DbSet<Sector>`, `DbSet<Asteroid>`, `DbSet<Ship>`, `DbSet<Player>`, `DbSet<NpcStation>` to `AppDbContext.cs`
+  - [x] Configure Fluent API in `OnModelCreating` (call `base.OnModelCreating` first): PKs, FKs, max lengths for strings, indexes on `SectorId`
+  - [x] Add `Microsoft.EntityFrameworkCore.Design` (10.0.3, `PrivateAssets=all`) to `BelterLife.Simulation.csproj`
+  - [x] Create `server/BelterLife.Simulation/Infrastructure/AppDbContextFactory.cs` implementing `IDesignTimeDbContextFactory<AppDbContext>` — same pattern as Story 1.2's `GatewayDbContextFactory`
+  - [x] Run migration: `export PATH="$PATH:/Users/richardthombs/.dotnet/tools" && dotnet ef migrations add InitialGameSchema --project server/BelterLife.Simulation --startup-project server/BelterLife.Simulation`
+  - [x] Verify generated migration SQL creates: `sectors`, `asteroids`, `ships`, `players`, `npc_stations` tables with `snake_case` columns
 
-- [ ] Task 3 — Change Simulation to ASP.NET Core Web hosting (enables internal HTTP endpoints) (AC: 1)
-  - [ ] Change `BelterLife.Simulation.csproj` SDK from `Microsoft.NET.Sdk.Worker` to `Microsoft.NET.Sdk.Web`
-  - [ ] Update `server/BelterLife.Simulation/Program.cs`: replace `Host.CreateApplicationBuilder(args)` with `WebApplication.CreateBuilder(args)`, add `builder.Services.AddControllers()`, add `app.MapControllers()` in middleware
-  - [ ] Keep `SimulationLoop` `AddHostedService` and `AppDbContext` `AddDbContext` registrations unchanged
-  - [ ] Add auto-migration at startup using `ProviderName` guard (NOT `IsRelational()` — see Dev Notes)
-  - [ ] Create `server/BelterLife.Simulation/appsettings.json` with Logging and AllowedHosts sections
-  - [ ] Add `ASPNETCORE_URLS: "http://0.0.0.0:5001"` to `shard` service in `docker-compose.yml`
+- [x] Task 3 — Change Simulation to ASP.NET Core Web hosting (enables internal HTTP endpoints) (AC: 1)
+  - [x] Change `BelterLife.Simulation.csproj` SDK from `Microsoft.NET.Sdk.Worker` to `Microsoft.NET.Sdk.Web`
+  - [x] Update `server/BelterLife.Simulation/Program.cs`: replace `Host.CreateApplicationBuilder(args)` with `WebApplication.CreateBuilder(args)`, add `builder.Services.AddControllers()`, add `app.MapControllers()` in middleware
+  - [x] Keep `SimulationLoop` `AddHostedService` and `AppDbContext` `AddDbContext` registrations unchanged
+  - [x] Add auto-migration at startup using `ProviderName` guard (NOT `IsRelational()` — see Dev Notes)
+  - [x] Create `server/BelterLife.Simulation/appsettings.json` with Logging and AllowedHosts sections
+  - [x] Add `ASPNETCORE_URLS: "http://0.0.0.0:5001"` to `shard` service in `docker-compose.yml`
 
-- [ ] Task 4 — Implement `SectorGenerator` service in Simulation (AC: 2, 3)
-  - [ ] Create `server/BelterLife.Simulation/Entities/SectorGenerator.cs` as a stateless service
-  - [ ] `long NewSeed()` — returns `new Random().NextInt64()`
-  - [ ] `(Sector sector, List<Asteroid> asteroids, List<NpcStation> stations) Generate(long seed)`:
+- [x] Task 4 — Implement `SectorGenerator` service in Simulation (AC: 2, 3)
+  - [x] Create `server/BelterLife.Simulation/Entities/SectorGenerator.cs` as a stateless service
+  - [x] `long NewSeed()` — returns `new Random().NextInt64()`
+  - [x] `(Sector sector, List<Asteroid> asteroids, List<NpcStation> stations) Generate(long seed)`:
     - Create `Sector { Seed = seed, CreatedAt = DateTimeOffset.UtcNow }`
     - `var rng = new Random((int)(seed ^ seed >> 32))` for seeded randomness
     - Asteroid count: `rng.Next(20, 51)` 
     - Per asteroid: polar coords `angle = rng.NextDouble() * Math.PI * 2`, `dist = 150 + rng.NextDouble() * 750` (150–900 units; safe zone 0–100 is excluded), `X = cos(angle)*dist`, `Y = sin(angle)*dist`, `Radius = 5f + rng.NextDouble() * 35f`, `VertexCount = rng.Next(6, 13)`, `RotationOffset = rng.NextDouble() * Math.PI * 2`
     - NPC station: `angle = rng.NextDouble() * Math.PI * 2`, `dist = 200 + rng.NextDouble() * 400` (200–600 units), `Name = "Station Alpha"` (single station for MVP)
-  - [ ] Register `SectorGenerator` as `AddSingleton<SectorGenerator>()` in Program.cs
+  - [x] Register `SectorGenerator` as `AddSingleton<SectorGenerator>()` in Program.cs
 
-- [ ] Task 5 — Implement `SpawnController` on Simulation shard (AC: 1, 2, 3, 4)
-  - [ ] Create `server/BelterLife.Simulation/Api/SpawnController.cs` with `[ApiController]`, `[Route("api/internal")]`
-  - [ ] `[HttpPost("spawn")]` — accept `[FromBody] SpawnRequest request`
-  - [ ] Validate `X-Shard-Secret` header matches `SHARD_SECRET` config value; return `Forbid()` on mismatch
-  - [ ] Check idempotency: if `Player` record with `request.PlayerId` already exists in DB, return `Ok(existing SpawnResponse)` immediately
-  - [ ] Call `SectorGenerator.Generate(sectorGenerator.NewSeed())` to produce sector data
-  - [ ] Persist `Sector`, all `Asteroid` records, `NpcStation` record in one `SaveChangesAsync()` call; use generated `Sector.Id`
-  - [ ] Create `Ship { PlayerId = request.PlayerId, SectorId = sector.Id, X = 0, Y = 0, VelocityX = 0, VelocityY = 0, Heading = 0 }` 
-  - [ ] Create `Player { Id = request.PlayerId, SectorId = sector.Id, ShipId = ship.Id, LastSeenAt = DateTimeOffset.UtcNow }`
-  - [ ] Return `StatusCode(201, new SpawnResponse(sector.Id, ship.Id, 0f, 0f))`
+- [x] Task 5 — Implement `SpawnController` on Simulation shard (AC: 1, 2, 3, 4)
+  - [x] Create `server/BelterLife.Simulation/Api/SpawnController.cs` with `[ApiController]`, `[Route("api/internal")]`
+  - [x] `[HttpPost("spawn")]` — accept `[FromBody] SpawnRequest request`
+  - [x] Validate `X-Shard-Secret` header matches `SHARD_SECRET` config value; return `Forbid()` on mismatch
+  - [x] Check idempotency: if `Player` record with `request.PlayerId` already exists in DB, return `Ok(existing SpawnResponse)` immediately
+  - [x] Call `SectorGenerator.Generate(sectorGenerator.NewSeed())` to produce sector data
+  - [x] Persist `Sector`, all `Asteroid` records, `NpcStation` record in one `SaveChangesAsync()` call; use generated `Sector.Id`
+  - [x] Create `Ship { PlayerId = request.PlayerId, SectorId = sector.Id, X = 0, Y = 0, VelocityX = 0, VelocityY = 0, Heading = 0 }` 
+  - [x] Create `Player { Id = request.PlayerId, SectorId = sector.Id, ShipId = ship.Id, LastSeenAt = DateTimeOffset.UtcNow }`
+  - [x] Return `StatusCode(201, new SpawnResponse(sector.Id, ship.Id, 0f, 0f))`
 
-- [ ] Task 6 — Implement `ShardClient` + `PlayersController` on Gateway (AC: 1)
-  - [ ] Create `server/BelterLife.Gateway/Infrastructure/ShardClient.cs` (typed HttpClient):
+- [x] Task 6 — Implement `ShardClient` + `PlayersController` on Gateway (AC: 1)
+  - [x] Create `server/BelterLife.Gateway/Infrastructure/ShardClient.cs` (typed HttpClient):
     - Constructor: `HttpClient http` + `IConfiguration config`
     - Reads `Shard__BaseUrl` (or falls back to `http://shard:5001`) and `SHARD_SECRET`
     - `Task<SpawnResponse?> SpawnAsync(string playerId)` — POST to `/api/internal/spawn`, adds `X-Shard-Secret` header, deserializes response
-  - [ ] Register in `Program.cs`: `builder.Services.AddHttpClient<ShardClient>(c => c.BaseAddress = new Uri(builder.Configuration["Shard__BaseUrl"] ?? "http://shard:5001"))`
-  - [ ] Create `server/BelterLife.Gateway/Api/v1/PlayersController.cs` with `[ApiController]`, `[Route("api/v1/players")]`, `[Authorize]`
-  - [ ] `[HttpPost("me/spawn")]` — extract `userId` from `User.FindFirstValue(JwtRegisteredClaimNames.Sub)!`, call `shardClient.SpawnAsync(userId)`, return `Ok(response)`
+  - [x] Register in `Program.cs`: `builder.Services.AddHttpClient<ShardClient>(c => c.BaseAddress = new Uri(builder.Configuration["Shard__BaseUrl"] ?? "http://shard:5001"))`
+  - [x] Create `server/BelterLife.Gateway/Api/v1/PlayersController.cs` with `[ApiController]`, `[Route("api/v1/players")]`, `[Authorize]`
+  - [x] `[HttpPost("me/spawn")]` — extract `userId` from `User.FindFirstValue(JwtRegisteredClaimNames.Sub)!`, call `shardClient.SpawnAsync(userId)`, return `Ok(response)`
 
-- [ ] Task 7 — Write tests (AC: 1, 2, 3, 4)
-  - [ ] Add to `BelterLife.Simulation.Tests.csproj`: `Microsoft.EntityFrameworkCore.InMemory` (10.0.3), `Microsoft.AspNetCore.Mvc.Testing` (10.0.3), `Moq` (4.20.72)
-  - [ ] Add `InternalsVisibleTo` to `BelterLife.Simulation.csproj` for test project
-  - [ ] Create `server/BelterLife.Simulation.Tests/Entities/SectorGeneratorTests.cs`:
+- [x] Task 7 — Write tests (AC: 1, 2, 3, 4)
+  - [x] Add to `BelterLife.Simulation.Tests.csproj`: `Microsoft.EntityFrameworkCore.InMemory` (10.0.3), `Microsoft.AspNetCore.Mvc.Testing` (10.0.3), `Moq` (4.20.72)
+  - [x] Add `InternalsVisibleTo` to `BelterLife.Simulation.csproj` for test project
+  - [x] Create `server/BelterLife.Simulation.Tests/Entities/SectorGeneratorTests.cs`:
     - `GenerateSector_AsteroidCount_IsBetween20And50()`
     - `GenerateSector_AlwaysHasExactlyOneNpcStation()`
     - `GenerateSector_NpcStation_IsWithin600UnitsOfOrigin()`
     - `GenerateSector_DifferentSeeds_ProduceDifferentLayouts()`
     - `GenerateSector_NoAsteroid_IsWithin100UnitsOfOrigin()` (safe spawn zone)
-  - [ ] Create `server/BelterLife.Simulation.Tests/Api/SpawnControllerTests.cs` (using InMemory AppDbContext):
+  - [x] Create `server/BelterLife.Simulation.Tests/Api/SpawnControllerTests.cs` (using InMemory AppDbContext):
     - `Spawn_NewPlayer_Creates201WithSpawnResponse()`
     - `Spawn_ExistingPlayer_Returns200WithSameIds()` (idempotent)
     - `Spawn_MissingShardSecret_Returns403()`
-  - [ ] Create `server/BelterLife.Gateway.Tests/Api/PlayersControllerTests.cs`:
+  - [x] Create `server/BelterLife.Gateway.Tests/Api/PlayersControllerTests.cs`:
     - `Spawn_AuthenticatedUser_CallsShardAndReturnsOk()` (mock ShardClient)
     - `Spawn_UnauthenticatedUser_Returns401()`
 
-- [ ] Task 8 — End-to-end verification (AC: 1, 2, 3, 4)
-  - [ ] `dotnet build server/BelterLife.slnx` → 0 errors
-  - [ ] `dotnet test server/BelterLife.slnx` → all tests passing
-  - [ ] `cd client && npm run build` → 0 TypeScript errors
-  - [ ] Inspect generated migration SQL: verify `snake_case` table and column names
+- [x] Task 8 — End-to-end verification (AC: 1, 2, 3, 4)
+  - [x] `dotnet build server/BelterLife.slnx` → 0 errors
+  - [x] `dotnet test server/BelterLife.slnx` → all tests passing
+  - [x] `cd client && npm run build` → 0 TypeScript errors
+  - [x] Inspect generated migration SQL: verify `snake_case` table and column names
 
 ## Dev Notes
 
@@ -339,10 +339,51 @@ ASPNETCORE_URLS: "http://0.0.0.0:5001"
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-sonnet-4-5 (via GitHub Copilot)
 
 ### Debug Log References
 
+- `Forbid()` without an auth scheme causes 500 in Simulation (no auth middleware) — replaced with `StatusCode(403)`
+- `IHostedService` requires `using Microsoft.Extensions.Hosting` in Simulation.Tests
+- ShardClient needs `IShardClient` interface for Moq-based unit testing in Gateway.Tests
+- `AddHttpClient<ShardClient>().AddTypedClient<IShardClient, ShardClient>()` registers both concrete and interface
+
 ### Completion Notes List
 
+- Task 1: Updated Player/Asteroid/Ship entities; created Sector, NpcStation, SpawnRequest, SpawnResponse
+- Task 2: AppDbContext configured with all DbSets + Fluent API; EFCore.Design added; AppDbContextFactory created; InitialGameSchema migration generated with snake_case tables (sectors, asteroids, ships, players, npc_stations)
+- Task 3: Simulation SDK changed to Web; Program.cs converted to WebApplication pattern with ProviderName guard for migrations; ASPNETCORE_URLS added to docker-compose
+- Task 4: SectorGenerator implemented with polar coordinate placement (150–900 asteroid dist, 200–600 station dist, safe zone 100+ units from origin)
+- Task 5: SpawnController with X-Shard-Secret validation, idempotency check, full entity persistence
+- Task 6: IShardClient interface + ShardClient typed HttpClient; PlayersController with [Authorize] + sub claim extraction
+- Task 7: 5 SectorGenerator unit tests + 3 SpawnController integration tests + 2 PlayersController tests — all 25 total passing
+- Task 8: `dotnet build` → 0 errors; `dotnet test` → 25/25 pass; `npm run build` → 0 TypeScript errors; migration SQL verified snake_case
+
 ### File List
+
+- server/BelterLife.Shared/Entities/Player.cs (modified)
+- server/BelterLife.Shared/Entities/Asteroid.cs (modified)
+- server/BelterLife.Shared/Entities/Ship.cs (modified)
+- server/BelterLife.Shared/Entities/Sector.cs (created)
+- server/BelterLife.Shared/Entities/NpcStation.cs (created)
+- server/BelterLife.Shared/Contracts/Api/SpawnRequest.cs (created)
+- server/BelterLife.Shared/Contracts/Api/SpawnResponse.cs (created)
+- server/BelterLife.Simulation/Infrastructure/AppDbContext.cs (modified)
+- server/BelterLife.Simulation/Infrastructure/AppDbContextFactory.cs (created)
+- server/BelterLife.Simulation/BelterLife.Simulation.csproj (modified — SDK Worker→Web, EFCore.Design, InternalsVisibleTo)
+- server/BelterLife.Simulation/Program.cs (modified — WebApplication, SectorGenerator, Controllers, migration)
+- server/BelterLife.Simulation/appsettings.json (modified — added AllowedHosts)
+- server/BelterLife.Simulation/Entities/SectorGenerator.cs (created)
+- server/BelterLife.Simulation/Api/SpawnController.cs (created)
+- server/BelterLife.Simulation/Migrations/20260221204547_InitialGameSchema.cs (created)
+- server/BelterLife.Simulation/Migrations/20260221204547_InitialGameSchema.Designer.cs (created)
+- server/BelterLife.Simulation/Migrations/AppDbContextModelSnapshot.cs (created)
+- server/BelterLife.Gateway/Infrastructure/IShardClient.cs (created)
+- server/BelterLife.Gateway/Infrastructure/ShardClient.cs (created)
+- server/BelterLife.Gateway/Api/v1/PlayersController.cs (modified)
+- server/BelterLife.Gateway/Program.cs (modified — AddHttpClient<ShardClient>)
+- server/BelterLife.Simulation.Tests/BelterLife.Simulation.Tests.csproj (modified — InMemory, Mvc.Testing, Moq)
+- server/BelterLife.Simulation.Tests/Entities/SectorGeneratorTests.cs (created)
+- server/BelterLife.Simulation.Tests/Api/SpawnControllerTests.cs (created)
+- server/BelterLife.Gateway.Tests/Api/PlayersControllerTests.cs (created)
+- docker-compose.yml (modified — ASPNETCORE_URLS for shard)

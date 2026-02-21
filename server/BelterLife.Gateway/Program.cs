@@ -9,6 +9,10 @@ builder.Services.AddControllers();
 builder.Services.AddSignalR().AddMessagePackProtocol();
 builder.Services.AddHealthChecks();
 builder.Services.AddBelterIdentity(builder.Configuration);
+builder.Services.AddHttpClient<ShardClient>(c =>
+{
+    c.BaseAddress = new Uri(builder.Configuration["Shard__BaseUrl"] ?? "http://shard:5001");
+}).AddTypedClient<IShardClient, ShardClient>();
 
 var app = builder.Build();
 
