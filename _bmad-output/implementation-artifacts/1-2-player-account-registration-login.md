@@ -1,6 +1,6 @@
 # Story 1.2: Player Account Registration & Login
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -36,18 +36,18 @@ So that I have a persistent identity and can access the game.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Add `Microsoft.EntityFrameworkCore.Design` to Gateway (AC: all — enables migrations) (AC: 1, 2, 3, 4, 5, 6)
-  - [ ] `dotnet add server/BelterLife.Gateway package Microsoft.EntityFrameworkCore.Design` with `PrivateAssets="all"` (dev-only tooling)
-  - [ ] Verify `BelterLife.Gateway.csproj` contains the reference
+- [x] Task 1 — Add `Microsoft.EntityFrameworkCore.Design` to Gateway (AC: all — enables migrations) (AC: 1, 2, 3, 4, 5, 6)
+  - [x] `dotnet add server/BelterLife.Gateway package Microsoft.EntityFrameworkCore.Design` with `PrivateAssets="all"` (dev-only tooling)
+  - [x] Verify `BelterLife.Gateway.csproj` contains the reference
 
-- [ ] Task 2 — Create `RevokedToken` entity and `GatewayDbContext` (AC: 6)
-  - [ ] Create `server/BelterLife.Gateway/Infrastructure/RevokedToken.cs` — entity with `Jti` (string, PK), `ExpiresAt` (DateTimeOffset)
-  - [ ] Create `server/BelterLife.Gateway/Infrastructure/GatewayDbContext.cs` — `IdentityDbContext<IdentityUser>` subclass
-  - [ ] Override `OnModelCreating`: call `base.OnModelCreating(modelBuilder)` first, then `modelBuilder.UseSnakeCaseNamingConvention()`, then configure `RevokedToken` PK
-  - [ ] Add `DbSet<RevokedToken> RevokedTokens` property
+- [x] Task 2 — Create `RevokedToken` entity and `GatewayDbContext` (AC: 6)
+  - [x] Create `server/BelterLife.Gateway/Infrastructure/RevokedToken.cs` — entity with `Jti` (string, PK), `ExpiresAt` (DateTimeOffset)
+  - [x] Create `server/BelterLife.Gateway/Infrastructure/GatewayDbContext.cs` — `IdentityDbContext<IdentityUser>` subclass
+  - [x] Override `OnModelCreating`: call `base.OnModelCreating(modelBuilder)` first, then `modelBuilder.UseSnakeCaseNamingConvention()`, then configure `RevokedToken` PK
+  - [x] Add `DbSet<RevokedToken> RevokedTokens` property
 
-- [ ] Task 3 — Wire Identity + JWT + DbContext in `GatewayIdentitySetup.cs` and `Program.cs` (AC: 1, 2, 5, 6)
-  - [ ] Populate `server/BelterLife.Gateway/Auth/IdentitySetup.cs` with a static `AddBelterIdentity(this IServiceCollection, IConfiguration)` extension method that:
+- [x] Task 3 — Wire Identity + JWT + DbContext in `GatewayIdentitySetup.cs` and `Program.cs` (AC: 1, 2, 5, 6)
+  - [x] Populate `server/BelterLife.Gateway/Auth/IdentitySetup.cs` with a static `AddBelterIdentity(this IServiceCollection, IConfiguration)` extension method that:
     - Registers `GatewayDbContext` with `UseNpgsql(...).UseSnakeCaseNamingConvention()`
     - Calls `AddIdentity<IdentityUser, IdentityRole>(...).AddEntityFrameworkStores<GatewayDbContext>()`
     - Configures Identity password options: `RequireDigit = false`, `RequireUppercase = false`, `RequireNonAlphanumeric = false`, `MinimumLength = 6`
@@ -55,29 +55,29 @@ So that I have a persistent identity and can access the game.
     - Registers `JwtTokenService` as scoped
     - Calls `AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(...)` with token validation params (Issuer, Audience, IssuerSigningKey from `JwtConfig.Key`)
     - Wires JWT query param fallback for SignalR: `OnMessageReceived` event reads `access_token` query param and sets `context.Token`
-  - [ ] Update `server/BelterLife.Gateway/Program.cs`:
+  - [x] Update `server/BelterLife.Gateway/Program.cs`:
     - Call `builder.Services.AddBelterIdentity(builder.Configuration)` before `Build()`
     - Add `app.UseAuthentication()` and `app.UseAuthorization()` BEFORE `app.MapControllers()`
     - Ensure order: `UseRouting()` → `UseAuthentication()` → `UseAuthorization()` → `MapControllers()` → `MapHub<GameHub>(...)` → `MapHealthChecks(...)`
 
-- [ ] Task 4 — Create `JwtTokenService` (AC: 1, 2, 6)
-  - [ ] Create `server/BelterLife.Gateway/Auth/JwtTokenService.cs`
-  - [ ] Constructor takes `IOptions<JwtConfig>`
-  - [ ] Method `GenerateToken(IdentityUser user): string` — creates a JWT with:
+- [x] Task 4 — Create `JwtTokenService` (AC: 1, 2, 6)
+  - [x] Create `server/BelterLife.Gateway/Auth/JwtTokenService.cs`
+  - [x] Constructor takes `IOptions<JwtConfig>`
+  - [x] Method `GenerateToken(IdentityUser user): string` — creates a JWT with:
     - Claims: `sub` = `user.Id`, `name` = `user.UserName`, `jti` = `Guid.NewGuid().ToString()`
     - `exp` = `DateTime.UtcNow.AddHours(24)` (24h expiry)
     - Signs with `HmacSha256` using `JwtConfig.Key`
-  - [ ] Method `GetJti(string token): string` — extracts JTI from a token string without full validation (used in logout)
+  - [x] Method `GetJti(string token): string` — extracts JTI from a token string without full validation (used in logout)
 
-- [ ] Task 5 — Run first EF Core migration (AC: 1, 2, 3, 4, 5, 6)
-  - [ ] From repo root: `dotnet ef migrations add InitialIdentitySchema --project server/BelterLife.Gateway --startup-project server/BelterLife.Gateway`
-  - [ ] The migration creates: ASP.NET Core Identity tables (`asp_net_users`, `asp_net_roles`, `asp_net_user_roles`, `asp_net_user_claims`, `asp_net_user_logins`, `asp_net_user_tokens`, `asp_net_role_claims`) + `revoked_tokens` — all with `snake_case` names from `UseSnakeCaseNamingConvention()`
-  - [ ] Commit the generated `Migrations/` folder files
-  - [ ] Do NOT run `dotnet ef database update` — that happens in `Program.cs` or docker-compose startup (see Dev Notes)
-  - [ ] Add `app.Services.GetRequiredService<GatewayDbContext>().Database.Migrate()` call at app startup (after `Build()`, before `Run()`) so the schema is auto-applied on container start
+- [x] Task 5 — Run first EF Core migration (AC: 1, 2, 3, 4, 5, 6)
+  - [x] From repo root: `dotnet ef migrations add InitialIdentitySchema --project server/BelterLife.Gateway --startup-project server/BelterLife.Gateway`
+  - [x] The migration creates: ASP.NET Core Identity tables (`asp_net_users`, `asp_net_roles`, `asp_net_user_roles`, `asp_net_user_claims`, `asp_net_user_logins`, `asp_net_user_tokens`, `asp_net_role_claims`) + `revoked_tokens` — all with `snake_case` names from `UseSnakeCaseNamingConvention()`
+  - [x] Commit the generated `Migrations/` folder files
+  - [x] Do NOT run `dotnet ef database update` — that happens in `Program.cs` or docker-compose startup (see Dev Notes)
+  - [x] Add `app.Services.GetRequiredService<GatewayDbContext>().Database.Migrate()` call at app startup (after `Build()`, before `Run()`) so the schema is auto-applied on container start
 
-- [ ] Task 6 — Implement `AuthController` (AC: 1, 2, 3, 4, 5, 6)
-  - [ ] Populate `server/BelterLife.Gateway/Api/v1/AuthController.cs`:
+- [x] Task 6 — Implement `AuthController` (AC: 1, 2, 3, 4, 5, 6)
+  - [x] Populate `server/BelterLife.Gateway/Api/v1/AuthController.cs`:
     - Constructor injects: `UserManager<IdentityUser>`, `JwtTokenService`, `GatewayDbContext`
     - `POST /api/v1/auth/register` — `RegisterRequest { Username, Password }`:
       - Create `new IdentityUser { UserName = request.Username }`
@@ -89,22 +89,22 @@ So that I have a persistent identity and can access the game.
       - Extract `jti` and `exp` from current `User.Claims`
       - Persist `new RevokedToken { Jti = jti, ExpiresAt = exp }` to `GatewayDbContext.RevokedTokens`
       - Returns 204 No Content
-  - [ ] Add token revocation check middleware or `OnTokenValidated` event in `IdentitySetup.cs`: query `GatewayDbContext` for the incoming JTI in `revoked_tokens`; if found, call `context.Fail("Token revoked")`
-  - [ ] Create record types `RegisterRequest` and `LoginRequest` in `server/BelterLife.Gateway/Api/v1/` (or as nested records in the controller file)
+  - [x] Add token revocation check middleware or `OnTokenValidated` event in `IdentitySetup.cs`: query `GatewayDbContext` for the incoming JTI in `revoked_tokens`; if found, call `context.Fail("Token revoked")`
+  - [x] Create record types `RegisterRequest` and `LoginRequest` in `server/BelterLife.Gateway/Api/v1/` (or as nested records in the controller file)
 
-- [ ] Task 7 — Update client `RestClient.ts` (AC: 1, 2, 6)
-  - [ ] Implement `client/src/network/RestClient.ts` with:
+- [x] Task 7 — Update client `RestClient.ts` (AC: 1, 2, 6)
+  - [x] Implement `client/src/network/RestClient.ts` with:
     - `const TOKEN_KEY = 'belter_jwt'`
     - `register(username: string, password: string): Promise<void>` — POST to `/api/v1/auth/register`, stores token in `localStorage`
     - `login(username: string, password: string): Promise<void>` — POST to `/api/v1/auth/login`, stores token in `localStorage`
     - `logout(): Promise<void>` — POST to `/api/v1/auth/logout` with Bearer token, removes token from `localStorage`
     - `getToken(): string | null` — returns `localStorage.getItem(TOKEN_KEY)`
     - All methods throw typed errors on non-2xx responses
-  - [ ] Update `client/src/network/GameHubClient.ts` `accessTokenFactory` to call `restClient.getToken()` (import from `RestClient.ts`)
-  - [ ] Ensure `npm run build` exits 0 — `noUnusedLocals: true` means all exports must be used or exported (see gotcha in Dev Notes)
+  - [x] Update `client/src/network/GameHubClient.ts` `accessTokenFactory` to call `restClient.getToken()` (import from `RestClient.ts`)
+  - [x] Ensure `npm run build` exits 0 — `noUnusedLocals: true` means all exports must be used or exported (see gotcha in Dev Notes)
 
-- [ ] Task 8 — Write tests (AC: 1, 2, 3, 4, 5, 6)
-  - [ ] In `server/BelterLife.Gateway.Tests/`:
+- [x] Task 8 — Write tests (AC: 1, 2, 3, 4, 5, 6)
+  - [x] In `server/BelterLife.Gateway.Tests/`:
     - Add `Microsoft.AspNetCore.Mvc.Testing` package for WebApplicationFactory-style integration tests (or use unit tests with mocked `UserManager`)
     - `AuthControllerTests.cs`:
       - `Register_WithValidCredentials_Returns201WithToken()`
@@ -113,10 +113,10 @@ So that I have a persistent identity and can access the game.
       - `Login_WithInvalidPassword_Returns401ProblemDetails()`
       - `Logout_WithValidToken_Returns204AndRevokesToken()`
 
-- [ ] Task 9 — Verify end-to-end (AC: 1, 2, 3, 4, 5, 6)
-  - [ ] Run `dotnet build server/BelterLife.slnx` — expect 0 errors
-  - [ ] Run `dotnet test server/BelterLife.slnx` — all tests pass
-  - [ ] Run `cd client && npm run build` — expect 0 TypeScript errors
+- [x] Task 9 — Verify end-to-end (AC: 1, 2, 3, 4, 5, 6)
+  - [x] Run `dotnet build server/BelterLife.slnx` — expect 0 errors ✅ Build succeeded
+  - [x] Run `dotnet test server/BelterLife.slnx` — all tests pass ✅ 11/11 passed
+  - [x] Run `cd client && npm run build` — expect 0 TypeScript errors ✅ 0 errors
 
 ## Dev Notes
 
@@ -312,10 +312,56 @@ Jwt__Key=
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+GitHub Copilot (Claude Sonnet 4.5), 2026-02-21
 
 ### Debug Log References
 
+- `TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled` — Vite tsconfig has `erasableSyntaxOnly: true`. TypeScript constructor parameter properties (`public readonly x: T`) are not allowed. Declare properties separately and assign in body.
+- `JwtSecurityTokenHandler.CanReadToken("not.a.jwt")` returns `true` (3 dot-separated segments) but `ReadJwtToken` throws `ArgumentException` on malformed base64 headers. Must wrap `ReadJwtToken` in try/catch.
+- `UserManager` test factory needs `UserValidator<IdentityUser>` in validators list for duplicate-username detection. Also needs `IdentityOptions` matching production (relaxed password) or test passwords must satisfy default validators.
+- `dotnet-ef` tool not on PATH after global install — run `export PATH="$PATH:/Users/richardthombs/.dotnet/tools"` or add to shell profile.
+
 ### Completion Notes List
 
+- ✅ `Microsoft.EntityFrameworkCore.Design` (10.0.3) added to Gateway (PrivateAssets=all) + `InternalsVisibleTo` for test project
+- ✅ Test packages: `Moq` (4.20.72), `Microsoft.EntityFrameworkCore.InMemory` (10.0.3), `Microsoft.AspNetCore.Mvc.Testing` added to Gateway.Tests
+- ✅ `GatewayDbContext : IdentityDbContext<IdentityUser>` created with `DbSet<RevokedToken>` — snake_case via UseSnakeCaseNamingConvention() on DI options
+- ✅ `GatewayDbContextFactory : IDesignTimeDbContextFactory<GatewayDbContext>` for dotnet-ef tooling
+- ✅ `RevokedToken` entity: PK = `Jti` (string, max 256 chars), `ExpiresAt` (DateTimeOffset)
+- ✅ `JwtConfig` updated with `ExpiryHours` property (default 24)
+- ✅ `JwtTokenService` implemented: `GenerateToken(IdentityUser)` + `ReadToken(string)` with safe try/catch
+- ✅ `IdentitySetup.AddBelterIdentity()` extension: DbContext registration, Identity + JWT Bearer, OnMessageReceived (SignalR query param), OnTokenValidated (DB revocation check)
+- ✅ `Program.cs` updated: `AddBelterIdentity`, auto-migration on startup, correct middleware order (UseAuthentication before UseAuthorization)
+- ✅ `appsettings.json` updated with Jwt section (Key/Issuer/Audience/ExpiryHours)
+- ✅ `docker-compose.yml` fixed: `JwtKey` → `Jwt__Key`, added `Jwt__Issuer` + `Jwt__Audience`
+- ✅ `.env.example` updated with JWT_KEY comment noting 32-char minimum
+- ✅ First EF Core migration `InitialIdentitySchema` generated (2026-02-21T16:41:41) — Identity tables + revoked_tokens, all snake_case
+- ✅ `AuthController` implemented: POST register (201+token), POST login (200+token), POST logout [Authorize] (204+revoke)
+- ✅ `RegisterRequest`, `LoginRequest`, `TokenResponse` records in AuthController.cs
+- ✅ `RestClient.ts` implemented: register/login/logout/getToken/isAuthenticated + `AuthError` typed exception
+- ✅ `GameHubClient.ts` updated: `accessTokenFactory` now imports `getToken()` from RestClient (eliminates hardcoded localStorage key)
+- ✅ 11 tests passing (0 regressions): `GameHubTests` + `JwtTokenServiceTests` (4) + `AppDbContextTests` + `AuthControllerTests` (5)
+
 ### File List
+
+server/BelterLife.Gateway/BelterLife.Gateway.csproj
+server/BelterLife.Gateway/Program.cs
+server/BelterLife.Gateway/appsettings.json
+server/BelterLife.Gateway/Auth/JwtConfig.cs
+server/BelterLife.Gateway/Auth/JwtTokenService.cs
+server/BelterLife.Gateway/Auth/IdentitySetup.cs
+server/BelterLife.Gateway/Infrastructure/RevokedToken.cs
+server/BelterLife.Gateway/Infrastructure/GatewayDbContext.cs
+server/BelterLife.Gateway/Infrastructure/GatewayDbContextFactory.cs
+server/BelterLife.Gateway/Api/v1/AuthController.cs
+server/BelterLife.Gateway/Migrations/20260221164141_InitialIdentitySchema.cs
+server/BelterLife.Gateway/Migrations/20260221164141_InitialIdentitySchema.Designer.cs
+server/BelterLife.Gateway/Migrations/GatewayDbContextModelSnapshot.cs
+server/BelterLife.Gateway.Tests/BelterLife.Gateway.Tests.csproj
+server/BelterLife.Gateway.Tests/UnitTest1.cs
+server/BelterLife.Gateway.Tests/JwtTokenServiceTests.cs
+server/BelterLife.Gateway.Tests/AuthControllerTests.cs
+client/src/network/RestClient.ts
+client/src/network/GameHubClient.ts
+docker-compose.yml
+.env.example

@@ -42,7 +42,9 @@ services:
         condition: service_started
     environment:
       ConnectionStrings__Default: "Host=postgres;Database=${POSTGRES_DB:-belterlife};Username=${POSTGRES_USER:-belter};Password=${POSTGRES_PASSWORD}"
-      JwtKey: ${JWT_KEY:?JWT_KEY is required}
+      Jwt__Key: ${JWT_KEY:?JWT_KEY is required}
+      Jwt__Issuer: belterlife
+      Jwt__Audience: belterlife
       Shard__BaseUrl: "http://shard:5001"
       SHARD_SECRET: ${SHARD_SECRET:?SHARD_SECRET is required}
     ports:

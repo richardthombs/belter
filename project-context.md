@@ -158,3 +158,4 @@ npx create-vite client --template vanilla-ts
 | Story | Key Finding |
 |---|---|
 | 1.1 Monorepo scaffold | `.slnx` not `.sln`; SignalR Protocols.MessagePack package; tsconfig noUnusedLocals |
+| 1.2 Player auth | `erasableSyntaxOnly` bans TS constructor parameter properties; `CanReadToken()` ≠ safe to parse (wrap ReadJwtToken in try/catch); UserManager test factory needs UserValidator + relaxed IdentityOptions to match production; `dotnet-ef` global tool must be on PATH |

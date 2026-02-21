@@ -1,5 +1,6 @@
 import { HubConnectionBuilder, HubConnection } from '@microsoft/signalr';
 import { MessagePackHubProtocol } from '@microsoft/signalr-protocol-msgpack';
+import { getToken } from './RestClient';
 
 /**
  * SignalR + MessagePack hub client.
@@ -13,7 +14,7 @@ export class GameHubClient {
   constructor() {
     this.connection = new HubConnectionBuilder()
       .withUrl('/hubs/game', {
-        accessTokenFactory: () => localStorage.getItem('access_token') ?? '',
+        accessTokenFactory: () => getToken() ?? '',
       })
       .withHubProtocol(new MessagePackHubProtocol())
       .withAutomaticReconnect()
