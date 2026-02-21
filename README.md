@@ -41,7 +41,7 @@ A browser-based 2D MMO asteroid mining and trading game.
 
 Server (from repo root):
 ```bash
-dotnet build server/BelterLife.sln
+dotnet build server/BelterLife.slnx
 ```
 
 Client (from repo root):
@@ -52,7 +52,7 @@ cd client && npm run build
 ### Running Tests
 
 ```bash
-dotnet test server/BelterLife.sln
+dotnet test server/BelterLife.slnx
 ```
 
 ## Project Structure

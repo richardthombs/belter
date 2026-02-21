@@ -53,7 +53,7 @@ Violating these will break the entire stack — enforce on every file you touch.
 ## Architecture Rules — Never Violate
 
 - **Server-authoritative physics** — client NEVER submits positions; only input events
-- **`X-Shard-Secret` header** — ALL shard-to-shard HTTP calls must attach it; all shard HTTP pipelines must validate it (K8s Secret env var `SHARD_SECRET`)
+- **`X-Shard-Secret` header** — ALL shard-to-shard HTTP calls must attach it; all shard HTTP pipelines must validate it. **Naming:** `SHARD_SECRET` = env var/K8s Secret key; `X-Shard-Secret` = HTTP header name. These are intentionally different — do not conflate.
 - **SignalR/REST split** — no FR is served by both; SignalR = game state + player input; REST = auth, marketplace, loadout, admin, catalogue reads
 - **No shared in-process state across shards** — each shard pod owns its region exclusively
 - **JWT auth flow** — token passed as `?access_token=...` query param on SignalR WebSocket upgrade (browser limitation)

@@ -1,10 +1,13 @@
-﻿namespace BelterLife.Simulation.Tests;
+﻿using BelterLife.Simulation.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 
-public class UnitTest1
+namespace BelterLife.Simulation.Tests;
+
+public class AppDbContextTests
 {
     [Fact]
-    public void Test1()
+    public void AppDbContext_IsSubclassOfDbContext()
     {
-
+        Assert.True(typeof(AppDbContext).IsSubclassOf(typeof(DbContext)));
     }
 }

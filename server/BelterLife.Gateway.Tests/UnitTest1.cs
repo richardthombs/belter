@@ -1,10 +1,13 @@
-﻿namespace BelterLife.Gateway.Tests;
+﻿using BelterLife.Gateway.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
-public class UnitTest1
+namespace BelterLife.Gateway.Tests;
+
+public class GameHubTests
 {
     [Fact]
-    public void Test1()
+    public void GameHub_IsSubclassOfHub()
     {
-
+        Assert.True(typeof(GameHub).IsSubclassOf(typeof(Hub)));
     }
 }

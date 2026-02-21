@@ -1,6 +1,6 @@
 # Story 1.1: Monorepo Scaffold & Local Dev Environment
 
-Status: review
+Status: done
 
 ## Story
 
@@ -208,11 +208,20 @@ GitHub Copilot (GPT-4o), 2026-02-21
 - ✅ `GameHubClient.ts` demonstrates `MessagePackHubProtocol` and JWT `accessTokenFactory` pattern
 - ✅ `WorldState.ts` establishes no-reactive-framework convention with timestamp comments
 - ✅ `npm run build` → 0 TypeScript errors, clean bundle
-- ✅ `dotnet test` → 2 test projects pass (default xUnit stub tests, 0 failures)
+- ✅ `dotnet test` → 2 tests pass (real type-hierarchy assertions)
 - ✅ Multi-stage Dockerfiles for gateway, shard, admin
 - ✅ `docker-compose.yml` with postgres healthcheck gating, shard, gateway; fully `.env` driven
 - ✅ K8s manifests for all 3 services + configmap; secrets intentionally external (kubectl / CI)
 - ✅ GitHub Actions `ci.yml` (PR → build+test both server and client) and `deploy.yml` (push main → deploy placeholder)
+
+### Code Review Fixes (post-review)
+
+- ✅ HIGH: Added `Microsoft.AspNetCore.SignalR.Client` (10.0.3) and `MessagePack` (3.1.4) to `BelterLife.Simulation.csproj`
+- ✅ HIGH: Added `OnConfiguring` stub to `AppDbContext.cs` (documents DI-injection pattern)
+- ✅ HIGH: Fixed `README.md` lines 44+55 — `server/BelterLife.sln` → `server/BelterLife.slnx`
+- ✅ MEDIUM: File List updated — 15 missing files added (appsettings, launchSettings, UnitTest1.cs files, client scaffold files)
+- ✅ MEDIUM: Placeholder tests renamed — `GameHubTests.GameHub_IsSubclassOfHub()` and `AppDbContextTests.AppDbContext_IsSubclassOfDbContext()` with real assertions
+- ℹ️ LOW: `SHARD_SECRET` (env var name) vs `X-Shard-Secret` (HTTP header name) — these are intentionally different; see project-context.md
 
 ### File List
 
@@ -227,6 +236,9 @@ server/BelterLife.Shared/Contracts/Hubs/.gitkeep
 server/BelterLife.Shared/Contracts/Api/.gitkeep
 server/BelterLife.Simulation/BelterLife.Simulation.csproj
 server/BelterLife.Simulation/Program.cs
+server/BelterLife.Simulation/appsettings.json
+server/BelterLife.Simulation/appsettings.Development.json
+server/BelterLife.Simulation/Properties/launchSettings.json
 server/BelterLife.Simulation/Physics/SimulationLoop.cs
 server/BelterLife.Simulation/Physics/PhysicsEngine.cs
 server/BelterLife.Simulation/Physics/CollisionResolver.cs
@@ -234,6 +246,10 @@ server/BelterLife.Simulation/Physics/RegionBounds.cs
 server/BelterLife.Simulation/Infrastructure/AppDbContext.cs
 server/BelterLife.Gateway/BelterLife.Gateway.csproj
 server/BelterLife.Gateway/Program.cs
+server/BelterLife.Gateway/appsettings.json
+server/BelterLife.Gateway/appsettings.Development.json
+server/BelterLife.Gateway/Properties/launchSettings.json
+server/BelterLife.Gateway/BelterLife.Gateway.http
 server/BelterLife.Gateway/Hubs/GameHub.cs
 server/BelterLife.Gateway/Api/v1/AuthController.cs
 server/BelterLife.Gateway/Api/v1/MarketplaceController.cs
@@ -246,16 +262,24 @@ server/BelterLife.Gateway/Routing/RegionRegistry.cs
 server/BelterLife.Gateway/Routing/PlayerRouter.cs
 server/BelterLife.Admin/BelterLife.Admin.csproj
 server/BelterLife.Admin/Program.cs
+server/BelterLife.Admin/appsettings.json
+server/BelterLife.Admin/appsettings.Development.json
+server/BelterLife.Admin/Properties/launchSettings.json
+server/BelterLife.Admin/BelterLife.Admin.http
 server/BelterLife.Admin/Api/v1/ShardsController.cs
 server/BelterLife.Admin/Api/v1/PlayersController.cs
 server/BelterLife.Admin/Services/UniverseResetService.cs
 server/BelterLife.Simulation.Tests/BelterLife.Simulation.Tests.csproj
+server/BelterLife.Simulation.Tests/UnitTest1.cs
 server/BelterLife.Gateway.Tests/BelterLife.Gateway.Tests.csproj
+server/BelterLife.Gateway.Tests/UnitTest1.cs
 client/package.json
 client/package-lock.json
+client/.gitignore
 client/vite.config.ts
 client/tsconfig.json
 client/index.html
+client/public/vite.svg
 client/src/main.ts
 client/src/app.ts
 client/src/rendering/Renderer.ts

@@ -17,4 +17,9 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
     }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        // Connection string provided via IConfiguration / AddDbContext in Program.cs — do not override here.
+    }
 }
