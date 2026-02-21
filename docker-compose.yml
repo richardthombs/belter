@@ -48,7 +48,7 @@ services:
       Shard__BaseUrl: "http://shard:5001"
       SHARD_SECRET: ${SHARD_SECRET:?SHARD_SECRET is required}
     ports:
-      - "5000:80"
+      - "5080:80"
 
 volumes:
   postgres_data:
