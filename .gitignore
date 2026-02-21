@@ -57,6 +57,8 @@ logs/
 
 # .NET build artefacts
 **/bin/
+# Handles Windows-backslash paths that bypass normal bin/ pattern
+**/bin\
 **/obj/
 *.user
 
