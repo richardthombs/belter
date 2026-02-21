@@ -48,23 +48,5 @@ docker-compose.override.yml
 *.log
 logs/
 
-# JetBrains IDEs
-.idea/
-*.iml
-
 # VS Code
 .vscode/
-
-# .NET build artefacts
-**/bin/
-# Handles Windows-backslash paths that bypass normal bin/ pattern
-**/bin\
-**/obj/
-*.user
-
-# Node
-node_modules/
-dist/
-
-# Environment secrets
-.env
