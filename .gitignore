@@ -1,0 +1,56 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverrideIcon
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+*.DotSettings.user
+.vs/
+TestResults/
+*.nupkg
+*.snupkg
+
+# Entity Framework
+*.db
+*.db-shm
+*.db-wal
+
+# Node / client
+node_modules/
+dist/
+.vite/
+*.local
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+*.pfx
+*.p12
+
+# Kubernetes secrets (never commit real secrets)
+infra/k8s/secrets/
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# JetBrains IDEs
+.idea/
+*.iml
+
+# VS Code
+.vscode/
