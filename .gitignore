@@ -54,3 +54,15 @@ logs/
 
 # VS Code
 .vscode/
+
+# .NET build artefacts
+**/bin/
+**/obj/
+*.user
+
+# Node
+node_modules/
+dist/
+
+# Environment secrets
+.env

@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="BelterLife.Admin/BelterLife.Admin.csproj" />
+  <Project Path="BelterLife.Gateway.Tests/BelterLife.Gateway.Tests.csproj" />
+  <Project Path="BelterLife.Gateway/BelterLife.Gateway.csproj" />
+  <Project Path="BelterLife.Shared/BelterLife.Shared.csproj" />
+  <Project Path="BelterLife.Simulation.Tests/BelterLife.Simulation.Tests.csproj" />
+  <Project Path="BelterLife.Simulation/BelterLife.Simulation.csproj" />
+</Solution>

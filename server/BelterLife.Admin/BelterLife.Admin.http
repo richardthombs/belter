@@ -1,0 +1,6 @@
+@BelterLife.Admin_HostAddress = http://localhost:5116
+
+GET {{BelterLife.Admin_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

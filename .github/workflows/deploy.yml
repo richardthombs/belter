@@ -1,0 +1,29 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Build, Push & Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      # TODO: Add DigitalOcean Container Registry login and image push steps
+      # TODO: Add kubectl apply steps for K8s manifests
+      # Credentials injected via GitHub Secrets:
+      #   DIGITALOCEAN_ACCESS_TOKEN, CLUSTER_NAME, REGISTRY_NAME
+      - name: Placeholder
+        run: echo "Deploy pipeline — configure registry and cluster credentials"

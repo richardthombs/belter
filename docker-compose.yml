@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-belterlife}
+      POSTGRES_USER: ${POSTGRES_USER:-belter}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-belter}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  shard:
+    build:
+      context: ./server
+      dockerfile: ../infra/docker/Dockerfile.shard
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: "Host=postgres;Database=${POSTGRES_DB:-belterlife};Username=${POSTGRES_USER:-belter};Password=${POSTGRES_PASSWORD}"
+      SHARD_SECRET: ${SHARD_SECRET:?SHARD_SECRET is required}
+    ports:
+      - "5001:5001"
+
+  gateway:
+    build:
+      context: ./server
+      dockerfile: ../infra/docker/Dockerfile.gateway
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      shard:
+        condition: service_started
+    environment:
+      ConnectionStrings__Default: "Host=postgres;Database=${POSTGRES_DB:-belterlife};Username=${POSTGRES_USER:-belter};Password=${POSTGRES_PASSWORD}"
+      JwtKey: ${JWT_KEY:?JWT_KEY is required}
+      Shard__BaseUrl: "http://shard:5001"
+      SHARD_SECRET: ${SHARD_SECRET:?SHARD_SECRET is required}
+    ports:
+      - "5000:80"
+
+volumes:
+  postgres_data:
