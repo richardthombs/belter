@@ -43,8 +43,8 @@ development_status:
   # ─────────────────────────────────────────────────────────────
   # Epic 1: Foundation — A Player Can Join and Fly
   # ─────────────────────────────────────────────────────────────
-  epic-1: backlog
-  1-1-monorepo-scaffold-local-dev-environment: backlog
+  epic-1: in-progress
+  1-1-monorepo-scaffold-local-dev-environment: ready-for-dev
   1-2-player-account-registration-login: backlog
   1-3-procedurally-generated-starting-sector: backlog
   1-4-real-time-game-world-via-signalr: backlog
