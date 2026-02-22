@@ -5,9 +5,12 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("Default");
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention());
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    var connectionString = builder.Configuration.GetConnectionString("Default");
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention());
+}
 
 builder.Services.AddSingleton<SectorGenerator>();
 builder.Services.AddHostedService<SimulationLoop>();
@@ -18,10 +21,10 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    if (db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
-        db.Database.Migrate();
-    else
+    if (app.Environment.IsEnvironment("Testing"))
         db.Database.EnsureCreated();
+    else
+        db.Database.Migrate();
 }
 
 app.MapControllers();

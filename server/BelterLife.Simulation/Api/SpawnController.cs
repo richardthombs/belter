@@ -37,37 +37,50 @@ public class SpawnController : ControllerBase
 
         var (sector, asteroids, stations) = _sectorGenerator.Generate(_sectorGenerator.NewSeed());
 
-        await _db.Sectors.AddAsync(sector);
-        await _db.SaveChangesAsync(); // get sector.Id
-
-        foreach (var a in asteroids) a.SectorId = sector.Id;
-        foreach (var s in stations) s.SectorId = sector.Id;
-        await _db.Asteroids.AddRangeAsync(asteroids);
-        await _db.NpcStations.AddRangeAsync(stations);
-
-        var ship = new Ship
+        await using var tx = await _db.Database.BeginTransactionAsync();
+        try
         {
-            PlayerId = request.PlayerId,
-            SectorId = sector.Id,
-            X = 0,
-            Y = 0,
-            VelocityX = 0,
-            VelocityY = 0,
-            Heading = 0,
-        };
-        await _db.Ships.AddAsync(ship);
-        await _db.SaveChangesAsync(); // get ship.Id
+            // Save 1: persist Sector to obtain its auto-generated Id
+            await _db.Sectors.AddAsync(sector);
+            await _db.SaveChangesAsync();
 
-        var player = new Player
+            // Save 2: persist Asteroids + NpcStations + Ship (all need sector.Id; Ship.Id needed for Player)
+            foreach (var a in asteroids) a.SectorId = sector.Id;
+            foreach (var s in stations) s.SectorId = sector.Id;
+            await _db.Asteroids.AddRangeAsync(asteroids);
+            await _db.NpcStations.AddRangeAsync(stations);
+
+            var ship = new Ship
+            {
+                PlayerId = request.PlayerId,
+                SectorId = sector.Id,
+                X = 0,
+                Y = 0,
+                VelocityX = 0,
+                VelocityY = 0,
+                Heading = 0,
+            };
+            await _db.Ships.AddAsync(ship);
+            await _db.SaveChangesAsync(); // resolves ship.Id
+
+            // Save 3: persist Player (needs both sector.Id and ship.Id) + commit
+            var player = new Player
+            {
+                Id = request.PlayerId,
+                SectorId = sector.Id,
+                ShipId = ship.Id,
+                LastSeenAt = DateTimeOffset.UtcNow,
+            };
+            await _db.Players.AddAsync(player);
+            await _db.SaveChangesAsync();
+            await tx.CommitAsync();
+
+            return StatusCode(201, new SpawnResponse(sector.Id, ship.Id, 0f, 0f));
+        }
+        catch
         {
-            Id = request.PlayerId,
-            SectorId = sector.Id,
-            ShipId = ship.Id,
-            LastSeenAt = DateTimeOffset.UtcNow,
-        };
-        await _db.Players.AddAsync(player);
-        await _db.SaveChangesAsync();
-
-        return StatusCode(201, new SpawnResponse(sector.Id, ship.Id, 0f, 0f));
+            await tx.RollbackAsync();
+            throw;
+        }
     }
 }

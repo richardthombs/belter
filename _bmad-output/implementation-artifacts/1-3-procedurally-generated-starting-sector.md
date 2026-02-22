@@ -1,6 +1,6 @@
 # Story 1.3: Procedurally Generated Starting Sector
 
-Status: review
+Status: done
 
 ## Story
 
@@ -105,7 +105,7 @@ So that there is a live game world to explore from my very first session.
 
 - **`AppDbContext` has NO `DbSet<>` properties today** — Task 2 adds the first ones. Do NOT add EF Core data annotations (`[Key]`, `[Column]`, `[ForeignKey]`) to `BelterLife.Shared/Entities/` — Shared has no EF Core packages. Use Fluent API exclusively in `AppDbContext.OnModelCreating`.
 - **`UseSnakeCaseNamingConvention()` is ALREADY wired** in `Simulation/Program.cs` via `AddDbContext`. Never add it again, never override it. This is what produces `snake_case` column names. Project-context.md: "Never remove or override it."
-- **Migrations live in `server/BelterLife.Simulation/Infrastructure/Migrations/`** — this is the FIRST AppDbContext migration. Simulation owns and applies AppDbContext migrations. Do NOT create AppDbContext migrations in any other project.
+- **Migrations live in `server/BelterLife.Simulation/Migrations/`** (EF Core default output) — this is the FIRST AppDbContext migration. Simulation owns and applies AppDbContext migrations. Do NOT create AppDbContext migrations in any other project.
 - **ProviderName guard for migrations** — learned in Story 1.2: `db.Database.IsRelational()` throws on InMemory in EF Core 10. Use `db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory"` instead.
 - **`Player` game record ≠ `IdentityUser`** — `Player.Id` equals the `IdentityUser.Id` string (GUID), but they live in separate tables (`players` vs `asp_net_users`). `GatewayDbContext` owns `asp_net_users`; `AppDbContext` owns `players`. Same PostgreSQL DB, separate contexts, separate table sets — no conflict.
 - **X-Shard-Secret on ALL internal shard endpoints** — `SHARD_SECRET` env var = K8s Secret key; `X-Shard-Secret` = HTTP header name. Reject requests without matching header with 403. This applies to every `api/internal/*` route.
@@ -340,6 +340,7 @@ ASPNETCORE_URLS: "http://0.0.0.0:5001"
 ### Agent Model Used
 
 claude-sonnet-4-5 (via GitHub Copilot)
+code-review: Claude Sonnet 4.6 (via GitHub Copilot)
 
 ### Debug Log References
 
@@ -347,6 +348,8 @@ claude-sonnet-4-5 (via GitHub Copilot)
 - `IHostedService` requires `using Microsoft.Extensions.Hosting` in Simulation.Tests
 - ShardClient needs `IShardClient` interface for Moq-based unit testing in Gateway.Tests
 - `AddHttpClient<ShardClient>().AddTypedClient<IShardClient, ShardClient>()` registers both concrete and interface
+- Transaction guard required: `IDbContextTransaction?` using ProviderName check (same as migration guard) — InMemory does not support real transactions
+- `IDbContextTransaction` requires `using Microsoft.EntityFrameworkCore.Storage`
 
 ### Completion Notes List
 
@@ -358,6 +361,11 @@ claude-sonnet-4-5 (via GitHub Copilot)
 - Task 6: IShardClient interface + ShardClient typed HttpClient; PlayersController with [Authorize] + sub claim extraction
 - Task 7: 5 SectorGenerator unit tests + 3 SpawnController integration tests + 2 PlayersController tests — all 25 total passing
 - Task 8: `dotnet build` → 0 errors; `dotnet test` → 25/25 pass; `npm run build` → 0 TypeScript errors; migration SQL verified snake_case
+- Code review H1: SpawnController wrapped in IDbContextTransaction (ProviderName guard for InMemory); reduced from 4 to 3 SaveChangesAsync calls with full rollback on failure
+- Code review H3: PlayersController.Spawn() now returns 502 on null response or HttpRequestException from ShardClient
+- Code review M1: SectorGeneratorTests safe zone assertion corrected from >= 100 to >= 150 (matches actual placement minimum)
+- Code review M2: ShardClient now injects ILogger<ShardClient> and logs a warning with status code before re-throwing on non-2xx responses
+- Code review L1: Story Dev Notes corrected migration path from Infrastructure/Migrations/ to Migrations/ (EF Core default)
 
 ### File List
 
@@ -387,3 +395,9 @@ claude-sonnet-4-5 (via GitHub Copilot)
 - server/BelterLife.Simulation.Tests/Api/SpawnControllerTests.cs (created)
 - server/BelterLife.Gateway.Tests/Api/PlayersControllerTests.cs (created)
 - docker-compose.yml (modified — ASPNETCORE_URLS for shard)
+
+**Code Review Fixes:**
+- server/BelterLife.Simulation/Api/SpawnController.cs (modified — transaction wrap with ProviderName guard)
+- server/BelterLife.Gateway/Api/v1/PlayersController.cs (modified — 502 on null/HttpRequestException)
+- server/BelterLife.Simulation.Tests/Entities/SectorGeneratorTests.cs (modified — safe zone assertion >= 150)
+- server/BelterLife.Gateway/Infrastructure/ShardClient.cs (modified — ILogger, log warning on non-2xx)

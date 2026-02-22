@@ -22,7 +22,16 @@ public class PlayersController : ControllerBase
     public async Task<IActionResult> Spawn()
     {
         var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
-        var response = await _shardClient.SpawnAsync(userId);
-        return Ok(response);
+        try
+        {
+            var response = await _shardClient.SpawnAsync(userId);
+            if (response is null)
+                return StatusCode(502, "Shard returned an empty response.");
+            return Ok(response);
+        }
+        catch (HttpRequestException)
+        {
+            return StatusCode(502, "Shard unavailable.");
+        }
     }
 }

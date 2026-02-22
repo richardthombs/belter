@@ -5,6 +5,7 @@ using BelterLife.Simulation.Infrastructure;
 using BelterLife.Simulation.Physics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,21 +13,24 @@ using Microsoft.Extensions.Hosting;
 namespace BelterLife.Simulation.Tests.Api;
 
 /// <summary>
-/// WebApplicationFactory for Simulation — replaces PostgreSQL AppDbContext with InMemory
+/// WebApplicationFactory for Simulation — replaces PostgreSQL AppDbContext with SQLite in-memory
 /// and removes SimulationLoop to prevent the game loop from running during tests.
+/// The SQLite connection is held open for the factory lifetime so the in-memory database persists.
 /// </summary>
 public class SimulationWebApplicationFactory : WebApplicationFactory<Program>
 {
-    readonly string dbName = "SimulationTest_" + Guid.NewGuid();
+    readonly SqliteConnection _connection = new("Data Source=:memory:");
 
     public SimulationWebApplicationFactory()
     {
         Environment.SetEnvironmentVariable("ConnectionStrings__Default", "Host=placeholder");
         Environment.SetEnvironmentVariable("SHARD_SECRET", "test-shard-secret");
+        _connection.Open();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseEnvironment("Testing");
         builder.ConfigureServices(services =>
         {
             // Remove SimulationLoop — prevents game loop from running during tests
@@ -35,19 +39,17 @@ public class SimulationWebApplicationFactory : WebApplicationFactory<Program>
                 d.ImplementationType == typeof(SimulationLoop));
             if (loopDescriptor != null) services.Remove(loopDescriptor);
 
-            // Replace PostgreSQL AppDbContext with InMemory
-            var descriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
-            if (descriptor != null) services.Remove(descriptor);
-
-            var inMemoryProvider = new ServiceCollection()
-                .AddEntityFrameworkInMemoryDatabase()
-                .BuildServiceProvider();
-
+            // Program.cs skips Npgsql registration in Testing; add SQLite here as the sole provider
             services.AddDbContext<AppDbContext>(opt =>
-                opt.UseInMemoryDatabase(dbName)
-                   .UseInternalServiceProvider(inMemoryProvider));
+                opt.UseSqlite(_connection)
+                   .UseSnakeCaseNamingConvention());
         });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (disposing) _connection.Dispose();
     }
 }
 

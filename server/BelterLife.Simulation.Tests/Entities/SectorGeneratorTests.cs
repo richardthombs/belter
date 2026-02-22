@@ -40,7 +40,7 @@ public class SectorGeneratorTests
     }
 
     [Fact]
-    public void GenerateSector_NoAsteroid_IsWithin100UnitsOfOrigin()
+    public void GenerateSector_NoAsteroid_IsWithin150UnitsOfOrigin()
     {
         for (long seed = 0; seed < 20; seed++)
         {
@@ -48,7 +48,7 @@ public class SectorGeneratorTests
             foreach (var a in asteroids)
             {
                 var dist = Math.Sqrt(a.X * a.X + a.Y * a.Y);
-                Assert.True(dist >= 100.0, $"Seed {seed}: asteroid at distance {dist} is within safe zone (< 100 units)");
+                Assert.True(dist >= 150.0, $"Seed {seed}: asteroid at distance {dist} is within minimum placement distance (< 150 units)");
             }
         }
     }
