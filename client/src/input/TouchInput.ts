@@ -1,2 +1,1 @@
-export class TouchInput {
-}
+export class TouchInput {}

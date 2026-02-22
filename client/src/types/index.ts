@@ -9,39 +9,39 @@
  */
 
 export interface PlayerDto {
-	id: string;
-	username: string;
+    id: string;
+    username: string;
 }
 
 export interface ShipSnapshot {
-	shipId: number;
-	playerId: string;
-	x: number;
-	y: number;
-	velocityX: number;
-	velocityY: number;
-	heading: number;
+    shipId: number;
+    playerId: string;
+    x: number;
+    y: number;
+    velocityX: number;
+    velocityY: number;
+    heading: number;
 }
 
 export interface AsteroidSnapshot {
-	asteroidId: number;
-	x: number;
-	y: number;
-	radius: number;
-	vertexCount: number;
-	rotationOffset: number;
+    asteroidId: number;
+    x: number;
+    y: number;
+    radius: number;
+    vertexCount: number;
+    rotationOffset: number;
 }
 
 export interface WorldStateUpdate {
-	sectorId: number;
-	timestamp: number;
-	ships: ShipSnapshot[];
-	asteroids: AsteroidSnapshot[];
+    sectorId: number;
+    timestamp: number;
+    ships: ShipSnapshot[];
+    asteroids: AsteroidSnapshot[];
 }
 
 export interface SpawnResponse {
-	sectorId: number;
-	shipId: number;
-	spawnX: number;
-	spawnY: number;
+    sectorId: number;
+    shipId: number;
+    spawnX: number;
+    spawnY: number;
 }

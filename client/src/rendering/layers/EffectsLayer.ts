@@ -1,4 +1,3 @@
-import { Container } from 'pixi.js';
+import { Container } from "pixi.js";
 
-export class EffectsLayer extends Container {
-}
+export class EffectsLayer extends Container {}

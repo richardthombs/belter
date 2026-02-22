@@ -1,2 +1,1 @@
-export class HyperspaceMap {
-}
+export class HyperspaceMap {}

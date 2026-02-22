@@ -1,4 +1,8 @@
-import type { AsteroidSnapshot, ShipSnapshot, WorldStateUpdate } from '../types';
+import type {
+    AsteroidSnapshot,
+    ShipSnapshot,
+    WorldStateUpdate,
+} from "../types";
 
 /**
  * WorldState — plain TypeScript singleton module.
@@ -14,21 +18,21 @@ let asteroids: AsteroidSnapshot[] = [];
 let timestamp = 0;
 
 export function apply(update: WorldStateUpdate): void {
-	ships = update.ships;
-	asteroids = update.asteroids;
-	timestamp = update.timestamp;
+    ships = update.ships;
+    asteroids = update.asteroids;
+    timestamp = update.timestamp;
 }
 
 export function getShips(): readonly ShipSnapshot[] {
-	return ships;
+    return ships;
 }
 
 export function getAsteroids(): readonly AsteroidSnapshot[] {
-	return asteroids;
+    return asteroids;
 }
 
 export function getTimestamp(): number {
-	return timestamp;
+    return timestamp;
 }
 
 /** @deprecated use named exports; kept for backward compat */

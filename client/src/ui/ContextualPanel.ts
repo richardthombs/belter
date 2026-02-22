@@ -1,2 +1,1 @@
-export class ContextualPanel {
-}
+export class ContextualPanel {}

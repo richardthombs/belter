@@ -1,2 +1,1 @@
-export class ShipLoadoutUi {
-}
+export class ShipLoadoutUi {}

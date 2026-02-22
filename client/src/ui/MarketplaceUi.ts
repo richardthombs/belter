@@ -1,2 +1,1 @@
-export class MarketplaceUi {
-}
+export class MarketplaceUi {}

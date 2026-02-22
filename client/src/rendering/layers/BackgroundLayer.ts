@@ -1,4 +1,3 @@
-import { Container } from 'pixi.js';
+import { Container } from "pixi.js";
 
-export class BackgroundLayer extends Container {
-}
+export class BackgroundLayer extends Container {}

@@ -1,2 +1,1 @@
-export class WreckRenderer {
-}
+export class WreckRenderer {}
