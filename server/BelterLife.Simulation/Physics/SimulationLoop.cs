@@ -32,10 +32,10 @@ public class SimulationLoop : BackgroundService
         using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(_tickRateMs));
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
-            using var scope = _scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             try
             {
+                using var scope = _scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 await TickAsync(db, stoppingToken);
             }
             catch (Exception ex)
@@ -47,9 +47,18 @@ public class SimulationLoop : BackgroundService
 
     internal async Task TickAsync(AppDbContext db, CancellationToken cancellationToken)
     {
-        var sectors = await db.Sectors.ToListAsync(cancellationToken);
-        var ships = await db.Ships.ToListAsync(cancellationToken);
-        var asteroids = await db.Asteroids.ToListAsync(cancellationToken);
+        var sectors = await db.Sectors.AsNoTracking().ToListAsync(cancellationToken);
+        if (sectors.Count == 0) return;
+
+        var sectorIds = sectors.Select(s => s.Id).ToList();
+        var ships = await db.Ships
+            .AsNoTracking()
+            .Where(s => sectorIds.Contains(s.SectorId))
+            .ToListAsync(cancellationToken);
+        var asteroids = await db.Asteroids
+            .AsNoTracking()
+            .Where(a => sectorIds.Contains(a.SectorId))
+            .ToListAsync(cancellationToken);
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         foreach (var sector in sectors)

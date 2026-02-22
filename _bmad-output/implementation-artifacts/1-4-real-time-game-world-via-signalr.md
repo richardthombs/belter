@@ -299,6 +299,17 @@ Claude Sonnet 4.6
 - `BroadcastControllerTests.cs`: `SendAsync` is a `ClientProxyExtensions` extension method and cannot be mocked with Moq — switched to `SendCoreAsync` which is the actual interface method on `IClientProxy`.
 - `SimulationLoopTests.cs`: `IServiceScopeFactory` not found — added `using Microsoft.Extensions.DependencyInjection;`.
 
+### Code Review Fixes (2026-02-22)
+
+- **H1** `GameHub.cs`: Added `_sectorGroup` field; `OnDisconnectedAsync` now calls `Groups.RemoveFromGroupAsync` before `base.OnDisconnectedAsync`.
+- **M1** Story File List: Added `Auth/IdentitySetup.cs` and `Gateway/Program.cs` (both modified in the 1.4 commit — RFC 9457 `OnChallenge` handler + `AddProblemDetails`).
+- **M2** `SimulationLoop.ExecuteAsync`: Moved `scope` and `db` resolution inside the `try` block so DI errors are caught and logged rather than killing the `BackgroundService`.
+- **M3** `BroadcastController`: Constructor now throws `InvalidOperationException` when `SHARD_SECRET` is not configured. Test `Constructor_ThrowsWhenSecretNotConfigured` added.
+- **M4** `SimulationLoop.TickAsync`: Added `.AsNoTracking()` to all three queries; `Ships` and `Asteroids` filtered by `sectorIds.Contains(...)` to push WHERE clause to the DB rather than in-memory. Added early-return when no sectors.
+- **L3** `GameHubTests`: Added `OnConnectedAsync_AbortsWhenUserIdMissing` test.
+- **L4** `SimulationLoopTests`: `Tick_BroadcastsWorldStateUpdate_ForEachSector` assertion now includes `u.Timestamp > 0`.
+- **New test** `GameHubTests.OnDisconnectedAsync_RemovesConnectionFromSectorGroup` — validates H1 fix.
+
 ### Completion Notes List
 
 - NFR14 (TLS/WSS): Met by K8s ingress TLS termination — no application code required.
@@ -322,6 +333,8 @@ Claude Sonnet 4.6
 
 **Modified:**
 - `server/BelterLife.Gateway/Hubs/GameHub.cs`
+- `server/BelterLife.Gateway/Auth/IdentitySetup.cs`
+- `server/BelterLife.Gateway/Program.cs`
 - `server/BelterLife.Simulation/Physics/SimulationLoop.cs`
 - `server/BelterLife.Simulation/Program.cs`
 - `server/BelterLife.Simulation/appsettings.json`

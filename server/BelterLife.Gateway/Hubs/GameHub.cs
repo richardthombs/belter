@@ -17,6 +17,7 @@ namespace BelterLife.Gateway.Hubs;
 public class GameHub : Hub
 {
     readonly IShardClient _shardClient;
+    private string? _sectorGroup;
 
     public GameHub(IShardClient shardClient)
     {
@@ -39,12 +40,15 @@ public class GameHub : Hub
             return;
         }
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, $"sector-{response.SectorId}");
+        _sectorGroup = $"sector-{response.SectorId}";
+        await Groups.AddToGroupAsync(Context.ConnectionId, _sectorGroup);
         await base.OnConnectedAsync();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        if (_sectorGroup is not null)
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, _sectorGroup);
         await base.OnDisconnectedAsync(exception);
     }
 }

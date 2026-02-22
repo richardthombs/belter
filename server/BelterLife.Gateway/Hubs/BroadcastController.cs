@@ -16,6 +16,8 @@ public class BroadcastController : ControllerBase
     {
         _hubContext = hubContext;
         _shardSecret = config["SHARD_SECRET"] ?? string.Empty;
+        if (string.IsNullOrEmpty(_shardSecret))
+            throw new InvalidOperationException("SHARD_SECRET is not configured — broadcast endpoint cannot enforce shard authentication.");
     }
 
     [HttpPost("broadcast")]

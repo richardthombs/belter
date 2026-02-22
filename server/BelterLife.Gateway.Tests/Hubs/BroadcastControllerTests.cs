@@ -98,4 +98,18 @@ public class BroadcastControllerTests
         var statusResult = Assert.IsType<StatusCodeResult>(result);
         Assert.Equal(403, statusResult.StatusCode);
     }
+
+    [Fact]
+    public void Constructor_ThrowsWhenSecretNotConfigured()
+    {
+        // Arrange
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>())
+            .Build();
+        var mockHubContext = new Mock<IHubContext<GameHub>>();
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() =>
+            new BroadcastController(mockHubContext.Object, config));
+    }
 }

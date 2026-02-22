@@ -77,4 +77,53 @@ public class GameHubTests
             g => g.AddToGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never());
     }
-}
+
+    [Fact]
+    public async Task OnConnectedAsync_AbortsWhenUserIdMissing()
+    {
+        // Arrange — principal with no Sub claim
+        var claims = new ClaimsPrincipal(new ClaimsIdentity());
+        var mockShardClient = new Mock<IShardClient>();
+
+        var mockContext = new Mock<HubCallerContext>();
+        mockContext.Setup(c => c.ConnectionId).Returns("conn-1");
+        mockContext.Setup(c => c.User).Returns(claims);
+        var mockGroups = new Mock<IGroupManager>();
+
+        var hub = new GameHub(mockShardClient.Object);
+        hub.Context = mockContext.Object;
+        hub.Groups = mockGroups.Object;
+
+        // Act
+        await hub.OnConnectedAsync();
+
+        // Assert
+        mockContext.Verify(c => c.Abort(), Times.Once());
+        mockShardClient.Verify(s => s.SpawnAsync(It.IsAny<string>()), Times.Never());
+    }
+
+    [Fact]
+    public async Task OnDisconnectedAsync_RemovesConnectionFromSectorGroup()
+    {
+        // Arrange
+        var mockShardClient = new Mock<IShardClient>();
+        mockShardClient
+            .Setup(s => s.SpawnAsync("user-1"))
+            .ReturnsAsync(new SpawnResponse(SectorId: 5, ShipId: 10, SpawnX: 0f, SpawnY: 0f));
+
+        var hub = CreateHub(mockShardClient.Object, out var mockContext, out var mockGroups);
+        mockGroups
+            .Setup(g => g.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Establish connection so _sectorGroup is set
+        await hub.OnConnectedAsync();
+
+        // Act
+        await hub.OnDisconnectedAsync(null);
+
+        // Assert
+        mockGroups.Verify(
+            g => g.RemoveFromGroupAsync("conn-1", "sector-5", It.IsAny<CancellationToken>()),
+            Times.Once());
+    }}

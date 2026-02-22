@@ -63,7 +63,8 @@ public class SimulationLoopTests
             g => g.BroadcastAsync(It.Is<WorldStateUpdate>(u =>
                 u.SectorId == sector.Id &&
                 u.Ships.Count == 1 &&
-                u.Asteroids.Count == 1)),
+                u.Asteroids.Count == 1 &&
+                u.Timestamp > 0)),
             Times.Once());
     }
 
