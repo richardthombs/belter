@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <!-- Use forward slashes to prevent Roslyn's design-time build from creating
+         a literal "bin\Debug" directory on macOS (where \ is not a path separator).
+         MSBuild normalizes / to \ on Windows, so this is safe cross-platform.
+         See: https://github.com/dotnet/roslyn (design-time build path normalization) -->
+    <BaseOutputPath>bin/</BaseOutputPath>
+  </PropertyGroup>
+</Project>
