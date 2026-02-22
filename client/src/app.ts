@@ -2,6 +2,7 @@
 // PixiJS Application.init() is async in v8 — initialise here when ready.
 import { Renderer } from "./rendering/Renderer";
 import { GameHubClient } from "./network/GameHubClient";
+import { InputManager } from "./input/InputManager";
 import { apply } from "./state/WorldState";
 import { spawn, AuthError, logout } from "./network/RestClient";
 
@@ -31,4 +32,7 @@ export async function app(): Promise<void> {
 	const hubClient = new GameHubClient();
 	await hubClient.start();
 	hubClient.onWorldStateUpdate((update) => apply(update));
+
+	const input = new InputManager(hubClient);
+	input.start();
 }

@@ -1,4 +1,5 @@
 using BelterLife.Shared.Contracts.Hubs;
+using BelterLife.Simulation.Entities;
 using BelterLife.Simulation.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,17 +13,23 @@ public class SimulationLoop : BackgroundService
 {
 	readonly IServiceScopeFactory _scopeFactory;
 	readonly IGatewayClient _gatewayClient;
+	readonly IInputBuffer _inputBuffer;
+	readonly PhysicsEngine _physicsEngine;
 	readonly int _tickRateMs;
 	readonly ILogger<SimulationLoop> _logger;
 
 	public SimulationLoop(
 		IServiceScopeFactory scopeFactory,
 		IGatewayClient gatewayClient,
+		IInputBuffer inputBuffer,
+		PhysicsEngine physicsEngine,
 		IConfiguration config,
 		ILogger<SimulationLoop> logger)
 	{
 		_scopeFactory = scopeFactory;
 		_gatewayClient = gatewayClient;
+		_inputBuffer = inputBuffer;
+		_physicsEngine = physicsEngine;
 		_tickRateMs = config.GetValue<int>("TickRateMs", 33);
 		_logger = logger;
 	}
@@ -51,14 +58,25 @@ public class SimulationLoop : BackgroundService
 		if (sectors.Count == 0) return;
 
 		var sectorIds = sectors.Select(s => s.Id).ToList();
+		// Ships are tracked (no AsNoTracking) so EF can persist physics mutations via SaveChangesAsync.
 		var ships = await db.Ships
-			.AsNoTracking()
 			.Where(s => sectorIds.Contains(s.SectorId))
 			.ToListAsync(cancellationToken);
 		var asteroids = await db.Asteroids
 			.AsNoTracking()
 			.Where(a => sectorIds.Contains(a.SectorId))
 			.ToListAsync(cancellationToken);
+
+		// Apply physics to every ship using last-known input from each player.
+		float dt = _tickRateMs / 1000f;
+		var inputs = _inputBuffer.GetAll();
+		foreach (var ship in ships)
+		{
+			inputs.TryGetValue(ship.PlayerId, out var input);
+			_physicsEngine.ApplyPhysics(ship, input, dt);
+		}
+		await db.SaveChangesAsync(cancellationToken);
+
 		var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
 		foreach (var sector in sectors)

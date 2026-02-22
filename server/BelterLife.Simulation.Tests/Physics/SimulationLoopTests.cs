@@ -1,5 +1,6 @@
 using BelterLife.Shared.Contracts.Hubs;
 using BelterLife.Shared.Entities;
+using BelterLife.Simulation.Entities;
 using BelterLife.Simulation.Infrastructure;
 using BelterLife.Simulation.Physics;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +29,13 @@ public class SimulationLoopTests
 			.AddInMemoryCollection(new Dictionary<string, string?> { ["TickRateMs"] = "33" })
 			.Build();
 
+	private static IInputBuffer EmptyBuffer()
+	{
+		var mock = new Mock<IInputBuffer>();
+		mock.Setup(b => b.GetAll()).Returns(new Dictionary<string, InputEvent>());
+		return mock.Object;
+	}
+
 	[Fact]
 	public async Task Tick_BroadcastsWorldStateUpdate_ForEachSector()
 	{
@@ -47,11 +55,11 @@ public class SimulationLoopTests
 		var mockGateway = new Mock<IGatewayClient>();
 		mockGateway.Setup(g => g.BroadcastAsync(It.IsAny<WorldStateUpdate>())).Returns(Task.CompletedTask);
 
-		var mockScopeFactory = new Mock<IServiceScopeFactory>();
-
 		var loop = new SimulationLoop(
-			mockScopeFactory.Object,
+			new Mock<IServiceScopeFactory>().Object,
 			mockGateway.Object,
+			EmptyBuffer(),
+			new PhysicsEngine(),
 			BuildConfig(),
 			NullLogger<SimulationLoop>.Instance);
 
@@ -85,6 +93,8 @@ public class SimulationLoopTests
 		var loop = new SimulationLoop(
 			new Mock<IServiceScopeFactory>().Object,
 			mockGateway.Object,
+			EmptyBuffer(),
+			new PhysicsEngine(),
 			BuildConfig(),
 			NullLogger<SimulationLoop>.Instance);
 
@@ -93,5 +103,47 @@ public class SimulationLoopTests
 
 		// Assert
 		Assert.Null(exception);
+	}
+
+	[Fact]
+	public async Task Tick_WithInputBuffer_UpdatesShipPosition()
+	{
+		// Arrange — ship at origin, input buffer has rightward thrust for player-1
+		await using var db = CreateDb();
+
+		var sector = new Sector { Seed = 3 };
+		await db.Sectors.AddAsync(sector);
+		await db.SaveChangesAsync();
+
+		var ship = new Ship { SectorId = sector.Id, PlayerId = "player-1", X = 0f, Y = 0f, VelocityX = 0f, VelocityY = 0f, Heading = 0f };
+		await db.Ships.AddAsync(ship);
+		await db.SaveChangesAsync();
+
+		// Stub input buffer returning rightward thrust for player-1
+		var inputMock = new Mock<IInputBuffer>();
+		inputMock.Setup(b => b.GetAll()).Returns(new Dictionary<string, InputEvent>
+		{
+			["player-1"] = new InputEvent(ThrustX: 1, ThrustY: 0, Brake: false),
+		});
+
+		var mockGateway = new Mock<IGatewayClient>();
+		mockGateway.Setup(g => g.BroadcastAsync(It.IsAny<WorldStateUpdate>())).Returns(Task.CompletedTask);
+
+		var loop = new SimulationLoop(
+			new Mock<IServiceScopeFactory>().Object,
+			mockGateway.Object,
+			inputMock.Object,
+			new PhysicsEngine(),
+			BuildConfig(),
+			NullLogger<SimulationLoop>.Instance);
+
+		// Act
+		await loop.TickAsync(db, CancellationToken.None);
+
+		// Assert — ship moved right (X > 0) after one tick of rightward thrust
+		var updated = await db.Ships.FindAsync(ship.Id);
+		Assert.NotNull(updated);
+		Assert.True(updated!.X > 0f, "Ship X should have increased after rightward thrust");
+		Assert.Equal(0f, updated.Y, precision: 3);
 	}
 }

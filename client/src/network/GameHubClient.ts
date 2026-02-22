@@ -1,7 +1,7 @@
 import { HubConnectionBuilder, HubConnection } from "@microsoft/signalr";
 import { MessagePackHubProtocol } from "@microsoft/signalr-protocol-msgpack";
 import { getToken } from "./RestClient";
-import type { WorldStateUpdate } from "../types";
+import type { WorldStateUpdate, InputEvent } from "../types";
 
 /**
  * SignalR + MessagePack hub client.
@@ -32,5 +32,18 @@ export class GameHubClient {
 
     onWorldStateUpdate(handler: (update: WorldStateUpdate) => void): void {
         this.connection.on("WorldStateUpdate", handler);
+    }
+
+    /**
+     * Sends player input to the server via the SendInput hub method.
+     * ContractlessStandardResolver serialises C# record fields as PascalCase on the wire,
+     * so we map to PascalCase keys here before invoking.
+     */
+    sendInput(input: InputEvent): void {
+        this.connection.invoke("SendInput", {
+            ThrustX: input.thrustX,
+            ThrustY: input.thrustY,
+            Brake:   input.brake,
+        }).catch(() => { /* swallow — input loss tolerable at 50ms poll rate */ });
     }
 }

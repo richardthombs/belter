@@ -45,3 +45,12 @@ export interface SpawnResponse {
     spawnX: number;
     spawnY: number;
 }
+
+/** Mirrors BelterLife.Shared.Contracts.Hubs.InputEvent.
+ *  Client → Server via SignalR SendInput hub method.
+ *  Wire format uses PascalCase (ContractlessStandardResolver): ThrustX, ThrustY, Brake. */
+export interface InputEvent {
+    thrustX: number;
+    thrustY: number;
+    brake: boolean;
+}

@@ -1,6 +1,6 @@
 # Story 1.5: Ship Flight — Assisted Newtonian Physics
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -19,13 +19,13 @@ so that movement feels physical and responsive without requiring constant correc
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Shared `InputEvent` contract (AC: 1, 3, 4, 5)
-  - [ ] Create `server/BelterLife.Shared/Contracts/Hubs/InputEvent.cs`:
+- [x] Task 1 — Shared `InputEvent` contract (AC: 1, 3, 4, 5)
+  - [x] Create `server/BelterLife.Shared/Contracts/Hubs/InputEvent.cs`:
     ```csharp
     namespace BelterLife.Shared.Contracts.Hubs;
     public record InputEvent(float ThrustX, float ThrustY, bool Brake);
     ```
-  - [ ] Add `InputEvent` interface to `client/src/types/index.ts`:
+  - [x] Add `InputEvent` interface to `client/src/types/index.ts`:
     ```typescript
     export interface InputEvent {
         thrustX: number;
@@ -34,20 +34,20 @@ so that movement feels physical and responsive without requiring constant correc
     }
     ```
 
-- [ ] Task 2 — Shard input buffer (AC: 4, 5)
-  - [ ] Create `server/BelterLife.Simulation/Entities/InputBuffer.cs`:
+- [x] Task 2 — Shard input buffer (AC: 4, 5)
+  - [x] Create `server/BelterLife.Simulation/Entities/InputBuffer.cs`:
     - Interface `IInputBuffer` with `Set(string playerId, InputEvent input)` and `GetAll(): IReadOnlyDictionary<string, InputEvent>`
     - Concrete `InputBuffer` backed by `ConcurrentDictionary<string, InputEvent>` — `Set` overwrites immediately (last-write-wins, safe for 30fps); `GetAll` returns a snapshot dict
     - Register as `builder.Services.AddSingleton<IInputBuffer, InputBuffer>()` in `Program.cs`
-  - [ ] Create `server/BelterLife.Simulation/Api/InputController.cs`:
+  - [x] Create `server/BelterLife.Simulation/Api/InputController.cs`:
     - `POST /api/internal/input` — accepts `InputRequest { string PlayerId; InputEvent Input; }`
     - Validates `X-Shard-Secret` header (read from `SHARD_SECRET` env var — same guard pattern as `BroadcastController` in the Gateway)
     - Constructor throws `InvalidOperationException` when `SHARD_SECRET` is not configured
     - Calls `_inputBuffer.Set(request.PlayerId, request.Input)`, returns `204 No Content`
     - Place in `BelterLife.Simulation/Api/` — not under `Physics/`
 
-- [ ] Task 3 — PhysicsEngine (AC: 1, 2, 3, 6)
-  - [ ] Implement `server/BelterLife.Simulation/Physics/PhysicsEngine.cs`:
+- [x] Task 3 — PhysicsEngine (AC: 1, 2, 3, 6)
+  - [x] Implement `server/BelterLife.Simulation/Physics/PhysicsEngine.cs`:
     - Make PhysicsEngine a singleton service (`builder.Services.AddSingleton<PhysicsEngine>()`)
     - Constants (expose as `const float` fields for test access):
       - `ThrustForce = 150f` (units/s²)
@@ -67,26 +67,26 @@ so that movement feels physical and responsive without requiring constant correc
          - `float speed = MathF.Sqrt(vx*vx + vy*vy); if (speed > MaxSpeed) { ship.VelocityX = vx/speed * MaxSpeed; ship.VelocityY = vy/speed * MaxSpeed; }`
       4. Integrate position: `ship.X += ship.VelocityX * deltaSeconds; ship.Y += ship.VelocityY * deltaSeconds`
 
-- [ ] Task 4 — SimulationLoop physics integration (AC: 5)
-  - [ ] Inject `IInputBuffer` and `PhysicsEngine` into `SimulationLoop` constructor
-  - [ ] Modify `TickAsync` to mutate ship state before broadcasting:
+- [x] Task 4 — SimulationLoop physics integration (AC: 5)
+  - [x] Inject `IInputBuffer` and `PhysicsEngine` into `SimulationLoop` constructor
+  - [x] Modify `TickAsync` to mutate ship state before broadcasting:
     1. Load ships **without** `AsNoTracking` (EF must track changes for `SaveChangesAsync`)
     2. Compute `float dt = _tickRateMs / 1000f`
     3. For each ship: call `_physicsEngine.ApplyPhysics(ship, _inputBuffer.GetAll().GetValueOrDefault(ship.PlayerId), dt)`
     4. `await db.SaveChangesAsync(cancellationToken)` before building snapshots
     5. Build `ShipSnapshot` list from updated ship positions (same as existing pattern)
     6. Broadcast as before
-  - [ ] Note: `AsNoTracking()` must be **removed** from the Ships query only (Asteroids can keep it)
+  - [x] Note: `AsNoTracking()` must be **removed** from the Ships query only (Asteroids can keep it)
 
-- [ ] Task 5 — Gateway: `IShardClient.SendInputAsync` + `GameHub.SendInput` (AC: 4, 5)
-  - [ ] Add to `server/BelterLife.Gateway/Infrastructure/IShardClient.cs`:
+- [x] Task 5 — Gateway: `IShardClient.SendInputAsync` + `GameHub.SendInput` (AC: 4, 5)
+  - [x] Add to `server/BelterLife.Gateway/Infrastructure/IShardClient.cs`:
     ```csharp
     Task SendInputAsync(string playerId, InputEvent input);
     ```
-  - [ ] Implement in `server/BelterLife.Gateway/Infrastructure/ShardClient.cs`:
+  - [x] Implement in `server/BelterLife.Gateway/Infrastructure/ShardClient.cs`:
     - `POST /api/internal/input` with JSON body `{ playerId, input }` and `X-Shard-Secret` header
     - Mirror the existing `SpawnAsync` error-handling pattern — log and swallow on failure (input loss is acceptable at 30fps)
-  - [ ] Add `SendInput` hub method to `server/BelterLife.Gateway/Hubs/GameHub.cs`:
+  - [x] Add `SendInput` hub method to `server/BelterLife.Gateway/Hubs/GameHub.cs`:
     ```csharp
     public async Task SendInput(InputEvent input)
     {
@@ -95,17 +95,17 @@ so that movement feels physical and responsive without requiring constant correc
         await _shardClient.SendInputAsync(userId, input);
     }
     ```
-  - [ ] Add `using BelterLife.Shared.Contracts.Hubs;` to `GameHub.cs`
+  - [x] Add `using BelterLife.Shared.Contracts.Hubs;` to `GameHub.cs`
 
-- [ ] Task 6 — Client: `KeyboardInput` + `InputManager` (AC: 1, 2, 3)
-  - [ ] Implement `client/src/input/KeyboardInput.ts`:
+- [x] Task 6 — Client: `KeyboardInput` + `InputManager` (AC: 1, 2, 3)
+  - [x] Implement `client/src/input/KeyboardInput.ts`:
     - Attach `keydown`/`keyup` listeners to `window` in constructor, `dispose()` removes them
     - Track active keys in a `Set<string>` using `event.code` (not `event.key`) for layout-independence
     - Codes to handle: `KeyW`, `ArrowUp`, `KeyS`, `ArrowDown`, `KeyA`, `ArrowLeft`, `KeyD`, `ArrowRight`
     - `getThrustX(): number` — returns `-1 | 0 | 1` (left/right from A/D/ArrowLeft/ArrowRight)
     - `getThrustY(): number` — returns `-1 | 0 | 1` (up/down from W/S/ArrowUp/ArrowDown; **up = -1** to match screen-space convention used by the server)
     - Call `event.preventDefault()` for arrow keys to suppress page scrolling
-  - [ ] Implement `client/src/input/InputManager.ts`:
+  - [x] Implement `client/src/input/InputManager.ts`:
     - Constructor takes `GameHubClient` instance
     - Creates a `KeyboardInput` instance internally
     - `start(intervalMs = 50)` — starts a `setInterval` poll loop:
@@ -115,8 +115,8 @@ so that movement feels physical and responsive without requiring constant correc
     - Actually: send every poll tick regardless (zero thrust triggers assisted braking on server)
     - `stop()` — clears interval, calls `keyboardInput.dispose()`
 
-- [ ] Task 7 — Client: `GameHubClient.sendInput` (AC: 5)
-  - [ ] Add `sendInput(input: InputEvent): void` to `client/src/network/GameHubClient.ts`:
+- [x] Task 7 — Client: `GameHubClient.sendInput` (AC: 5)
+  - [x] Add `sendInput(input: InputEvent): void` to `client/src/network/GameHubClient.ts`:
     ```typescript
     sendInput(input: InputEvent): void {
         // ContractlessStandardResolver uses exact C# property names (PascalCase) on the wire.
@@ -127,28 +127,28 @@ so that movement feels physical and responsive without requiring constant correc
         }).catch(() => { /* swallow — input loss tolerable at poll rate */ });
     }
     ```
-  - [ ] Add `import type { InputEvent } from "../types";` to `GameHubClient.ts`
+  - [x] Add `import type { InputEvent } from "../types";` to `GameHubClient.ts`
 
-- [ ] Task 8 — Client: `app.ts` integration (AC: 1, 5)
-  - [ ] Import `InputManager` in `app.ts`
-  - [ ] After `await hubClient.start()`: instantiate `new InputManager(hubClient)` and call `.start()`
+- [x] Task 8 — Client: `app.ts` integration (AC: 1, 5)
+  - [x] Import `InputManager` in `app.ts`
+  - [x] After `await hubClient.start()`: instantiate `new InputManager(hubClient)` and call `.start()`
 
-- [ ] Task 9 — Tests (AC: 1, 2, 3, 4, 5)
-  - [ ] Create `server/BelterLife.Simulation.Tests/Physics/PhysicsEngineTests.cs`:
+- [x] Task 9 — Tests (AC: 1, 2, 3, 4, 5)
+  - [x] Create `server/BelterLife.Simulation.Tests/Physics/PhysicsEngineTests.cs`:
     - `ApplyPhysics_WithThrust_AccumulatesVelocity()` — ship starts at rest, one tick of full UP thrust, vY < 0 (upward), |velocity| ≈ ThrustForce * dt
     - `ApplyPhysics_NoThrust_ReducesVelocity()` — ship starts with vX=100, no input, one tick, vX < 100 and vX > 0 (braking but not instant stop)
     - `ApplyPhysics_ThrustInDifferentDirection_VectorAdds()` — ship moving right (vX=100), apply UP thrust, result: vX still 100, vY decreases (negative), confirming vector addition not heading lock
     - `ApplyPhysics_ExceedingMaxSpeed_ClampsToMaxSpeed()` — ship starts with vX=290, apply rightward thrust, result: speed == MaxSpeed
     - `ApplyPhysics_HeadingUpdates_ToFaceThrustDirection()` — after thrust right, heading ≈ Atan2(0,1) converted to PixiJS rotation
-  - [ ] Update `server/BelterLife.Simulation.Tests/Physics/SimulationLoopTests.cs`:
+  - [x] Update `server/BelterLife.Simulation.Tests/Physics/SimulationLoopTests.cs`:
     - Add mock/stub for `IInputBuffer` returning empty snapshot; update `Tick_BroadcastsWorldStateUpdate_ForEachSector` to inject it
     - Add `Tick_WithInputBuffer_UpdatesShipPositions()` — seeds DB ship at (0,0), stubs input buffer with full rightward thrust for that playerId, runs one tick, verifies ship X > 0 in DB
-  - [ ] Create `server/BelterLife.Gateway.Tests/Hubs/SendInputTests.cs`:
+  - [x] Create `server/BelterLife.Gateway.Tests/Hubs/SendInputTests.cs`:
     - `SendInput_WhenUserAuthenticated_ForwardsToShardClient()` — mock `IShardClient.SendInputAsync`, invoke hub `SendInput`, verify called with correct playerId and InputEvent
     - `SendInput_WhenUserIdMissing_DoesNotCallShard()` — unauthenticated context, verify `SendInputAsync` never called
-  - [ ] `dotnet build server/BelterLife.slnx` → 0 errors
-  - [ ] `dotnet test server/BelterLife.slnx` → all tests passing
-  - [ ] `cd client && npm run build` → 0 TypeScript errors
+  - [x] `dotnet build server/BelterLife.slnx` → 0 errors
+  - [x] `dotnet test server/BelterLife.slnx` → all tests passing
+  - [x] `cd client && npm run build` → 0 TypeScript errors
 
 ## Dev Notes
 
@@ -369,11 +369,19 @@ No new NuGet packages required. All dependencies already installed.
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Sonnet 4.6
 
 ### Debug Log References
 
+- `InputManager.ts`: constructor parameter shorthand (`private hubClient`) banned by `erasableSyntaxOnly` tsconfig option — switched to explicit field + assignment.
+
 ### Completion Notes List
+
+- All 29 server tests pass (`dotnet test` — 0 failures).
+- Client TypeScript build clean (`npm run build` — 0 errors).
+- `AsNoTracking()` removed from Ships query in `SimulationLoop.TickAsync` so EF tracks mutations for `SaveChangesAsync`.
+- `InputBuffer` is a singleton — last-write-wins per player, never cleared. Zero-thrust events sent by client on key release trigger assisted braking.
+- `SendInput` hub method added to `GameHub`; PascalCase wire mapping handled in `GameHubClient.sendInput()` to satisfy ContractlessStandardResolver.
 
 ### File List
 

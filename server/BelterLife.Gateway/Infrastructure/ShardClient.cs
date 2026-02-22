@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using BelterLife.Shared.Contracts.Api;
+using BelterLife.Shared.Contracts.Hubs;
 using Microsoft.Extensions.Logging;
 
 namespace BelterLife.Gateway.Infrastructure;
@@ -34,5 +35,23 @@ public class ShardClient : IShardClient
             response.EnsureSuccessStatusCode(); // throws HttpRequestException for callers to handle
         }
         return await response.Content.ReadFromJsonAsync<SpawnResponse>();
+    }
+
+    public async Task SendInputAsync(string playerId, InputEvent input)
+    {
+        try
+        {
+            var req = new HttpRequestMessage(HttpMethod.Post, "/api/internal/input")
+            {
+                Content = JsonContent.Create(new { playerId, input }),
+            };
+            req.Headers.Add("X-Shard-Secret", _shardSecret);
+            var response = await _http.SendAsync(req);
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "SendInputAsync failed — input lost for player {PlayerId}", playerId);
+        }
     }
 }

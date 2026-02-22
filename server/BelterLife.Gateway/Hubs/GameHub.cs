@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using BelterLife.Gateway.Infrastructure;
+using BelterLife.Shared.Contracts.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
@@ -50,5 +51,16 @@ public class GameHub : Hub
 		if (_sectorGroup is not null)
 			await Groups.RemoveFromGroupAsync(Context.ConnectionId, _sectorGroup);
 		await base.OnDisconnectedAsync(exception);
+	}
+
+	/// <summary>
+	/// Receives player input and forwards to the shard.
+	/// Client sends PascalCase fields: { ThrustX, ThrustY, Brake } via ContractlessStandardResolver.
+	/// </summary>
+	public async Task SendInput(InputEvent input)
+	{
+		var userId = Context.User?.FindFirstValue(JwtRegisteredClaimNames.Sub);
+		if (userId is null) return;
+		await _shardClient.SendInputAsync(userId, input);
 	}
 }
