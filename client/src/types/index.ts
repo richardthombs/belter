@@ -21,6 +21,10 @@ export interface ShipSnapshot {
     velocityX: number;
     velocityY: number;
     heading: number;
+    /** Populated ~once/s for reconciliation; null all other ticks. */
+    thrust?: number | null;
+    /** Populated ~once/s for reconciliation; null all other ticks. */
+    torque?: number | null;
 }
 
 export interface AsteroidSnapshot {

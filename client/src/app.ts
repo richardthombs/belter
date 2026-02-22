@@ -3,7 +3,7 @@
 import { Renderer } from "./rendering/Renderer";
 import { GameHubClient } from "./network/GameHubClient";
 import { InputManager } from "./input/InputManager";
-import { apply } from "./state/WorldState";
+import { apply, getShips } from "./state/WorldState";
 import { spawn, AuthError, logout } from "./network/RestClient";
 
 export async function app(): Promise<void> {
@@ -31,8 +31,15 @@ export async function app(): Promise<void> {
 
 	const hubClient = new GameHubClient();
 	await hubClient.start();
-	hubClient.onWorldStateUpdate((update) => apply(update));
-
 	const input = new InputManager(hubClient);
 	input.start();
+
+	hubClient.onWorldStateUpdate((update) => {
+		apply(update);
+		// Reconcile ~once/s when server includes input state in snapshot.
+		const ownShip = getShips().find(s => s.shipId === spawnResponse.shipId);
+		if (ownShip && ownShip.thrust != null && ownShip.torque != null) {
+			input.reconcile(ownShip.thrust, ownShip.torque);
+		}
+	});
 }

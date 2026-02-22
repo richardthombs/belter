@@ -17,6 +17,8 @@ public class SimulationLoop : BackgroundService
 	readonly PhysicsEngine _physicsEngine;
 	readonly int _tickRateMs;
 	readonly ILogger<SimulationLoop> _logger;
+	int _tickCount = 0;
+	const int ReconcileIntervalTicks = 20;
 
 	public SimulationLoop(
 		IServiceScopeFactory scopeFactory,
@@ -54,6 +56,7 @@ public class SimulationLoop : BackgroundService
 
 	internal async Task TickAsync(AppDbContext db, CancellationToken cancellationToken)
 	{
+		bool includeInput = (_tickCount++ % ReconcileIntervalTicks) == 0;
 		var sectors = await db.Sectors.AsNoTracking().ToListAsync(cancellationToken);
 		if (sectors.Count == 0) return;
 
@@ -82,7 +85,17 @@ public class SimulationLoop : BackgroundService
 		foreach (var sector in sectors)
 		{
 			var sectorShips = ships.Where(s => s.SectorId == sector.Id)
-				.Select(s => new ShipSnapshot(s.Id, s.PlayerId, s.X, s.Y, s.VelocityX, s.VelocityY, s.Heading))
+				.Select(s =>
+				{
+					float? thrust = null;
+					float? torque = null;
+					if (includeInput && inputs.TryGetValue(s.PlayerId, out var inp))
+					{
+						thrust = inp.Thrust;
+						torque = inp.Torque;
+					}
+					return new ShipSnapshot(s.Id, s.PlayerId, s.X, s.Y, s.VelocityX, s.VelocityY, s.Heading, thrust, torque);
+				})
 				.ToList();
 
 			var sectorAsteroids = asteroids.Where(a => a.SectorId == sector.Id)
