@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  plugins: [tailwindcss()],
   server: {
     proxy: {
       // Proxy REST API calls to the Gateway in local development

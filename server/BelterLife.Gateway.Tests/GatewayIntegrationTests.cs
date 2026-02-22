@@ -2,10 +2,12 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using BelterLife.Gateway.Infrastructure;
+using BelterLife.Shared.Contracts.Api;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 
 namespace BelterLife.Gateway.Tests;
 
@@ -119,5 +121,142 @@ public class AuthIntegrationTests : IClassFixture<GatewayWebApplicationFactory>
         var res = await client.PostAsync("/api/v1/auth/logout", null);
 
         Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
+    }
+}
+
+/// <summary>
+/// Factory variant that additionally replaces IShardClient with a Moq mock,
+/// allowing full register → login → spawn integration tests without a live shard.
+/// </summary>
+public class GatewayWebApplicationFactoryWithMockShard : GatewayWebApplicationFactory
+{
+    public Mock<IShardClient> ShardMock { get; } = new Mock<IShardClient>();
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder); // apply in-memory DB from base class
+
+        builder.ConfigureServices(services =>
+        {
+            // Remove the real ShardClient registrations and replace with the mock.
+            var toRemove = services
+                .Where(d => d.ServiceType == typeof(IShardClient)
+                         || d.ServiceType == typeof(ShardClient))
+                .ToList();
+            foreach (var d in toRemove) services.Remove(d);
+
+            services.AddSingleton<IShardClient>(_ => ShardMock.Object);
+        });
+    }
+}
+
+/// <summary>
+/// End-to-end integration tests for the full auth + spawn flow.
+///
+/// These tests exercise the complete HTTP pipeline:
+///   Register → JWT issued (201)
+///   Login    → JWT issued (200)
+///   Spawn    → shard called with correct player ID, SpawnResponse returned (200)
+///
+/// The IShardClient is mocked so these tests run without a real shard process.
+///
+/// Regression coverage: the MapInboundClaims = false fix in IdentitySetup.cs.
+/// Without that fix, playerId passed to the shard would be null, causing 502.
+/// See docs/jwt-claim-mapping-gotcha.md for full details.
+/// </summary>
+public class RegisterLoginSpawnIntegrationTests : IDisposable
+{
+    readonly GatewayWebApplicationFactoryWithMockShard _factory = new();
+
+    public void Dispose() => _factory.Dispose();
+
+    static async Task<(string token, string responseBody)> PostAuth(
+        HttpClient client, string path, object body)
+    {
+        var res = await client.PostAsJsonAsync(path, body);
+        var responseBody = await res.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(responseBody);
+        var token = doc.RootElement.TryGetProperty("token", out var t) ? t.GetString()! : string.Empty;
+        return (token, responseBody);
+    }
+
+    /// <summary>Register issues a 201 with a non-empty JWT.</summary>
+    [Fact]
+    public async Task Register_Returns201_WithToken()
+    {
+        var client = _factory.CreateClient();
+        var username = "reg_" + Guid.NewGuid().ToString("N")[..8];
+
+        var res = await client.PostAsJsonAsync("/api/v1/auth/register",
+            new { username, password = "password123" });
+
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+        var body = await res.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        Assert.True(doc.RootElement.TryGetProperty("token", out var tokenEl));
+        Assert.False(string.IsNullOrWhiteSpace(tokenEl.GetString()));
+    }
+
+    /// <summary>Login with valid credentials returns 200 with a non-empty JWT.</summary>
+    [Fact]
+    public async Task Login_WithValidCredentials_Returns200_WithToken()
+    {
+        var client = _factory.CreateClient();
+        var username = "log_" + Guid.NewGuid().ToString("N")[..8];
+
+        // Register first
+        await client.PostAsJsonAsync("/api/v1/auth/register", new { username, password = "pass123" });
+
+        var res = await client.PostAsJsonAsync("/api/v1/auth/login", new { username, password = "pass123" });
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var body = await res.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        Assert.True(doc.RootElement.TryGetProperty("token", out var tokenEl));
+        Assert.False(string.IsNullOrWhiteSpace(tokenEl.GetString()));
+    }
+
+    /// <summary>
+    /// Full flow: register → login → spawn returns 200 with SpawnResponse.
+    ///
+    /// Regression: previously returned 502 because MapInboundClaims defaulted to true,
+    /// causing User.FindFirstValue("sub") to return null (the claim was remapped to
+    /// ClaimTypes.NameIdentifier). The shard received playerId=null and rejected with 400.
+    /// </summary>
+    [Fact]
+    public async Task RegisterLoginSpawn_FullFlow_Returns200WithSpawnResponse()
+    {
+        var client = _factory.CreateClient();
+        var username = "spawn_" + Guid.NewGuid().ToString("N")[..8];
+        var expectedSpawn = new SpawnResponse(SectorId: 1, ShipId: 42, SpawnX: 100f, SpawnY: 200f);
+
+        // The mock accepts any non-null playerId and returns the canned SpawnResponse.
+        _factory.ShardMock
+            .Setup(s => s.SpawnAsync(It.IsNotNull<string>()))
+            .ReturnsAsync(expectedSpawn);
+
+        // Register
+        var (regToken, _) = await PostAuth(client, "/api/v1/auth/register",
+            new { username, password = "spawnpass" });
+        Assert.False(string.IsNullOrWhiteSpace(regToken), "Register must return a JWT");
+
+        // Login
+        var (loginToken, _) = await PostAuth(client, "/api/v1/auth/login",
+            new { username, password = "spawnpass" });
+        Assert.False(string.IsNullOrWhiteSpace(loginToken), "Login must return a JWT");
+
+        // Spawn — use the login token
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginToken);
+        var spawnRes = await client.PostAsync("/api/v1/players/me/spawn", null);
+
+        Assert.Equal(HttpStatusCode.OK, spawnRes.StatusCode);
+        var spawn = await spawnRes.Content.ReadFromJsonAsync<SpawnResponse>();
+        Assert.NotNull(spawn);
+        Assert.Equal(expectedSpawn.SectorId, spawn.SectorId);
+        Assert.Equal(expectedSpawn.ShipId, spawn.ShipId);
+
+        // Verify the shard was called with a real (non-null) player ID.
+        _factory.ShardMock.Verify(s => s.SpawnAsync(It.IsNotNull<string>()), Times.Once);
     }
 }

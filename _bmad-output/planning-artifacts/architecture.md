@@ -150,6 +150,9 @@ cd client && npm install pixi.js
 | Role separation | ASP.NET Core Identity roles — `Admin` role gates all admin endpoints |
 | SignalR auth | JWT passed as `access_token` query parameter on WebSocket upgrade (browser limitation) |
 
+**Implementation note — `MapInboundClaims = false` is required.**
+ASP.NET Core's JWT middleware defaults to remapping standard claim names to long-form URI equivalents (e.g. `sub` → `ClaimTypes.NameIdentifier`). This means `User.FindFirstValue(JwtRegisteredClaimNames.Sub)` returns `null` unless `options.MapInboundClaims = false` is set in `AddJwtBearer`. Without this, the gateway passes `playerId = null` to the shard, which returns 400, surfaced to the client as 502. The fix is applied in `Auth/IdentitySetup.cs` and must not be removed. Anywhere in the codebase that reads JWT claims by short name (`"sub"`, `"jti"`, etc.) depends on it.
+
 ### API & Communication Patterns
 
 | Decision | Choice |

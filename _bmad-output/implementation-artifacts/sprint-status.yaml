@@ -48,7 +48,7 @@ development_status:
   1-2-player-account-registration-login: done
   1-3-procedurally-generated-starting-sector: done
   1-4-real-time-game-world-via-signalr: done
-  1-4b-login-register-screen: ready-for-dev
+  1-4b-login-register-screen: done
   1-5-ship-flight-assisted-newtonian-physics: backlog
   1-6-dual-input-touch-virtual-joystick-keyboard-mouse: backlog
   1-7-persistent-session-return-to-exact-state: backlog
