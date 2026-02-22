@@ -7,7 +7,7 @@ namespace BelterLife.Simulation.Tests.Physics;
 public class PhysicsEngineTests
 {
 	private static Ship ShipFacingUp() =>
-		new() { Id = 1, PlayerId = "p1", SectorId = 1, X = 0, Y = 0, VelocityX = 0, VelocityY = 0, Heading = 0 };
+		new() { Id = 1, PlayerId = "p1", SectorId = 1, X = 0, Y = 0, VelocityX = 0, VelocityY = 0, Heading = 0, AngularVelocity = 0 };
 
 	private const float Dt = 0.033f; // 33 ms tick
 
@@ -23,7 +23,7 @@ public class PhysicsEngineTests
 		// Act
 		_engine.ApplyPhysics(ship, input, Dt);
 
-		// Assert — ship accelerated upward (VelocityY < 0); heading=0 facing=(0,-1)
+		// Assert — facing=(sin0,-cos0)=(0,-1); should accelerate upward (VelocityY < 0)
 		Assert.Equal(0f, ship.VelocityX, precision: 4);
 		Assert.True(ship.VelocityY < 0f, "Should accelerate upward (neg-Y) when facing up");
 		Assert.Equal(-PhysicsEngine.ThrustForce * Dt, ship.VelocityY, precision: 3);
@@ -31,80 +31,84 @@ public class PhysicsEngineTests
 	}
 
 	[Fact]
-	public void ApplyPhysics_RetroThrusters_DeceleratesOppositeToHeading()
+	public void ApplyPhysics_NoInput_VelocityUnchanged()
 	{
-		// Arrange — ship faces up (heading=0) moving upward, retro thrusters on
+		// Pure Newtonian — linear velocity must NOT decay when there is no thrust input.
 		var ship = ShipFacingUp();
-		ship.VelocityY = -100f; // moving up
+		ship.VelocityX = 100f;
+
+		_engine.ApplyPhysics(ship, null, Dt);
+
+		Assert.Equal(100f, ship.VelocityX, precision: 4);
+		Assert.Equal(0f,   ship.VelocityY, precision: 4);
+	}
+
+	[Fact]
+	public void ApplyPhysics_RetroThrusters_OpposesHeading()
+	{
+		// Ship facing up, moving upward — retros should reduce upward speed.
+		var ship = ShipFacingUp();
+		ship.VelocityY = -100f;
 		var input = new InputEvent(Thrust: -1, Torque: 0, Brake: false);
 
-		// Act
 		_engine.ApplyPhysics(ship, input, Dt);
 
-		// Assert — retros push backward (facing up → retro pushes down → VelocityY increases toward 0)
 		Assert.True(ship.VelocityY > -100f, "Retros should oppose upward motion");
 	}
 
 	[Fact]
-	public void ApplyPhysics_NoInput_ReducesVelocity()
+	public void ApplyPhysics_TorqueRight_AccumulatesAngularVelocity()
 	{
-		// Arrange — ship moving right, no input
 		var ship = ShipFacingUp();
-		ship.VelocityX = 100f;
+		var input = new InputEvent(Thrust: 0, Torque: 1, Brake: false);
 
-		// Act
+		_engine.ApplyPhysics(ship, input, Dt);
+
+		float expectedAV = PhysicsEngine.AngularAccel * Dt;
+		Assert.Equal(expectedAV, ship.AngularVelocity, precision: 4);
+		Assert.True(ship.Heading > 0f, "Heading should have increased (rotated right)");
+	}
+
+	[Fact]
+	public void ApplyPhysics_NoTorque_AngularVelocityDecays()
+	{
+		// Assisted braking for rotation — angular velocity should bleed off.
+		var ship = ShipFacingUp();
+		ship.AngularVelocity = 2.0f; // already spinning
+
 		_engine.ApplyPhysics(ship, null, Dt);
 
-		// Assert — VelocityX decreased (assisted braking) but not instantly zero
-		Assert.True(ship.VelocityX < 100f, "Velocity should decrease");
-		Assert.True(ship.VelocityX > 0f, "Braking should not instantly stop the ship");
+		Assert.True(ship.AngularVelocity < 2.0f, "Angular velocity should decrease");
+		Assert.True(ship.AngularVelocity > 0f,   "Should not instantly stop");
 	}
 
 	[Fact]
 	public void ApplyPhysics_ExceedingMaxSpeed_ClampsToMaxSpeed()
 	{
-		// Arrange — ship near MaxSpeed, facing right (heading = π/2), main engines on
+		// Ship facing right (heading = π/2): facing=(1,0). Near MaxSpeed, fire main engines.
 		var ship = ShipFacingUp();
-		ship.Heading = MathF.PI / 2f; // facing right
+		ship.Heading  = MathF.PI / 2f;
 		ship.VelocityX = PhysicsEngine.MaxSpeed - 1f;
 		var input = new InputEvent(Thrust: 1, Torque: 0, Brake: false);
 
-		// Act
 		_engine.ApplyPhysics(ship, input, Dt);
 
-		// Assert — speed clamped to MaxSpeed
 		float speed = MathF.Sqrt(ship.VelocityX * ship.VelocityX + ship.VelocityY * ship.VelocityY);
 		Assert.Equal(PhysicsEngine.MaxSpeed, speed, precision: 2);
 	}
 
 	[Fact]
-	public void ApplyPhysics_TorqueRight_IncreasesHeading()
-	{
-		// Arrange — ship facing up, rotate right
-		var ship = ShipFacingUp();
-		var input = new InputEvent(Thrust: 0, Torque: 1, Brake: false);
-
-		// Act
-		_engine.ApplyPhysics(ship, input, Dt);
-
-		// Assert — heading increased by RotationRate * Dt
-		float expected = PhysicsEngine.RotationRate * Dt;
-		Assert.Equal(expected, ship.Heading, precision: 4);
-	}
-
-	[Fact]
 	public void ApplyPhysics_MainEnginesAfterRotation_ThrustFollowsNewHeading()
 	{
-		// Arrange — ship rotated to face right (heading = π/2), then fire main engines
+		// Ship rotated to face right (heading = π/2), then fire main engines.
 		var ship = ShipFacingUp();
-		ship.Heading = MathF.PI / 2f; // facing right → facing=(sin π/2, -cos π/2)=(1,0)
+		ship.Heading = MathF.PI / 2f; // facing=(sin π/2, -cos π/2)=(1, 0)
 		var input = new InputEvent(Thrust: 1, Torque: 0, Brake: false);
 
-		// Act
 		_engine.ApplyPhysics(ship, input, Dt);
 
-		// Assert — ship accelerated rightward (VelocityX > 0, VelocityY ≈ 0)
 		Assert.True(ship.VelocityX > 0f, "Should accelerate right");
 		Assert.Equal(0f, ship.VelocityY, precision: 3);
 	}
 }
+

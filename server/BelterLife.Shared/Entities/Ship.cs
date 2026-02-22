@@ -10,4 +10,6 @@ public class Ship
     public float VelocityX { get; set; }
     public float VelocityY { get; set; }
     public float Heading { get; set; }
+    /// <summary>Angular velocity in radians per second. Positive = clockwise.</summary>
+    public float AngularVelocity { get; set; }
 }
