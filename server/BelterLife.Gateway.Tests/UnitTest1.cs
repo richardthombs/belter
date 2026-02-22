@@ -1,4 +1,4 @@
-﻿using BelterLife.Gateway.Auth;
+using BelterLife.Gateway.Auth;
 using BelterLife.Gateway.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;

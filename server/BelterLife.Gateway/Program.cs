@@ -35,4 +35,3 @@ app.MapHub<GameHub>("/hubs/game");
 app.MapHealthChecks("/health");
 
 app.Run();
-

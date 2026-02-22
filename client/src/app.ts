@@ -6,18 +6,18 @@ import { apply } from './state/WorldState';
 import { spawn } from './network/RestClient';
 
 export async function app(): Promise<void> {
-  console.log('Belter Life initialising...');
+	console.log('Belter Life initialising...');
 
-  await spawn();
+	await spawn();
 
-  const canvas = document.createElement('canvas');
-  document.getElementById('app')?.appendChild(canvas);
+	const canvas = document.createElement('canvas');
+	document.getElementById('app')?.appendChild(canvas);
 
-  const renderer = new Renderer();
-  await renderer.init(canvas);
-  renderer.start();
+	const renderer = new Renderer();
+	await renderer.init(canvas);
+	renderer.start();
 
-  const hubClient = new GameHubClient();
-  await hubClient.start();
-  hubClient.onWorldStateUpdate(update => apply(update));
+	const hubClient = new GameHubClient();
+	await hubClient.start();
+	hubClient.onWorldStateUpdate(update => apply(update));
 }

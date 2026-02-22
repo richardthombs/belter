@@ -10,28 +10,27 @@ import type { WorldStateUpdate } from '../types';
  * Client→Server methods: PascalCase  (e.g. SendInput)
  */
 export class GameHubClient {
-  private connection: HubConnection;
+	private connection: HubConnection;
 
-  constructor() {
-    this.connection = new HubConnectionBuilder()
-      .withUrl('/hubs/game', {
-        accessTokenFactory: () => getToken() ?? '',
-      })
-      .withHubProtocol(new MessagePackHubProtocol())
-      .withAutomaticReconnect()
-      .build();
-  }
+	constructor() {
+		this.connection = new HubConnectionBuilder()
+			.withUrl('/hubs/game', {
+				accessTokenFactory: () => getToken() ?? '',
+			})
+			.withHubProtocol(new MessagePackHubProtocol())
+			.withAutomaticReconnect()
+			.build();
+	}
 
-  getConnection(): HubConnection {
-    return this.connection;
-  }
+	getConnection(): HubConnection {
+		return this.connection;
+	}
 
-  async start(): Promise<void> {
-    await this.connection.start();
-  }
+	async start(): Promise<void> {
+		await this.connection.start();
+	}
 
-  onWorldStateUpdate(handler: (update: WorldStateUpdate) => void): void {
-    this.connection.on('WorldStateUpdate', handler);
-  }
+	onWorldStateUpdate(handler: (update: WorldStateUpdate) => void): void {
+		this.connection.on('WorldStateUpdate', handler);
+	}
 }
-

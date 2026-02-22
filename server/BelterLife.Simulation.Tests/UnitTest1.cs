@@ -1,4 +1,4 @@
-﻿using BelterLife.Simulation.Infrastructure;
+using BelterLife.Simulation.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace BelterLife.Simulation.Tests;
