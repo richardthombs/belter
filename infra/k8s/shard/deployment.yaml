@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shard
+  template:
+    metadata:
+      labels:
+        app: shard
+    spec:
+      containers:
+        - name: shard
+          image: registry.digitalocean.com/belterlife/shard:latest
+          ports:
+            - containerPort: 5001
+          envFrom:
+            - secretRef:
+                name: belterlife-secrets
+            - configMapRef:
+                name: belterlife-config
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 5
+            periodSeconds: 10

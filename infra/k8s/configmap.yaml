@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: belterlife-config
+data:
+  TICK_RATE_HZ: "30"
+  REGION_WIDTH: "10000"
+  REGION_HEIGHT: "10000"
+  # Note: Secrets (DB string, JWT key, X-Shard-Secret) are NOT here.
+  # Create via: kubectl create secret generic belterlife-secrets \
+  #   --from-literal=ConnectionStrings__Default=... \
+  #   --from-literal=JwtKey=... \
+  #   --from-literal=SHARD_SECRET=...

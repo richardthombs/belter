@@ -1,0 +1,12 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY BelterLife.Shared/ BelterLife.Shared/
+COPY BelterLife.Gateway/ BelterLife.Gateway/
+RUN dotnet publish BelterLife.Gateway/BelterLife.Gateway.csproj -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+COPY --from=build /app/publish .
+EXPOSE 80
+ENTRYPOINT ["dotnet", "BelterLife.Gateway.dll"]

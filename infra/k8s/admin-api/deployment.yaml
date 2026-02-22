@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin-api
+  template:
+    metadata:
+      labels:
+        app: admin-api
+    spec:
+      containers:
+        - name: admin-api
+          image: registry.digitalocean.com/belterlife/admin:latest
+          ports:
+            - containerPort: 5002
+          envFrom:
+            - secretRef:
+                name: belterlife-secrets
+            - configMapRef:
+                name: belterlife-config
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5002
+            initialDelaySeconds: 5
+            periodSeconds: 10

@@ -1,0 +1,126 @@
+# generated: 2026-02-21
+# project: xx (Belter Life)
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-02-21
+project: xx (Belter Life)
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # ─────────────────────────────────────────────────────────────
+  # Epic 1: Foundation — A Player Can Join and Fly
+  # ─────────────────────────────────────────────────────────────
+  epic-1: in-progress
+  1-1-monorepo-scaffold-local-dev-environment: done
+  1-2-player-account-registration-login: done
+  1-3-procedurally-generated-starting-sector: ready-for-dev
+  1-4-real-time-game-world-via-signalr: backlog
+  1-5-ship-flight-assisted-newtonian-physics: backlog
+  1-6-dual-input-touch-virtual-joystick-keyboard-mouse: backlog
+  1-7-persistent-session-return-to-exact-state: backlog
+  epic-1-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 2: The Core Mining Loop — Discover, Extract, Sell
+  # ─────────────────────────────────────────────────────────────
+  epic-2: backlog
+  2-1-living-belt-asteroid-physics-simulation: backlog
+  2-2-hud-bottom-bar-pulse-indicator: backlog
+  2-3-context-panel-tap-to-select-with-live-range-updates: backlog
+  2-4-asteroid-scanning: backlog
+  2-5-asteroid-mining: backlog
+  2-6-fuel-management: backlog
+  2-7-npc-station-dock-and-sell-cargo: backlog
+  2-8-starter-ship-floor-free-replacement-on-loss: backlog
+  epic-2-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 3: The Navigation Catalogue & Hyperspace Jumps
+  # ─────────────────────────────────────────────────────────────
+  epic-3: backlog
+  3-1-multi-sector-world-second-sector-basic-routing: backlog
+  3-2-navigation-catalogue-store-view-per-asteroid-survey-data: backlog
+  3-3-star-map-sector-coverage-visualisation: backlog
+  3-4-hyperspace-jump-initiation-transition: backlog
+  3-5-materialisation-beat-hyperspace-arrival-session-re-entry: backlog
+  3-6-information-marketplace-browse-buy-survey-data: backlog
+  3-7-sell-survey-data-list-catalogue-entries-for-sale: backlog
+  epic-3-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 4: A Distributed World — Multi-Shard & Auto-Scaling
+  # ─────────────────────────────────────────────────────────────
+  epic-4: backlog
+  4-1-entity-handoff-protocol-design-validation: backlog
+  4-2-cross-sector-player-traversal: backlog
+  4-3-automatic-shard-splitting-under-load: backlog
+  4-4-automatic-shard-coalescing-under-low-load: backlog
+  4-5-state-durability-survive-server-restart: backlog
+  4-6-rolling-restarts-no-mass-disconnection: backlog
+  epic-4-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 5: Full Economy — Marketplace, Ships, and Territory
+  # ─────────────────────────────────────────────────────────────
+  epic-5: backlog
+  5-1-global-resource-marketplace-browse-buy: backlog
+  5-2-list-resources-for-sale: backlog
+  5-3-ship-component-upgrades-at-npc-stations: backlog
+  5-4-fleet-management-own-multiple-ships: backlog
+  5-5-asteroid-claiming-upkeep: backlog
+  5-6-mining-rights-contracts: backlog
+  5-7-beacons-mark-claimed-asteroids: backlog
+  5-8-persistent-wrecks-salvage: backlog
+  5-9-frontier-outposts-npc-presence-in-deep-space: backlog
+  epic-5-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 6: Administration & Live Service Operations
+  # ─────────────────────────────────────────────────────────────
+  epic-6: backlog
+  6-1-admin-authentication-role-guard: backlog
+  6-2-shard-status-dashboard: backlog
+  6-3-player-account-lookup-inspection: backlog
+  6-4-universe-reset-explicit-admin-operation: backlog
+  epic-6-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 7: New Player Experience & Contextual Discovery
+  # ─────────────────────────────────────────────────────────────
+  epic-7: backlog
+  7-1-first-session-contextual-tutorial-tooltips: backlog
+  7-2-contextual-onboarding-world-teaches-by-proximity: backlog
+  epic-7-retrospective: optional
