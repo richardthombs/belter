@@ -28,7 +28,7 @@ services:
       ConnectionStrings__Default: "Host=postgres;Database=${POSTGRES_DB:-belterlife};Username=${POSTGRES_USER:-belter};Password=${POSTGRES_PASSWORD}"
       SHARD_SECRET: ${SHARD_SECRET:?SHARD_SECRET is required}
       ASPNETCORE_URLS: "http://0.0.0.0:5001"
-      GATEWAY_URL: "http://gateway:5080"
+      GATEWAY_URL: "http://gateway:80"
     ports:
       - "5001:5001"
 
