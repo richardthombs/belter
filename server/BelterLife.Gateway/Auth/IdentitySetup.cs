@@ -74,6 +74,23 @@ public static class IdentitySetup
 
                 options.Events = new JwtBearerEvents
                 {
+                    // Return RFC 9457 Problem Details on 401 challenge (no/invalid token)
+                    OnChallenge = async context =>
+                    {
+                        context.HandleResponse();
+                        context.Response.StatusCode = 401;
+                        context.Response.ContentType = "application/problem+json";
+                        var body = System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            type = "https://tools.ietf.org/html/rfc9110#section-15.5.2",
+                            title = "Unauthorized",
+                            status = 401,
+                            detail = string.IsNullOrEmpty(context.ErrorDescription)
+                                ? "A valid bearer token is required."
+                                : context.ErrorDescription,
+                        });
+                        await context.Response.WriteAsync(body);
+                    },
                     // SignalR WebSocket upgrade passes JWT as ?access_token= query param (browser limitation)
                     OnMessageReceived = context =>
                     {

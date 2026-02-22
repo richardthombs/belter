@@ -1,6 +1,7 @@
 import { HubConnectionBuilder, HubConnection } from '@microsoft/signalr';
 import { MessagePackHubProtocol } from '@microsoft/signalr-protocol-msgpack';
 import { getToken } from './RestClient';
+import type { WorldStateUpdate } from '../types';
 
 /**
  * SignalR + MessagePack hub client.
@@ -23,6 +24,14 @@ export class GameHubClient {
 
   getConnection(): HubConnection {
     return this.connection;
+  }
+
+  async start(): Promise<void> {
+    await this.connection.start();
+  }
+
+  onWorldStateUpdate(handler: (update: WorldStateUpdate) => void): void {
+    this.connection.on('WorldStateUpdate', handler);
   }
 }
 

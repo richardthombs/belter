@@ -1,4 +1,4 @@
 import { app } from './app.ts'
 
-app();
+app().catch(console.error);
 

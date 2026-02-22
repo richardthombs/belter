@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddProblemDetails();
 builder.Services.AddSignalR().AddMessagePackProtocol();
 builder.Services.AddHealthChecks();
 builder.Services.AddBelterIdentity(builder.Configuration);

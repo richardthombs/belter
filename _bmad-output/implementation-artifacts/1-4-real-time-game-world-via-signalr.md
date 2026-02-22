@@ -1,6 +1,6 @@
 # Story 1.4: Real-Time Game World via SignalR
 
-Status: ready-for-dev
+Status: complete
 
 ## Story
 
@@ -24,52 +24,52 @@ So that I am connected to and experiencing the live game world.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Define `WorldStateUpdate` message contract in Shared + TypeScript types (AC: 2)
-  - [ ] Create `server/BelterLife.Shared/Contracts/Hubs/ShipSnapshot.cs`: `record ShipSnapshot(int ShipId, string PlayerId, float X, float Y, float VelocityX, float VelocityY, float Heading)`
-  - [ ] Create `server/BelterLife.Shared/Contracts/Hubs/AsteroidSnapshot.cs`: `record AsteroidSnapshot(int AsteroidId, float X, float Y, float Radius, int VertexCount, float RotationOffset)`
-  - [ ] Create `server/BelterLife.Shared/Contracts/Hubs/WorldStateUpdate.cs`: `record WorldStateUpdate(int SectorId, long Timestamp, List<ShipSnapshot> Ships, List<AsteroidSnapshot> Asteroids)` — `Timestamp` is Unix milliseconds
-  - [ ] Update `client/src/types/index.ts`: add `ShipSnapshot`, `AsteroidSnapshot`, `WorldStateUpdate` interfaces matching C# record field names in camelCase
+- [x] Task 1 — Define `WorldStateUpdate` message contract in Shared + TypeScript types (AC: 2)
+  - [x] Create `server/BelterLife.Shared/Contracts/Hubs/ShipSnapshot.cs`: `record ShipSnapshot(int ShipId, string PlayerId, float X, float Y, float VelocityX, float VelocityY, float Heading)`
+  - [x] Create `server/BelterLife.Shared/Contracts/Hubs/AsteroidSnapshot.cs`: `record AsteroidSnapshot(int AsteroidId, float X, float Y, float Radius, int VertexCount, float RotationOffset)`
+  - [x] Create `server/BelterLife.Shared/Contracts/Hubs/WorldStateUpdate.cs`: `record WorldStateUpdate(int SectorId, long Timestamp, List<ShipSnapshot> Ships, List<AsteroidSnapshot> Asteroids)` — `Timestamp` is Unix milliseconds
+  - [x] Update `client/src/types/index.ts`: add `ShipSnapshot`, `AsteroidSnapshot`, `WorldStateUpdate` interfaces matching C# record field names in camelCase
 
-- [ ] Task 2 — Implement `GatewayClient` in Simulation (pushes tick data to Gateway) (AC: 4)
-  - [ ] Create `server/BelterLife.Simulation/Infrastructure/GatewayClient.cs` as a typed `HttpClient`:
+- [x] Task 2 — Implement `GatewayClient` in Simulation (pushes tick data to Gateway) (AC: 4)
+  - [x] Create `server/BelterLife.Simulation/Infrastructure/GatewayClient.cs` as a typed `HttpClient`:
     - Constructor: `HttpClient http, IConfiguration config, ILogger<GatewayClient> logger`
     - Reads `GATEWAY_URL` (falls back to `http://gateway:5080`) and `SHARD_SECRET` config values
     - `Task BroadcastAsync(WorldStateUpdate update)` — POST to `/api/internal/broadcast`, `X-Shard-Secret` header, `JsonContent.Create(update)`; log warning on non-2xx, rethrow
-  - [ ] Register in `server/BelterLife.Simulation/Program.cs`: `builder.Services.AddHttpClient<GatewayClient>(c => c.BaseAddress = new Uri(builder.Configuration["GATEWAY_URL"] ?? "http://gateway:5080"))`
-  - [ ] Add `GATEWAY_URL: "http://gateway:5080"` to `shard` service `environment` in `docker-compose.yml`
+  - [x] Register in `server/BelterLife.Simulation/Program.cs`: `builder.Services.AddHttpClient<GatewayClient>(c => c.BaseAddress = new Uri(builder.Configuration["GATEWAY_URL"] ?? "http://gateway:5080"))`
+  - [x] Add `GATEWAY_URL: "http://gateway:5080"` to `shard` service `environment` in `docker-compose.yml`
 
-- [ ] Task 3 — Implement `BroadcastController` on Gateway (receives shard push, broadcasts via SignalR) (AC: 2)
-  - [ ] Create `server/BelterLife.Gateway/Hubs/BroadcastController.cs` with `[ApiController]`, `[Route("api/internal")]`
-  - [ ] Constructor: `IHubContext<GameHub> hubContext, IConfiguration config`
-  - [ ] `[HttpPost("broadcast")]` — validate `X-Shard-Secret` header (same pattern as `SpawnController` — return `StatusCode(403)` on mismatch); call `hubContext.Clients.Group($"sector-{update.SectorId}").SendAsync("WorldStateUpdate", update)`; return `Ok()`
-  - [ ] Note: `IHubContext<T>` is provided by ASP.NET Core SignalR — no new package needed
+- [x] Task 3 — Implement `BroadcastController` on Gateway (receives shard push, broadcasts via SignalR) (AC: 2)
+  - [x] Create `server/BelterLife.Gateway/Hubs/BroadcastController.cs` with `[ApiController]`, `[Route("api/internal")]`
+  - [x] Constructor: `IHubContext<GameHub> hubContext, IConfiguration config`
+  - [x] `[HttpPost("broadcast")]` — validate `X-Shard-Secret` header (same pattern as `SpawnController` — return `StatusCode(403)` on mismatch); call `hubContext.Clients.Group($"sector-{update.SectorId}").SendAsync("WorldStateUpdate", update)`; return `Ok()`
+  - [x] Note: `IHubContext<T>` is provided by ASP.NET Core SignalR — no new package needed
 
-- [ ] Task 4 — Implement `GameHub.cs` connection lifecycle (AC: 1)
-  - [ ] Add `[Authorize]` attribute to `GameHub` class
-  - [ ] Override `OnConnectedAsync`: extract `userId` from `Context.User.FindFirstValue(JwtRegisteredClaimNames.Sub)`, call `shardClient.SpawnAsync(userId)` (idempotent — returns existing sector if already spawned), add connection to group `$"sector-{response.SectorId}"` via `Groups.AddToGroupAsync`; handle null response with `Context.Abort()`
-  - [ ] Override `OnDisconnectedAsync`: call `Groups.RemoveFromGroupAsync` (SignalR auto-removes on disconnect but explicit removal is cleaner); call `base.OnDisconnectedAsync(exception)`
-  - [ ] Constructor: inject `IShardClient shardClient`
-  - [ ] Note: JWT query-param extraction (`OnMessageReceived`) is ALREADY wired in `server/BelterLife.Gateway/Auth/IdentitySetup.cs` line 77–83 — do NOT add it again
+- [x] Task 4 — Implement `GameHub.cs` connection lifecycle (AC: 1)
+  - [x] Add `[Authorize]` attribute to `GameHub` class
+  - [x] Override `OnConnectedAsync`: extract `userId` from `Context.User.FindFirstValue(JwtRegisteredClaimNames.Sub)`, call `shardClient.SpawnAsync(userId)` (idempotent — returns existing sector if already spawned), add connection to group `$"sector-{response.SectorId}"` via `Groups.AddToGroupAsync`; handle null response with `Context.Abort()`
+  - [x] Override `OnDisconnectedAsync`: call `Groups.RemoveFromGroupAsync` (SignalR auto-removes on disconnect but explicit removal is cleaner); call `base.OnDisconnectedAsync(exception)`
+  - [x] Constructor: inject `IShardClient shardClient`
+  - [x] Note: JWT query-param extraction (`OnMessageReceived`) is ALREADY wired in `server/BelterLife.Gateway/Auth/IdentitySetup.cs` line 77–83 — do NOT add it again
 
-- [ ] Task 5 — Implement `SimulationLoop.cs` with real tick at 30 FPS + broadcast (AC: 4)
-  - [ ] Replace stub `ExecuteAsync` with a `PeriodicTimer` loop targeting `TICK_RATE_MS` (default 33ms, ~30 FPS)
-  - [ ] On each tick: load sectors + ships + asteroids from `AppDbContext`; for each sector build `WorldStateUpdate { SectorId, Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), Ships = [...], Asteroids = [...] }`; call `gatewayClient.BroadcastAsync(update)` (fire-and-forget on exception — tick must not crash on a single broadcast failure; log and continue)
-  - [ ] Read `TICK_RATE_MS` from `IConfiguration` (default 33); add to `appsettings.json` as `"TickRateMs": 33`
-  - [ ] Constructor: `AppDbContext db, GatewayClient gatewayClient, IConfiguration config, ILogger<SimulationLoop> logger`
-  - [ ] Note: `AppDbContext` in `BackgroundService` requires a scoped lifetime workaround — inject `IServiceScopeFactory`, create a scope per tick
+- [x] Task 5 — Implement `SimulationLoop.cs` with real tick at 30 FPS + broadcast (AC: 4)
+  - [x] Replace stub `ExecuteAsync` with a `PeriodicTimer` loop targeting `TICK_RATE_MS` (default 33ms, ~30 FPS)
+  - [x] On each tick: load sectors + ships + asteroids from `AppDbContext`; for each sector build `WorldStateUpdate { SectorId, Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), Ships = [...], Asteroids = [...] }`; call `gatewayClient.BroadcastAsync(update)` (fire-and-forget on exception — tick must not crash on a single broadcast failure; log and continue)
+  - [x] Read `TICK_RATE_MS` from `IConfiguration` (default 33); add to `appsettings.json` as `"TickRateMs": 33`
+  - [x] Constructor: `AppDbContext db, GatewayClient gatewayClient, IConfiguration config, ILogger<SimulationLoop> logger`
+  - [x] Note: `AppDbContext` in `BackgroundService` requires a scoped lifetime workaround — inject `IServiceScopeFactory`, create a scope per tick
 
-- [ ] Task 6 — Implement `WorldState.ts` and wire `GameHubClient.ts` (AC: 2)
-  - [ ] Update `client/src/state/WorldState.ts`:
+- [x] Task 6 — Implement `WorldState.ts` and wire `GameHubClient.ts` (AC: 2)
+  - [x] Update `client/src/state/WorldState.ts`:
     - Add typed fields: `let ships: ShipSnapshot[] = []`, `let asteroids: AsteroidSnapshot[] = []`, `let timestamp = 0`
     - Export `apply(update: WorldStateUpdate): void` — mutates module state
     - Export `getShips(): readonly ShipSnapshot[]` and `getAsteroid(): readonly AsteroidSnapshot[]`
-  - [ ] Update `client/src/network/GameHubClient.ts`:
+  - [x] Update `client/src/network/GameHubClient.ts`:
     - Add `start(): Promise<void>` — calls `this.connection.start()`
     - Add `onWorldStateUpdate(handler: (update: WorldStateUpdate) => void): void` — registers handler via `this.connection.on('WorldStateUpdate', handler)`
     - Wire in `app.ts`: after hub start, call `client.onWorldStateUpdate(update => WorldState.apply(update))`
 
-- [ ] Task 7 — Implement `Renderer.ts` with PixiJS v8 init and layer composition (AC: 3, 6)
-  - [ ] Update `client/src/rendering/Renderer.ts`:
+- [x] Task 7 — Implement `Renderer.ts` with PixiJS v8 init and layer composition (AC: 3, 6)
+  - [x] Update `client/src/rendering/Renderer.ts`:
     - Add `private app: Application` (PixiJS Application — import from `pixi.js`)
     - Add `async init(canvas: HTMLCanvasElement): Promise<void>` — calls `await this.app.init({ canvas, resizeTo: window, backgroundColor: 0x0a0a1a })` (PixiJS v8 breaking change: `Application.init()` is async)
     - After init: create `BackgroundLayer`, `WorldLayer`, `EffectsLayer`, `UiLayer` instances; add to `this.app.stage` as children in that order
@@ -77,40 +77,40 @@ So that I am connected to and experiencing the live game world.
     - Add `private tick(delta: number): void` — calls `worldLayer.update(delta)` (other layers are static for this story)
     - Expose `getWorldLayer(): WorldLayer`
 
-- [ ] Task 8 — Implement `WorldLayer.ts`, `ShipRenderer.ts`, `AsteroidRenderer.ts` (AC: 2, 3, 6)
-  - [ ] Update `client/src/rendering/layers/WorldLayer.ts`:
+- [x] Task 8 — Implement `WorldLayer.ts`, `ShipRenderer.ts`, `AsteroidRenderer.ts` (AC: 2, 3, 6)
+  - [x] Update `client/src/rendering/layers/WorldLayer.ts`:
     - Extends `Container` (PixiJS); constructor adds children for ship + asteroid containers
     - `update(): void` — calls `WorldState.getShips()` and `WorldState.getAsteroid()`, diffs against current child map, creates/updates/removes `ShipRenderer` and `AsteroidRenderer` instances keyed by id
-  - [ ] Update `client/src/rendering/entities/ShipRenderer.ts`:
+  - [x] Update `client/src/rendering/entities/ShipRenderer.ts`:
     - Extends `Container`; uses `Graphics` to draw a triangle (heading-up pointer): `g.moveTo(0,-12).lineTo(8,10).lineTo(-8,10).closePath().fill(0x00ff88)`
     - `update(snapshot: ShipSnapshot): void` — set `position.set(snapshot.x, snapshot.y)`, `rotation = snapshot.heading`
-  - [ ] Update `client/src/rendering/entities/AsteroidRenderer.ts`:
+  - [x] Update `client/src/rendering/entities/AsteroidRenderer.ts`:
     - Extends `Container`; uses `Graphics` to draw polygon from `VertexCount`, `Radius`, `RotationOffset`: generate vertex list from polar coords equally spaced with slight radius jitter seeded from `AsteroidId`; call `g.poly(points).fill(0x888888)`
     - Call `g.cacheAsTexture(true)` after drawing (static shape — `cacheAsTexture` is the PixiJS v8 method, replaces v7 `cacheAsBitmap`)
     - `update(snapshot: AsteroidSnapshot): void` — set `position.set(snapshot.x, snapshot.y)`
 
-- [ ] Task 9 — Wire `app.ts`: init Renderer + SignalR (AC: 1, 2, 3)
-  - [ ] Update `client/src/app.ts`:
+- [x] Task 9 — Wire `app.ts`: init Renderer + SignalR (AC: 1, 2, 3)
+  - [x] Update `client/src/app.ts`:
     - Import `Renderer`, `GameHubClient`, `WorldState`, `spawn` (RestClient)
     - `app()`: call `await spawn()` to ensure sector is assigned, then `await renderer.init(canvas)`, `renderer.start()`, `await hubClient.start()`, wire `onWorldStateUpdate`
     - Add `spawn` export to `client/src/network/RestClient.ts`: `export async function spawn(): Promise<SpawnResponse>` — POST `/api/v1/players/me/spawn` with auth header, return parsed `SpawnResponse`
     - Add `SpawnResponse` interface to `client/src/types/index.ts`: `{ sectorId: number; shipId: number; spawnX: number; spawnY: number }`
 
-- [ ] Task 10 — Write tests (AC: 1, 2, 4)
-  - [ ] Create `server/BelterLife.Simulation.Tests/Physics/SimulationLoopTests.cs`:
+- [x] Task 10 — Write tests (AC: 1, 2, 4)
+  - [x] Create `server/BelterLife.Simulation.Tests/Physics/SimulationLoopTests.cs`:
     - `Tick_BroadcastsWorldStateUpdate_ForEachSector()` — seeds DB with one sector (asteroids + ship), runs one tick, verifies `IGatewayClient.BroadcastAsync` called with matching SectorId and entity counts
     - Use `IGatewayClient` interface (create it: `BelterLife.Simulation/Infrastructure/IGatewayClient.cs`) + Moq
-  - [ ] Create `server/BelterLife.Gateway.Tests/Hubs/BroadcastControllerTests.cs`:
+  - [x] Create `server/BelterLife.Gateway.Tests/Hubs/BroadcastControllerTests.cs`:
     - `Broadcast_WithValidSecret_CallsHubContext()` — mocks `IHubContext<GameHub>`, verifies `SendAsync("WorldStateUpdate", ...)` called on correct group `$"sector-{sectorId}"`
     - `Broadcast_MissingSecret_Returns403()`
-  - [ ] Create `server/BelterLife.Gateway.Tests/Hubs/GameHubTests.cs`:
+  - [x] Create `server/BelterLife.Gateway.Tests/Hubs/GameHubTests.cs`:
     - `OnConnectedAsync_AddsConnectionToSectorGroup()` — mocks `IShardClient` returning `SpawnResponse(sectorId:1, ...)`, verify `Groups.AddToGroupAsync` called with `"sector-1"`
     - `OnConnectedAsync_AbortsWhenShardUnavailable()` — SpawnAsync returns null → `Context.Abort()` called
 
-- [ ] Task 11 — End-to-end verification (AC: 1, 2, 3, 4)
-  - [ ] `dotnet build server/BelterLife.slnx` → 0 errors
-  - [ ] `dotnet test server/BelterLife.slnx` → all tests passing
-  - [ ] `cd client && npm run build` → 0 TypeScript errors
+- [x] Task 11 — End-to-end verification (AC: 1, 2, 3, 4)
+  - [x] `dotnet build server/BelterLife.slnx` → 0 errors
+  - [x] `dotnet test server/BelterLife.slnx` → all tests passing
+  - [x] `cd client && npm run build` → 0 TypeScript errors
 
 ## Dev Notes
 
@@ -291,10 +291,51 @@ No new NuGet packages required for any project in this story. All dependencies a
 
 ### Agent Model Used
 
-_to be filled by dev agent_
+Claude Sonnet 4.6
 
 ### Debug Log References
 
+- `SimulationLoop.cs`: `replace_string_in_file` duplicated TickAsync body — fixed by removing the duplicate trailing block.
+- `BroadcastControllerTests.cs`: `SendAsync` is a `ClientProxyExtensions` extension method and cannot be mocked with Moq — switched to `SendCoreAsync` which is the actual interface method on `IClientProxy`.
+- `SimulationLoopTests.cs`: `IServiceScopeFactory` not found — added `using Microsoft.Extensions.DependencyInjection;`.
+
 ### Completion Notes List
 
+- NFR14 (TLS/WSS): Met by K8s ingress TLS termination — no application code required.
+- `WorldState.ts`: Exported both `getAsteroids()` (plural, canonical) and kept `WorldState` namespace alias for backward compat. `WorldLayer.ts` uses `getAsteroids()`.
+- `AsteroidRenderer.ts`: `cacheAsTexture(true)` called on Container (PixiJS v8 method replacing v7 `cacheAsBitmap`).
+- `SimulationLoop.TickAsync`: Made `internal` with `InternalsVisibleTo("BelterLife.Simulation.Tests")` to enable direct unit testing without running the PeriodicTimer.
+- `BroadcastController.cs`: Placed in `BelterLife.Gateway/Hubs/` namespace per story spec.
+
 ### File List
+
+**Created:**
+- `server/BelterLife.Shared/Contracts/Hubs/ShipSnapshot.cs`
+- `server/BelterLife.Shared/Contracts/Hubs/AsteroidSnapshot.cs`
+- `server/BelterLife.Shared/Contracts/Hubs/WorldStateUpdate.cs`
+- `server/BelterLife.Simulation/Infrastructure/IGatewayClient.cs`
+- `server/BelterLife.Simulation/Infrastructure/GatewayClient.cs`
+- `server/BelterLife.Gateway/Hubs/BroadcastController.cs`
+- `server/BelterLife.Simulation.Tests/Physics/SimulationLoopTests.cs`
+- `server/BelterLife.Gateway.Tests/Hubs/BroadcastControllerTests.cs`
+- `server/BelterLife.Gateway.Tests/Hubs/GameHubTests.cs`
+
+**Modified:**
+- `server/BelterLife.Gateway/Hubs/GameHub.cs`
+- `server/BelterLife.Simulation/Physics/SimulationLoop.cs`
+- `server/BelterLife.Simulation/Program.cs`
+- `server/BelterLife.Simulation/appsettings.json`
+- `docker-compose.yml`
+- `client/src/types/index.ts`
+- `client/src/state/WorldState.ts`
+- `client/src/network/GameHubClient.ts`
+- `client/src/network/RestClient.ts`
+- `client/src/rendering/Renderer.ts`
+- `client/src/rendering/layers/BackgroundLayer.ts`
+- `client/src/rendering/layers/WorldLayer.ts`
+- `client/src/rendering/layers/EffectsLayer.ts`
+- `client/src/rendering/layers/UiLayer.ts`
+- `client/src/rendering/entities/ShipRenderer.ts`
+- `client/src/rendering/entities/AsteroidRenderer.ts`
+- `client/src/app.ts`
+- `client/src/main.ts`

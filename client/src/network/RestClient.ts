@@ -5,6 +5,8 @@
  * Timestamps: ISO 8601 UTC.
  */
 
+import type { SpawnResponse } from '../types';
+
 const TOKEN_KEY = 'belter_jwt';
 const BASE = '/api/v1';
 
@@ -27,7 +29,12 @@ export class AuthError extends Error {
 
 async function throwIfError(res: Response): Promise<void> {
     if (!res.ok) {
-        const problem = await res.json() as ProblemDetails;
+        let problem: ProblemDetails;
+        try {
+            problem = await res.json() as ProblemDetails;
+        } catch {
+            problem = { title: res.statusText || 'Unknown error', status: res.status };
+        }
         throw new AuthError(res.status, problem);
     }
 }
@@ -80,4 +87,15 @@ export function getToken(): string | null {
 /** Returns true if a token is currently stored (does not validate expiry). */
 export function isAuthenticated(): boolean {
     return getToken() !== null;
+}
+
+/** Call the spawn endpoint to ensure the player's sector and ship are assigned. */
+export async function spawn(): Promise<SpawnResponse> {
+    const token = getToken();
+    const res = await fetch(`${BASE}/players/me/spawn`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token ?? ''}` },
+    });
+    await throwIfError(res);
+    return res.json() as Promise<SpawnResponse>;
 }
