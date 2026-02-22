@@ -51,7 +51,7 @@ public class SendInputTests
 			.Returns(Task.CompletedTask);
 
 		var hub   = CreateHub(mockShard.Object, out _);
-		var input = new InputEvent(ThrustX: 1f, ThrustY: 0f, Brake: false);
+		var input = new InputEvent(Thrust: 1f, Torque: 0f, Brake: false);
 
 		// Act
 		await hub.SendInput(input);
@@ -59,7 +59,7 @@ public class SendInputTests
 		// Assert
 		mockShard.Verify(
 			s => s.SendInputAsync("user-1", It.Is<InputEvent>(e =>
-				e.ThrustX == 1f && e.ThrustY == 0f && !e.Brake)),
+				e.Thrust == 1f && e.Torque == 0f && !e.Brake)),
 			Times.Once());
 	}
 
@@ -69,7 +69,7 @@ public class SendInputTests
 		// Arrange — hub context has no Sub claim
 		var mockShard = new Mock<IShardClient>();
 		var hub       = CreateHub(mockShard.Object, out _, userId: null);
-		var input     = new InputEvent(ThrustX: 1f, ThrustY: 0f, Brake: false);
+		var input     = new InputEvent(Thrust: 1f, Torque: 0f, Brake: false);
 
 		// Act
 		await hub.SendInput(input);

@@ -48,9 +48,11 @@ export interface SpawnResponse {
 
 /** Mirrors BelterLife.Shared.Contracts.Hubs.InputEvent.
  *  Client → Server via SignalR SendInput hub method.
- *  Wire format uses PascalCase (ContractlessStandardResolver): ThrustX, ThrustY, Brake. */
+ *  Wire format uses PascalCase (ContractlessStandardResolver): Thrust, Torque, Brake.
+ *  Thrust: 1 = main engines (forward), -1 = retro thrusters, 0 = off.
+ *  Torque: 1 = rotate right, -1 = rotate left, 0 = off. */
 export interface InputEvent {
-    thrustX: number;
-    thrustY: number;
+    thrust: number;
+    torque: number;
     brake: boolean;
 }

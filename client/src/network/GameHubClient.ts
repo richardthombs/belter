@@ -40,10 +40,12 @@ export class GameHubClient {
      * so we map to PascalCase keys here before invoking.
      */
     sendInput(input: InputEvent): void {
-        this.connection.invoke("SendInput", {
-            ThrustX: input.thrustX,
-            ThrustY: input.thrustY,
-            Brake:   input.brake,
+        // Use send (fire-and-forget) not invoke — no ack needed for high-frequency input.
+        // invoke() queues a pending completion per call; at 20hz this exhausts the pipeline.
+        this.connection.send("SendInput", {
+            Thrust: input.thrust,
+            Torque: input.torque,
+            Brake:  input.brake,
         }).catch(() => { /* swallow — input loss tolerable at 50ms poll rate */ });
     }
 }

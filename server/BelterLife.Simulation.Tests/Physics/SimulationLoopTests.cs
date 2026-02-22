@@ -119,11 +119,11 @@ public class SimulationLoopTests
 		await db.Ships.AddAsync(ship);
 		await db.SaveChangesAsync();
 
-		// Stub input buffer returning rightward thrust for player-1
+		// Stub input buffer returning forward thrust (main engines) for player-1
 		var inputMock = new Mock<IInputBuffer>();
 		inputMock.Setup(b => b.GetAll()).Returns(new Dictionary<string, InputEvent>
 		{
-			["player-1"] = new InputEvent(ThrustX: 1, ThrustY: 0, Brake: false),
+			["player-1"] = new InputEvent(Thrust: 1, Torque: 0, Brake: false),
 		});
 
 		var mockGateway = new Mock<IGatewayClient>();
@@ -140,10 +140,11 @@ public class SimulationLoopTests
 		// Act
 		await loop.TickAsync(db, CancellationToken.None);
 
-		// Assert — ship moved right (X > 0) after one tick of rightward thrust
+		// Assert — ship faced up (heading=0); main engines accelerate along (sin0,-cos0)=(0,-1),
+		// so Y < 0 (moved upward in screen-space). X stays 0.
 		var updated = await db.Ships.FindAsync(ship.Id);
 		Assert.NotNull(updated);
-		Assert.True(updated!.X > 0f, "Ship X should have increased after rightward thrust");
-		Assert.Equal(0f, updated.Y, precision: 3);
+		Assert.True(updated!.Y < 0f, "Ship Y should have decreased (moved upward) after forward thrust with heading=0");
+		Assert.Equal(0f, updated.X, precision: 3);
 	}
 }

@@ -4,60 +4,66 @@ using BelterLife.Shared.Entities;
 namespace BelterLife.Simulation.Physics;
 
 /// <summary>
-/// Server-authoritative Newtonian physics engine.
-/// Applies thrust, assisted braking, speed clamping, and position integration per tick.
-/// NFR12: only InputEvent vectors accepted from clients — no client-submitted position/velocity.
+/// Server-authoritative Newtonian physics engine — heading-based flight model.
+/// Ship facing direction at heading θ: (sin θ, −cos θ) in screen-space (PixiJS: 0 = up).
+/// NFR12: only InputEvent vectors accepted — no client-submitted position/velocity.
 /// </summary>
 public class PhysicsEngine
 {
-    public const float ThrustForce  = 150f;  // units / s²
-    public const float MaxSpeed     = 300f;  // units / s
-    public const float BrakeDamping = 2.0f;  // deceleration coefficient (1/s)
+    public const float ThrustForce  = 150f;   // main engine acceleration, units / s²
+    public const float RetroForce   = 100f;   // retro thruster acceleration, units / s²
+    public const float MaxSpeed     = 300f;   // speed cap, units / s
+    public const float BrakeDamping = 2.0f;   // assisted braking coefficient, 1/s
+    public const float RotationRate = 2.5f;   // rotation speed, radians / s
 
     /// <summary>
-    /// Applies one physics tick to the given ship.
-    /// Mutates ship.VelocityX/Y, ship.Heading, ship.X/Y in place.
-    /// EF change tracking will persist the result when SaveChangesAsync is called.
+    /// Applies one physics tick to <paramref name="ship"/>.
+    /// Mutates Heading, VelocityX/Y, X/Y in place — EF change tracking persists these.
     /// </summary>
     public void ApplyPhysics(Ship ship, InputEvent? input, float deltaSeconds)
     {
-        float tx = input?.ThrustX ?? 0f;
-        float ty = input?.ThrustY ?? 0f;
-        bool hasThrustInput = tx != 0f || ty != 0f;
+        float thrust = input?.Thrust ?? 0f;
+        float torque = input?.Torque ?? 0f;
+        bool  brake  = input?.Brake  ?? false;
 
-        if (hasThrustInput)
+        // 1. Rotation — apply before thrust so thrust immediately uses new heading.
+        if (torque != 0f)
+            ship.Heading += torque * RotationRate * deltaSeconds;
+
+        // 2. Thrust — always in ship-facing direction.
+        //    PixiJS rotation=0 → nose points up (neg-Y). Facing vector: (sin θ, -cos θ).
+        float facingX = MathF.Sin(ship.Heading);
+        float facingY = -MathF.Cos(ship.Heading);
+
+        if (thrust > 0f)
         {
-            // Normalise thrust vector (diagonal input has same magnitude as cardinal)
-            float len = MathF.Sqrt(tx * tx + ty * ty);
-            float nx = tx / len;
-            float ny = ty / len;
-
-            ship.VelocityX += nx * ThrustForce * deltaSeconds;
-            ship.VelocityY += ny * ThrustForce * deltaSeconds;
-
-            // Update heading to face thrust direction.
-            // PixiJS rotation: 0 = up (nose of triangle); Atan2(y,x) measures from +X axis.
-            // Subtract π/2 to rotate frame so 0 = +Y-up rather than +X-right.
-            ship.Heading = MathF.Atan2(ny, nx) - MathF.PI / 2f;
+            // Main engines — accelerate forward.
+            ship.VelocityX += facingX * ThrustForce * deltaSeconds;
+            ship.VelocityY += facingY * ThrustForce * deltaSeconds;
+        }
+        else if (thrust < 0f)
+        {
+            // Retro thrusters — decelerate by pushing backward.
+            ship.VelocityX -= facingX * RetroForce * deltaSeconds;
+            ship.VelocityY -= facingY * RetroForce * deltaSeconds;
         }
         else
         {
-            // Assisted braking — gentle deceleration toward rest when no thrust input.
-            // Apply even when input is null (player disconnected briefly).
+            // No thrust — assisted braking gradually bleeds off velocity.
             float friction = MathF.Max(0f, 1f - BrakeDamping * deltaSeconds);
             ship.VelocityX *= friction;
             ship.VelocityY *= friction;
         }
 
-        // Brake flag from client overrides directional damping with the same friction curve.
-        if (input?.Brake == true && hasThrustInput)
+        // 3. Brake flag — additional damping on top of existing thrust (e.g., parking brake).
+        if (brake)
         {
             float friction = MathF.Max(0f, 1f - BrakeDamping * deltaSeconds);
             ship.VelocityX *= friction;
             ship.VelocityY *= friction;
         }
 
-        // Clamp to MaxSpeed.
+        // 4. Clamp to MaxSpeed.
         float speed = MathF.Sqrt(ship.VelocityX * ship.VelocityX + ship.VelocityY * ship.VelocityY);
         if (speed > MaxSpeed)
         {
@@ -65,7 +71,7 @@ public class PhysicsEngine
             ship.VelocityY = ship.VelocityY / speed * MaxSpeed;
         }
 
-        // Integrate position.
+        // 5. Integrate position.
         ship.X += ship.VelocityX * deltaSeconds;
         ship.Y += ship.VelocityY * deltaSeconds;
     }

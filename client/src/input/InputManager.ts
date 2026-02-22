@@ -23,9 +23,9 @@ export class InputManager {
     start(intervalMs = 50): void {
         this.intervalId = setInterval(() => {
             this.hubClient.sendInput({
-                thrustX: this.keyboard.getThrustX(),
-                thrustY: this.keyboard.getThrustY(),
-                brake:   false,
+                thrust: this.keyboard.getThrust(),
+                torque: this.keyboard.getTorque(),
+                brake:  false,
             });
         }, intervalMs);
     }
