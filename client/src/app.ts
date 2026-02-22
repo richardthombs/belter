@@ -8,8 +8,9 @@ import { spawn, AuthError, logout } from "./network/RestClient";
 export async function app(): Promise<void> {
 	console.log("Belter Life initialising...");
 
+	let spawnResponse: Awaited<ReturnType<typeof spawn>>;
 	try {
-		await spawn();
+		spawnResponse = await spawn();
 	} catch (err) {
 		if (err instanceof AuthError && err.status === 401) {
 			await logout();
@@ -24,6 +25,7 @@ export async function app(): Promise<void> {
 
 	const renderer = new Renderer();
 	await renderer.init(canvas);
+	renderer.setLocalShipId(spawnResponse.shipId);
 	renderer.start();
 
 	const hubClient = new GameHubClient();

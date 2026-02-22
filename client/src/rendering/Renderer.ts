@@ -28,12 +28,22 @@ export class Renderer {
         this.app.stage.addChild(uiLayer);
     }
 
+    setLocalShipId(shipId: number): void {
+        this.worldLayer.setLocalShipId(shipId);
+    }
+
     start(): void {
         this.app.ticker.add((ticker) => this.tick(ticker.deltaTime));
     }
 
     private tick(_delta: number): void {
-        this.worldLayer.update();
+        const shipPos = this.worldLayer.update();
+        if (shipPos) {
+            this.worldLayer.position.set(
+                this.app.screen.width / 2 - shipPos.x,
+                this.app.screen.height / 2 - shipPos.y,
+            );
+        }
     }
 
     getWorldLayer(): WorldLayer {

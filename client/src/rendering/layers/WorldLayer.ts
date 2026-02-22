@@ -6,10 +6,17 @@ import { AsteroidRenderer } from "../entities/AsteroidRenderer";
 export class WorldLayer extends Container {
     private shipMap = new Map<number, ShipRenderer>();
     private asteroidMap = new Map<number, AsteroidRenderer>();
+    private localShipId: number | null = null;
 
-    update(): void {
+    setLocalShipId(id: number): void {
+        this.localShipId = id;
+    }
+
+    /** Updates all entity renderers and returns the local ship's world position, or null if not yet known. */
+    update(): { x: number; y: number } | null {
         const ships = getShips();
         const asteroids = getAsteroids();
+        let localPos: { x: number; y: number } | null = null;
 
         // Remove stale ships
         for (const [id, r] of this.shipMap) {
@@ -27,6 +34,9 @@ export class WorldLayer extends Container {
                 this.shipMap.set(ship.shipId, r);
             }
             r.update(ship);
+            if (ship.shipId === this.localShipId) {
+                localPos = { x: ship.x, y: ship.y };
+            }
         }
 
         // Remove stale asteroids
@@ -46,5 +56,7 @@ export class WorldLayer extends Container {
             }
             r.update(asteroid);
         }
+
+        return localPos;
     }
 }
