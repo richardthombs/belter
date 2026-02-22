@@ -55,7 +55,7 @@ public class GameHub : Hub
 
 	/// <summary>
 	/// Receives player input and forwards to the shard.
-	/// Client sends PascalCase fields: { ThrustX, ThrustY, Brake } via ContractlessStandardResolver.
+	/// Client sends PascalCase fields: { Thrust, Torque, Brake } via ContractlessStandardResolver.
 	/// </summary>
 	public async Task SendInput(InputEvent input)
 	{

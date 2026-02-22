@@ -18,6 +18,8 @@ public class SimulationLoop : BackgroundService
 	readonly int _tickRateMs;
 	readonly ILogger<SimulationLoop> _logger;
 	int _tickCount = 0;
+	// At 33 ms/tick, 20 ticks ≈ 660 ms between reconciliation snapshots sent to clients.
+	// Increase to reduce bandwidth; decrease to improve client correction latency.
 	const int ReconcileIntervalTicks = 20;
 
 	public SimulationLoop(

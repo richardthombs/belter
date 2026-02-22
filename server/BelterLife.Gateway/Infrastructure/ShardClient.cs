@@ -47,6 +47,9 @@ public class ShardClient : IShardClient
             };
             req.Headers.Add("X-Shard-Secret", _shardSecret);
             var response = await _http.SendAsync(req);
+            if (!response.IsSuccessStatusCode)
+                _logger.LogWarning("Shard returned {StatusCode} for SendInputAsync(playerId={PlayerId})",
+                    (int)response.StatusCode, playerId);
             response.EnsureSuccessStatusCode();
         }
         catch (Exception ex)

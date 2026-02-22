@@ -11,11 +11,11 @@ so that movement feels physical and responsive without requiring constant correc
 ## Acceptance Criteria
 
 1. **Given** the player's ship, **when** thrust input is applied via WASD or arrow keys, **then** the ship accelerates in the thrust direction — velocity accumulates via Newtonian physics (velocity += thrustForce * dt).
-2. **Given** a moving ship with no thrust input, **when** assisted flight is active, **then** the ship decelerates gently to rest (soft damping, not instant stop and not pure drift).
-3. **Given** the ship at speed, **when** thrust is applied in a different direction, **then** the velocity vector changes correctly via vector addition (not heading-locked).
+2. **Given** a moving ship with no thrust input, **when** no brake is engaged, **then** the ship maintains velocity unchanged (pure Newtonian drift) — to decelerate the player uses retro thrusters (Thrust = -1) or the Brake flag.
+3. **Given** the ship at speed, **when** thrust is applied, **then** velocity accumulates in the ship's current heading direction via vector addition; heading is controlled independently by Torque input.
 4. **Given** any client-submitted position or velocity state, **when** received by the server, **then** it is rejected — the server only accepts `InputEvent` vectors; all physics are server-authoritative (NFR12).
 5. **Given** `SendInput` called on the SignalR hub with a valid `InputEvent`, **when** processed by the shard on the next tick, **then** the ship's physics state (position + velocity) is updated and reflected in the next `WorldStateUpdate`.
-6. **Given** the ship heading, **when** thrust is applied, **then** the ship's heading updates to face the thrust direction and is visible to all connected clients via `WorldStateUpdate`.
+6. **Given** Torque input applied, **when** processed on the server, **then** the ship's angular velocity accumulates (with assisted damping when no torque), heading updates accordingly, and is visible to all connected clients via `WorldStateUpdate`.
 
 ## Tasks / Subtasks
 
@@ -23,13 +23,15 @@ so that movement feels physical and responsive without requiring constant correc
   - [x] Create `server/BelterLife.Shared/Contracts/Hubs/InputEvent.cs`:
     ```csharp
     namespace BelterLife.Shared.Contracts.Hubs;
-    public record InputEvent(float ThrustX, float ThrustY, bool Brake);
+    // Thrust: 1 = main engines (forward), -1 = retro thrusters (backward), 0 = off.
+    // Torque: 1 = rotate right, -1 = rotate left, 0 = off.
+    public record InputEvent(float Thrust, float Torque, bool Brake);
     ```
   - [x] Add `InputEvent` interface to `client/src/types/index.ts`:
     ```typescript
     export interface InputEvent {
-        thrustX: number;
-        thrustY: number;
+        thrust: number;  // 1 = main engines, -1 = retros, 0 = off
+        torque: number;  // 1 = rotate right, -1 = rotate left, 0 = off
         brake: boolean;
     }
     ```
@@ -49,23 +51,20 @@ so that movement feels physical and responsive without requiring constant correc
 - [x] Task 3 — PhysicsEngine (AC: 1, 2, 3, 6)
   - [x] Implement `server/BelterLife.Simulation/Physics/PhysicsEngine.cs`:
     - Make PhysicsEngine a singleton service (`builder.Services.AddSingleton<PhysicsEngine>()`)
-    - Constants (expose as `const float` fields for test access):
-      - `ThrustForce = 150f` (units/s²)
-      - `MaxSpeed = 300f` (units/s)
-      - `BrakeDamping = 2.0f` (deceleration coefficient, 1/s — velocity multiplied by `1f - BrakeDamping * dt` per tick)
-    - `ApplyPhysics(Ship ship, InputEvent? input, float deltaSeconds)`:
-      1. Compute thrust: if `input` has any non-zero thrust (`ThrustX != 0 || ThrustY != 0`):
-         - Normalise the thrust vector: `len = MathF.Sqrt(tx*tx + ty*ty); nx = tx/len; ny = ty/len`
-         - `ship.VelocityX += nx * ThrustForce * deltaSeconds`
-         - `ship.VelocityY += ny * ThrustForce * deltaSeconds`
-         - Update heading to face thrust direction: `ship.Heading = MathF.Atan2(ny, nx) - MathF.PI / 2f` (PixiJS rotation: 0 = up; Atan2(y,x) measured from +X, subtract 90° to align the triangle nose)
-      2. Assisted braking when no thrust (or `input.Brake == true`):
-         - `float friction = 1f - BrakeDamping * deltaSeconds`
-         - `ship.VelocityX *= MathF.Max(0f, friction)`
-         - `ship.VelocityY *= MathF.Max(0f, friction)`
-      3. Clamp to `MaxSpeed`:
-         - `float speed = MathF.Sqrt(vx*vx + vy*vy); if (speed > MaxSpeed) { ship.VelocityX = vx/speed * MaxSpeed; ship.VelocityY = vy/speed * MaxSpeed; }`
-      4. Integrate position: `ship.X += ship.VelocityX * deltaSeconds; ship.Y += ship.VelocityY * deltaSeconds`
+    - Constants (public `const float` fields for test access):
+      - `ThrustForce = 150f` (main engine acceleration, units/s²)
+      - `RetroForce = 100f` (retro thruster acceleration, units/s²)
+      - `MaxSpeed = 300f` (speed cap, units/s)
+      - `AngularAccel = 4.0f` (angular acceleration, rad/s²)
+      - `MaxAngularSpeed = 2.5f` (angular speed cap, rad/s)
+      - `AngularDamping = 4.0f` (rotation braking coefficient, 1/s)
+      - `BrakeDamping = 4.0f` (linear brake damping coefficient, 1/s)
+    - `ApplyPhysics(Ship ship, InputEvent? input, float deltaSeconds)` — heading-based flight model:
+      1. Rotation: apply torque → `ship.AngularVelocity += torque * AngularAccel * dt`, clamp to `MaxAngularSpeed`; when no torque, decay angular velocity via `AngularDamping`; integrate: `ship.Heading += ship.AngularVelocity * dt`
+      2. Linear thrust in heading direction — facing vector: `(sin θ, −cos θ)`. Main engines (Thrust > 0) accelerate along facing; retros (Thrust < 0) decelerate. Zero thrust = pure Newtonian drift (velocity unchanged)
+      3. Brake flag: apply strong linear damping (`BrakeDamping`) to both velocity components
+      4. Clamp speed to `MaxSpeed`
+      5. Integrate position: `ship.X += ship.VelocityX * dt; ship.Y += ship.VelocityY * dt`
 
 - [x] Task 4 — SimulationLoop physics integration (AC: 5)
   - [x] Inject `IInputBuffer` and `PhysicsEngine` into `SimulationLoop` constructor
@@ -102,29 +101,28 @@ so that movement feels physical and responsive without requiring constant correc
     - Attach `keydown`/`keyup` listeners to `window` in constructor, `dispose()` removes them
     - Track active keys in a `Set<string>` using `event.code` (not `event.key`) for layout-independence
     - Codes to handle: `KeyW`, `ArrowUp`, `KeyS`, `ArrowDown`, `KeyA`, `ArrowLeft`, `KeyD`, `ArrowRight`
-    - `getThrustX(): number` — returns `-1 | 0 | 1` (left/right from A/D/ArrowLeft/ArrowRight)
-    - `getThrustY(): number` — returns `-1 | 0 | 1` (up/down from W/S/ArrowUp/ArrowDown; **up = -1** to match screen-space convention used by the server)
+    - `getThrust(): number` — returns `1 | 0 | -1` (W/ArrowUp = 1 main engines, S/ArrowDown = -1 retros)
+    - `getTorque(): number` — returns `1 | 0 | -1` (D/ArrowRight = 1 rotate right, A/ArrowLeft = -1 rotate left)
     - Call `event.preventDefault()` for arrow keys to suppress page scrolling
-  - [x] Implement `client/src/input/InputManager.ts`:
-    - Constructor takes `GameHubClient` instance
-    - Creates a `KeyboardInput` instance internally
-    - `start(intervalMs = 50)` — starts a `setInterval` poll loop:
-      1. Read `thrustX`, `thrustY` from `KeyboardInput`
-      2. If any non-zero: build `InputEvent { thrustX, thrustY, brake: false }` and call `_hubClient.sendInput(inputEvent)`
-      3. Also send on every tick (not just on change) so server-side buffers always have fresh state; send a zero `InputEvent` when releasing so braking kicks in on the shard
-    - Actually: send every poll tick regardless (zero thrust triggers assisted braking on server)
-    - `stop()` — clears interval, calls `keyboardInput.dispose()`
+  - [x] Implement `client/src/input/InputManager.ts` — **event-driven** (not polling):
+    - Constructor takes `GameHubClient` instance; creates `KeyboardInput` internally
+    - Listens to `keydown`/`keyup` on `window`; fires `sendInput` only when thrust/torque state changes (debounced by key event)
+    - `reconcile(serverThrust, serverTorque)` — called ~once/s when server includes input in `WorldStateUpdate`; re-sends if server state disagrees with current keyboard
+    - `start()` — sends initial state baseline
+    - `stop()` — removes event listeners, calls `keyboard.dispose()`
 
 - [x] Task 7 — Client: `GameHubClient.sendInput` (AC: 5)
   - [x] Add `sendInput(input: InputEvent): void` to `client/src/network/GameHubClient.ts`:
     ```typescript
     sendInput(input: InputEvent): void {
         // ContractlessStandardResolver uses exact C# property names (PascalCase) on the wire.
-        this.connection.invoke("SendInput", {
-            ThrustX: input.thrustX,
-            ThrustY: input.thrustY,
-            Brake:   input.brake,
-        }).catch(() => { /* swallow — input loss tolerable at poll rate */ });
+        // Use send() (fire-and-forget), not invoke() — invoke() queues pending completions
+        // which exhausts the SignalR pipeline at 20hz+.
+        this.connection.send("SendInput", {
+            Thrust: input.thrust,
+            Torque: input.torque,
+            Brake:  input.brake,
+        }).catch(() => { /* swallow — input loss tolerable at event rate */ });
     }
     ```
   - [x] Add `import type { InputEvent } from "../types";` to `GameHubClient.ts`
@@ -135,14 +133,16 @@ so that movement feels physical and responsive without requiring constant correc
 
 - [x] Task 9 — Tests (AC: 1, 2, 3, 4, 5)
   - [x] Create `server/BelterLife.Simulation.Tests/Physics/PhysicsEngineTests.cs`:
-    - `ApplyPhysics_WithThrust_AccumulatesVelocity()` — ship starts at rest, one tick of full UP thrust, vY < 0 (upward), |velocity| ≈ ThrustForce * dt
-    - `ApplyPhysics_NoThrust_ReducesVelocity()` — ship starts with vX=100, no input, one tick, vX < 100 and vX > 0 (braking but not instant stop)
-    - `ApplyPhysics_ThrustInDifferentDirection_VectorAdds()` — ship moving right (vX=100), apply UP thrust, result: vX still 100, vY decreases (negative), confirming vector addition not heading lock
-    - `ApplyPhysics_ExceedingMaxSpeed_ClampsToMaxSpeed()` — ship starts with vX=290, apply rightward thrust, result: speed == MaxSpeed
-    - `ApplyPhysics_HeadingUpdates_ToFaceThrustDirection()` — after thrust right, heading ≈ Atan2(0,1) converted to PixiJS rotation
+    - `ApplyPhysics_MainEngines_AcceleratesForwardAlongHeading()` — heading=0 (up), Thrust=1: vY < 0, vX=0
+    - `ApplyPhysics_NoInput_VelocityUnchanged()` — pure Newtonian: vX=100 stays 100 with null input
+    - `ApplyPhysics_RetroThrusters_OpposesHeading()` — moving up, Thrust=-1: vY increases toward 0
+    - `ApplyPhysics_TorqueRight_AccumulatesAngularVelocity()` — Torque=1: AngularVelocity ≈ AngularAccel*dt, Heading > 0
+    - `ApplyPhysics_NoTorque_AngularVelocityDecays()` — AngularVelocity=2.0, no input: decays but not instant zero
+    - `ApplyPhysics_ExceedingMaxSpeed_ClampsToMaxSpeed()` — near MaxSpeed facing right, fire main engines: speed == MaxSpeed
+    - `ApplyPhysics_MainEnginesAfterRotation_ThrustFollowsNewHeading()` — heading=π/2, Thrust=1: vX > 0, vY ≈ 0
   - [x] Update `server/BelterLife.Simulation.Tests/Physics/SimulationLoopTests.cs`:
     - Add mock/stub for `IInputBuffer` returning empty snapshot; update `Tick_BroadcastsWorldStateUpdate_ForEachSector` to inject it
-    - Add `Tick_WithInputBuffer_UpdatesShipPositions()` — seeds DB ship at (0,0), stubs input buffer with full rightward thrust for that playerId, runs one tick, verifies ship X > 0 in DB
+    - Add `Tick_WithInputBuffer_UpdatesShipPosition()` — seeds DB ship at (0,0) with heading=0, stubs input buffer with Thrust=1 for that playerId, runs one tick, verifies ship Y < 0 (moved upward in screen-space)
   - [x] Create `server/BelterLife.Gateway.Tests/Hubs/SendInputTests.cs`:
     - `SendInput_WhenUserAuthenticated_ForwardsToShardClient()` — mock `IShardClient.SendInputAsync`, invoke hub `SendInput`, verify called with correct playerId and InputEvent
     - `SendInput_WhenUserIdMissing_DoesNotCallShard()` — unauthenticated context, verify `SendInputAsync` never called
@@ -160,7 +160,7 @@ so that movement feels physical and responsive without requiring constant correc
    | KB input poll (50ms)          |                            |
    | InputManager                  |                            |
    |-- SendInput (SignalR) ------->|                            |
-   |   { ThrustX, ThrustY, Brake } |                            |
+   |   { Thrust, Torque, Brake }   |                            |
    |                               |-- SendInputAsync() ------->|
    |                               |   POST /api/internal/input |
    |                               |   X-Shard-Secret           |
@@ -178,7 +178,7 @@ so that movement feels physical and responsive without requiring constant correc
 
 - **Server-authoritative physics (NFR12)** — The client sends `InputEvent` only. There is no endpoint that accepts `x`, `y`, `velocityX`, or `velocityY` from the client. The shard computes all physics. [Source: architecture.md#Core Architectural Decisions → Server-authoritative physics]
 - **`InputEvent` is a SignalR Hub argument, not a broadcast** — direction is Client→Server only; no `[MessagePackObject]` attributes needed since `ContractlessStandardResolver` serialises by property name [Source: Story 1.4 Dev Notes#SignalR MessagePack]
-- **PascalCase wire keys for Hub invocation** — `ContractlessStandardResolver` uses exact C# property names. TypeScript must send `{ ThrustX, ThrustY, Brake }` (PascalCase) when invoking `SendInput`. The `sendInput()` helper in `GameHubClient` handles this mapping. [Source: WorldState.ts normalizeKeys comment — same resolver applies in both directions]
+- **PascalCase wire keys for Hub invocation** — `ContractlessStandardResolver` uses exact C# property names. TypeScript must send `{ Thrust, Torque, Brake }` (PascalCase) when invoking `SendInput`. The `sendInput()` helper in `GameHubClient` handles this mapping. [Source: WorldState.ts normalizeKeys comment — same resolver applies in both directions]
 - **Hub up = negative Y** — Screen-space: Y increases downward. Keyboard W/ArrowUp maps to `thrustY = -1` so that "up on screen = negative Y" is consistent with PixiJS coordinate system. PhysicsEngine uses this as-is. [Source: PixiJS v8 coordinate system; ShipRenderer.update() position.set(snapshot.x, snapshot.y)]
 - **`InputBuffer.GetAll()` returns a snapshot** — the physics loop reads a consistent snapshot; concurrent writes from the HTTP endpoint modify the live dict, which is fine since ConcurrentDictionary is thread-safe.
 - **EF tracking required on Ships** — `AsNoTracking()` must be removed from the Ships `db.Ships` query in `SimulationLoop.TickAsync` so `SaveChangesAsync` persists position updates. Asteroids can keep `AsNoTracking()`. [Source: EF Core tracking behaviour]
@@ -377,7 +377,8 @@ Claude Sonnet 4.6
 
 ### Completion Notes List
 
-- All 29 server tests pass (`dotnet test` — 0 failures).
+- All 52 server tests pass — 23 Simulation + 29 Gateway (`dotnet test` — 0 failures).
+  - Includes 3 new `InputControllerTests` added during code review (secret validation, buffer interaction).
 - Client TypeScript build clean (`npm run build` — 0 errors).
 - `AsNoTracking()` removed from Ships query in `SimulationLoop.TickAsync` so EF tracks mutations for `SaveChangesAsync`.
 - `InputBuffer` is a singleton — last-write-wins per player, never cleared. Zero-thrust events sent by client on key release trigger assisted braking.
@@ -390,7 +391,9 @@ Claude Sonnet 4.6
 - `server/BelterLife.Simulation/Entities/InputBuffer.cs`
 - `server/BelterLife.Simulation/Api/InputController.cs`
 - `server/BelterLife.Simulation.Tests/Physics/PhysicsEngineTests.cs`
+- `server/BelterLife.Simulation.Tests/Physics/SimulationLoopTests.cs` *(updated)*
 - `server/BelterLife.Gateway.Tests/Hubs/SendInputTests.cs`
+- `server/BelterLife.Simulation.Tests/Api/InputControllerTests.cs` *(added in code review)*
 
 **Modified:**
 - `server/BelterLife.Simulation/Physics/PhysicsEngine.cs`

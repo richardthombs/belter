@@ -18,6 +18,7 @@ public class PhysicsEngine
     public const float AngularAccel      = 4.0f;   // angular acceleration, rad / s²
     public const float MaxAngularSpeed   = 2.5f;   // angular speed cap, rad / s
     public const float AngularDamping    = 4.0f;   // rotation braking coefficient, 1/s
+    public const float BrakeDamping      = 4.0f;   // linear brake damping coefficient, 1/s
 
     /// <summary>
     /// Applies one physics tick to <paramref name="ship"/>.
@@ -64,9 +65,7 @@ public class PhysicsEngine
         // 3. Brake flag — linear damping on demand (manual stop assist).
         if (brake)
         {
-            // Use a strong damping so brake feels deliberate, not passive.
-            const float brakeDamping = 4.0f;
-            float friction = MathF.Max(0f, 1f - brakeDamping * deltaSeconds);
+            float friction = MathF.Max(0f, 1f - BrakeDamping * deltaSeconds);
             ship.VelocityX *= friction;
             ship.VelocityY *= friction;
         }
