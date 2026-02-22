@@ -15,7 +15,7 @@ public class PhysicsEngine
     public const float ThrustForce       = 150f;   // main engine acceleration, units / s²
     public const float RetroForce        = 100f;   // retro thruster acceleration, units / s²
     public const float MaxSpeed          = 300f;   // speed cap, units / s
-    public const float AngularAccel      = 3.0f;   // angular acceleration, rad / s²
+    public const float AngularAccel      = 4.0f;   // angular acceleration, rad / s²
     public const float MaxAngularSpeed   = 2.5f;   // angular speed cap, rad / s
     public const float AngularDamping    = 4.0f;   // rotation braking coefficient, 1/s
 
