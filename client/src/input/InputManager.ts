@@ -21,7 +21,7 @@ export class InputManager {
         // Fire after KeyboardInput's own handlers (registered first) update `held`.
         this.onKeyEvent = () => this.sendIfChanged();
         window.addEventListener("keydown", this.onKeyEvent);
-        window.addEventListener("keyup",   this.onKeyEvent);
+        window.addEventListener("keyup", this.onKeyEvent);
     }
 
     start(): void {
@@ -44,7 +44,10 @@ export class InputManager {
     private sendIfChanged(): void {
         const thrust = this.keyboard.getThrust();
         const torque = this.keyboard.getTorque();
-        if (thrust !== this.lastSent.thrust || torque !== this.lastSent.torque) {
+        if (
+            thrust !== this.lastSent.thrust ||
+            torque !== this.lastSent.torque
+        ) {
             this.sendNow();
         }
     }
@@ -58,7 +61,7 @@ export class InputManager {
 
     stop(): void {
         window.removeEventListener("keydown", this.onKeyEvent);
-        window.removeEventListener("keyup",   this.onKeyEvent);
+        window.removeEventListener("keyup", this.onKeyEvent);
         this.keyboard.dispose();
     }
 }
