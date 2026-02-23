@@ -85,6 +85,7 @@ development_status:
   # Epic 4: A Distributed World — Multi-Shard & Auto-Scaling
   # ─────────────────────────────────────────────────────────────
   epic-4: backlog
+  4-0-production-infrastructure-cd-pipeline: ready-for-dev
   4-1-entity-handoff-protocol-design-validation: backlog
   4-2-cross-sector-player-traversal: backlog
   4-3-automatic-shard-splitting-under-load: backlog

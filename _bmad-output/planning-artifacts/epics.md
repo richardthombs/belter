@@ -911,6 +911,40 @@ So that my survey work has economic value beyond personal use.
 
 The game world transparently spans multiple server shards. Players traverse sector boundaries without interruption. The world auto-splits under load and coalesces when quiet. All state survives server restarts. Rolling restarts proceed without mass disconnection.
 
+### Story 4.0: Production Infrastructure & CD Pipeline
+
+As a **developer/ops**,
+I want complete production-ready Kubernetes manifests and a working CD pipeline,
+So that the application can be deployed to DigitalOcean Kubernetes and all Epic 4 stories have a real cluster to verify their infrastructure ACs against.
+
+**Acceptance Criteria:**
+
+**Given** a merge to `main`,
+**When** the GitHub Actions deploy workflow runs,
+**Then** Docker images for gateway, shard, and admin-api are built, pushed to `registry.digitalocean.com/belterlife/`, and all K8s manifests are applied to DOKS
+
+**Given** the shard `Deployment` manifest,
+**When** inspected,
+**Then** it has `strategy.type: RollingUpdate` with `maxUnavailable: 0`, `maxSurge: 1`, a `lifecycle.preStop` exec hook, and `terminationGracePeriodSeconds: 60`
+
+**Given** all three `Deployment` manifests,
+**When** applied,
+**Then** every container has `resources.requests` and `resources.limits` defined
+
+**Given** the gateway `Service`,
+**When** applied,
+**Then** `type: LoadBalancer` makes the gateway publicly reachable; admin-api `Service` remains `ClusterIP` (NFR13)
+
+**Given** `infra/k8s/shard/pdb.yaml`,
+**When** a voluntary disruption occurs,
+**Then** at least one shard pod remains available throughout
+
+**Given** `POST /internal/drain` on the shard,
+**When** called,
+**Then** it returns HTTP 200 (stub — real drain logic deferred to Story 4.5)
+
+---
+
 ### Story 4.1: Entity Handoff Protocol — Design & Validation
 
 As a **developer**,
