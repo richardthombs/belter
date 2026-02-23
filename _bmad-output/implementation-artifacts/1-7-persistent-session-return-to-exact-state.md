@@ -39,13 +39,15 @@ so that the game respects my time and builds a habit of return.
     - If `ship is null`, fall through to new-player creation (defensive; should never happen)
     - Load asteroids for sector: `var asteroids = await _db.Asteroids.Where(a => a.SectorId == existing.SectorId).AsNoTracking().ToListAsync();`
     - Perform overlap check and reposition (see Dev Notes for full algorithm)
-    - If repositioned, `await _db.SaveChangesAsync();`
+    - Update `existing.LastSeenAt = DateTimeOffset.UtcNow;`
+    - If repositioned OR LastSeenAt changed: `await _db.SaveChangesAsync();` — track `existing` (no `AsNoTracking`) so EF picks up the change
     - Return `Ok(new SpawnResponse(existing.SectorId, existing.ShipId, ship.X, ship.Y, repositioned))`
   - [ ] For new-player path: set `Credits = 500` on the new `Player` entity (starting credits)
+  - [ ] `BelterLife.Gateway.Tests` and `BelterLife.Gateway.Tests/Hubs/GameHubTests.cs` require **no changes** — their `new SpawnResponse(...)` calls use a subset of positional args and `Repositioned` defaults to `false`
   - [ ] Run `dotnet build server/BelterLife.slnx` → 0 errors
 
 - [ ] Task 4 — Client: initialise camera at saved spawn position (AC: 2)
-  - [ ] In `client/src/rendering/Renderer.ts`: add method `initCameraAt(x: number, y: number): void` that pre-positions the world layer: `this.worldLayer.position.set(window.innerWidth / 2 - x, window.innerHeight / 2 - y)`
+  - [ ] In `client/src/rendering/Renderer.ts`: add `initCameraAt(x: number, y: number): void` — see Dev Notes for exact implementation (uses `this.app.screen.width/height`, matching the existing `tick()` logic)
   - [ ] In `client/src/app.ts`: after `await renderer.init(canvas)` and `renderer.setLocalShipId(...)`, add `renderer.initCameraAt(spawnResponse.spawnX, spawnResponse.spawnY)`
   - [ ] Run `cd client && npm run build` → 0 TypeScript errors
 
@@ -66,8 +68,8 @@ so that the game respects my time and builds a habit of return.
 
 - [ ] Task 6 — Tests: returning player spawn position and reposition (AC: 2, 3)
   - [ ] In `server/BelterLife.Simulation.Tests/Api/SpawnControllerTests.cs`, add tests:
-    - `Spawn_ReturningPlayer_ReturnsActualShipPosition()` — first spawn creates player at (0,0); manually update `Ship.X=123f, Ship.Y=456f` in DB; second spawn returns `SpawnX=123f, SpawnY=456f` and `Repositioned=false`
-    - `Spawn_ReturningPlayer_RepositionsShipWhenOverlapsAsteroid()` — create player; manually place an asteroid at ship's saved position (`X=0, Y=0, Radius=100f`); second spawn returns `Repositioned=true` and coordinates that do NOT overlap the asteroid
+    - `Spawn_ReturningPlayer_ReturnsActualShipPosition()` — first spawn creates player at (0,0); manually update `Ship.X=50f, Ship.Y=50f` in DB (distance ≈ 71 units — safely inside the clear zone; `SectorGenerator` places asteroids at minimum 150 units from origin, so `<110 units` is always asteroid-free); second spawn returns `SpawnX=50f, SpawnY=50f` and `Repositioned=false`
+    - `Spawn_ReturningPlayer_RepositionsShipWhenOverlapsAsteroid()` — create player; extract `sectorId` from first spawn response; insert `new Asteroid { SectorId = sectorId, X = 0f, Y = 0f, Radius = 100f, VertexCount = 6, RotationOffset = 0f }` into DB (must include `SectorId` to satisfy FK); second spawn returns `Repositioned=true` and a position that does NOT overlap the asteroid
     - `Spawn_NewPlayer_InitialisesCredits_500()` — verify new `Player.Credits == 500` after first spawn
   - [ ] Run `cd server && dotnet test BelterLife.slnx` → all pass
 
@@ -138,10 +140,23 @@ var candidates = new (float, float)[]
 - EF Core snake_case naming via `UseSnakeCaseNamingConvention()` will map `Credits` → `credits` column automatically — do NOT manually specify column name
 - The column should default to `0` for existing rows — EF will handle this in the migration; verify the generated `Up()` method includes `.HasDefaultValue(0)` or add it manually if absent
 - **IMPORTANT**: `UseSnakeCaseNamingConvention()` is in `AppDbContext.OnConfiguring` area and in `Program.cs` — do NOT remove or override it (breaks entire schema)
+- **Tests do NOT need the migration** — `Program.cs` calls `db.Database.EnsureCreated()` in the `Testing` environment, which builds the schema directly from the current model. Adding `Credits` to `Player.cs` is sufficient for all tests to see the column in SQLite. Do not attempt to run `dotnet ef database update` against the test DB.
 
 ### `SpawnController` Dependency Injection
 
 `SpawnController` already has `AppDbContext db` injected. No new services are needed for Task 3 — just use `_db` directly.
+
+### `Player.LastSeenAt` — Update on Re-entry
+
+The existing-player branch must update `existing.LastSeenAt = DateTimeOffset.UtcNow`. The `existing` entity is already EF-tracked (loaded via `FirstOrDefaultAsync` without `AsNoTracking`), so setting the property and calling `SaveChangesAsync` is enough. Combine this save with the reposition save — call `SaveChangesAsync` once covering both changes. Always call it unconditionally in the returning-player path (LastSeenAt always changes).
+
+### Unchanged Gateway Test Files — No Edits Required
+
+Two files construct `SpawnResponse` using positional args without `Repositioned`:
+- `BelterLife.Gateway.Tests/GatewayIntegrationTests.cs`: `new SpawnResponse(SectorId: 1, ShipId: 42, SpawnX: 100f, SpawnY: 200f)` — compiles because `Repositioned = false` is a default parameter
+- `BelterLife.Gateway.Tests/Hubs/GameHubTests.cs`: `new SpawnResponse(SectorId: 1, ShipId: 10, SpawnX: 0f, SpawnY: 0f)` — same reason
+
+Do **not** touch these files. They require zero changes.
 
 ### Client Camera Positioning
 
@@ -191,8 +206,20 @@ To seed ship position for `Spawn_ReturningPlayer_ReturnsActualShipPosition`:
 using var scope = _factory.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 var ship = await db.Ships.FirstAsync(s => s.PlayerId == playerId);
-ship.X = 123f;
-ship.Y = 456f;
+ship.X = 50f;   // safe zone: <110 units from origin is always asteroid-free
+ship.Y = 50f;   // SectorGenerator minimum asteroid dist = 150, max radius = 40
+await db.SaveChangesAsync();
+```
+
+To seed the overlapping asteroid for `Spawn_ReturningPlayer_RepositionsShipWhenOverlapsAsteroid`:
+```csharp
+// Must include SectorId — FK constraint on asteroids table
+db.Asteroids.Add(new Asteroid
+{
+    SectorId = firstSpawnResponse.SectorId,
+    X = 0f, Y = 0f, Radius = 100f,
+    VertexCount = 6, RotationOffset = 0f
+});
 await db.SaveChangesAsync();
 ```
 
