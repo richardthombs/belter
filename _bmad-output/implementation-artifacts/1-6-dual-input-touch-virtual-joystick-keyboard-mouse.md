@@ -1,6 +1,6 @@
 # Story 1.6: Dual Input — Touch Virtual Joystick & Keyboard/Mouse
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -22,44 +22,44 @@ so that I can play comfortably on my preferred device with no difference in capa
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Implement `TouchInput.ts` (AC: 1, 3, 4, 5)
-  - [ ] Replace existing stub `client/src/input/TouchInput.ts` with full implementation
-  - [ ] Maintain exported type: `export type TouchChangeCallback = (thrust: number, torque: number) => void;`
-  - [ ] Constructor: `constructor(onChange: TouchChangeCallback)` — creates joystick DOM elements and attaches event listeners
-  - [ ] Build DOM dynamically (no static HTML required):
+- [x] Task 1 — Implement `TouchInput.ts` (AC: 1, 3, 4, 5)
+  - [x] Replace existing stub `client/src/input/TouchInput.ts` with full implementation
+  - [x] Maintain exported type: `export type TouchChangeCallback = (thrust: number, torque: number) => void;`
+  - [x] Constructor: `constructor(onChange: TouchChangeCallback)` — creates joystick DOM elements and attaches event listeners
+  - [x] Build DOM dynamically (no static HTML required):
     ```
     <div class="joystick-zone">    <!-- 120×120px, fixed bottom:32px left:32px, touch capture zone -->
       <div class="joystick-ring">  <!-- full inset, border circle, semi-transparent -->
         <div class="joystick-nub"> <!-- 48×48px thumb indicator, centered, draggable -->
     ```
-  - [ ] Style via inline `element.style` assignments (no CSS file — avoids ordering concerns with Tailwind/PixiJS overlay):
+  - [x] Style via inline `element.style` assignments (no CSS file — avoids ordering concerns with Tailwind/PixiJS overlay):
     - Zone: `position:fixed; bottom:32px; left:32px; width:120px; height:120px; border-radius:50%; touch-action:none; z-index:100`
     - Ring: `position:absolute; inset:0; border-radius:50%; border:2px solid rgba(255,255,255,0.4); background:rgba(255,255,255,0.05)`
     - Nub: `width:48px; height:48px; border-radius:50%; background:rgba(255,255,255,0.6); position:absolute; top:50%; left:50%; transform:translate(-50%,-50%)`
     - Nub transition: `transition: transform 0.05s ease-out` unless `prefers-reduced-motion` — then `transition: none`
-  - [ ] Read `prefers-reduced-motion` via `window.matchMedia("(prefers-reduced-motion: reduce)").matches` in constructor; store as `private reducedMotion: boolean`
-  - [ ] Mount zone to `document.body` in constructor
-  - [ ] `maxRadius`: `(120 - 48) / 2 = 36` px — maximum nub displacement from centre
-  - [ ] `deadZone`: `5` px — displacement below this returns 0 (prevents drift)
-  - [ ] Touch tracking:
+  - [x] Read `prefers-reduced-motion` via `window.matchMedia("(prefers-reduced-motion: reduce)").matches` in constructor; store as `private reducedMotion: boolean`
+  - [x] Mount zone to `document.body` in constructor
+  - [x] `maxRadius`: `(120 - 48) / 2 = 36` px — maximum nub displacement from centre
+  - [x] `deadZone`: `5` px — displacement below this returns 0 (prevents drift)
+  - [x] Touch tracking:
     - `touchstart` on zone element (with `{ passive: false }` to allow `preventDefault()`): capture `touch.identifier`, compute zone centre from `getBoundingClientRect()`
     - `touchmove` on `window` (passive: false): find tracked identifier in `changedTouches`, compute `dx/dy` from centre, clamp to `maxRadius`, normalise to [-1, 1]
     - `touchend`/`touchcancel` on `window`: release tracked identifier, reset nub to centre, call `onChange(0, 0)`
     - Only track ONE touch per `TouchInput` instance — ignore multi-touch (ignore additional touch starts if `activeTouch !== null`)
-  - [ ] Direction mapping (screen-space → game-space):
+  - [x] Direction mapping (screen-space → game-space):
     - Y axis: `thrust = -normalizedDy` (push thumb UP = negative screen dY = `thrust > 0` = forward; push DOWN = `thrust < 0` = retros)
     - X axis: `torque = normalizedDx` (push thumb RIGHT = `torque > 0` = rotate right; LEFT = `torque < 0` = rotate left)
     - Apply dead zone per axis independently: if `|displacement| < deadZone` → 0
     - Normalise: `clampedDist = min(dist, maxRadius)`, `normalised = clampedDist / maxRadius * sign`
     - Clamp final output to [-1, 1]
-  - [ ] `_updateNub(offsetX: number, offsetY: number)`: sets `nub.style.transform = \`translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))\``
-  - [ ] `dispose()`: remove all event listeners, call `zone.remove()`
+  - [x] `_updateNub(offsetX: number, offsetY: number)`: sets `nub.style.transform = \`translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))\``
+  - [x] `dispose()`: remove all event listeners, call `zone.remove()`
 
-- [ ] Task 2 — Update `InputManager.ts` to integrate `TouchInput` (AC: 2, 3)
-  - [ ] Import `TouchInput` from `./TouchInput`
-  - [ ] Add private fields: `private touch: TouchInput`, `private touchThrust = 0`, `private touchTorque = 0`
-  - [ ] In constructor: instantiate `new TouchInput((thrust, torque) => { this.touchThrust = thrust; this.touchTorque = torque; this.sendIfChanged(); })`
-  - [ ] Add private helpers:
+- [x] Task 2 — Update `InputManager.ts` to integrate `TouchInput` (AC: 2, 3)
+  - [x] Import `TouchInput` from `./TouchInput`
+  - [x] Add private fields: `private touch: TouchInput`, `private touchThrust = 0`, `private touchTorque = 0`
+  - [x] In constructor: instantiate `new TouchInput((thrust, torque) => { this.touchThrust = thrust; this.touchTorque = torque; this.sendIfChanged(); })`
+  - [x] Add private helpers:
     ```typescript
     private currentThrust(): number {
         return Math.max(-1, Math.min(1, this.keyboard.getThrust() + this.touchThrust));
@@ -68,17 +68,17 @@ so that I can play comfortably on my preferred device with no difference in capa
         return Math.max(-1, Math.min(1, this.keyboard.getTorque() + this.touchTorque));
     }
     ```
-  - [ ] Replace all uses of `this.keyboard.getThrust()` / `this.keyboard.getTorque()` in `sendIfChanged()`, `sendNow()`, and `reconcile()` with `this.currentThrust()` / `this.currentTorque()`
-  - [ ] In `stop()`: add `this.touch.dispose()`
-  - [ ] Do NOT change the `lastSent` tracking logic — threshold-delta behaviour is unchanged
+  - [x] Replace all uses of `this.keyboard.getThrust()` / `this.keyboard.getTorque()` in `sendIfChanged()`, `sendNow()`, and `reconcile()` with `this.currentThrust()` / `this.currentTorque()`
+  - [x] In `stop()`: add `this.touch.dispose()`
+  - [x] Do NOT change the `lastSent` tracking logic — threshold-delta behaviour is unchanged
 
-- [ ] Task 3 — Verify `app.ts` requires no changes (AC: 3)
-  - [ ] Confirm `InputManager` is constructed and `start()` called after `await hubClient.start()` — no changes needed; `TouchInput` is created internally by `InputManager`
-  - [ ] Confirm `reconcile()` call in `onWorldStateUpdate` still works — no changes needed
+- [x] Task 3 — Verify `app.ts` requires no changes (AC: 3)
+  - [x] Confirm `InputManager` is constructed and `start()` called after `await hubClient.start()` — no changes needed; `TouchInput` is created internally by `InputManager`
+  - [x] Confirm `reconcile()` call in `onWorldStateUpdate` still works — no changes needed
 
-- [ ] Task 4 — Build verification (AC: 2)
-  - [ ] `cd client && npm run build` → 0 TypeScript errors, 0 Vite errors
-  - [ ] `dotnet build server/BelterLife.slnx` → 0 errors (sanity check — no server files changed)
+- [x] Task 4 — Build verification (AC: 2)
+  - [x] `cd client && npm run build` → 0 TypeScript errors, 0 Vite errors
+  - [x] `dotnet build server/BelterLife.slnx` → 0 errors (sanity check — no server files changed)
 
 ## Dev Notes
 
@@ -212,10 +212,27 @@ No new npm packages required. The virtual joystick is pure DOM/CSS — no third-
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Sonnet 4.6
 
 ### Debug Log References
 
+None — implementation proceeded without errors.
+
 ### Completion Notes List
 
+- Replaced `TouchInput.ts` stub with full implementation: DOM-based virtual joystick (zone 120×120px, ring, nub 48×48px), `touchstart`/`touchmove`/`touchend` event handling with single-touch tracking via `touch.identifier`, dead zone (5px), normalised analog output [-1, 1], `prefers-reduced-motion` detection suppresses nub CSS transition, `dispose()` removes all event listeners and DOM node.
+- Updated `InputManager.ts`: imported `TouchInput`, added `touchThrust`/`touchTorque` fields, instantiated `TouchInput` in constructor with callback that updates fields and calls `sendIfChanged()`, introduced `currentThrust()` / `currentTorque()` helpers that sum and clamp keyboard + touch values, replaced all `keyboard.getThrust/getTorque()` direct calls in `sendIfChanged()`, `sendNow()`, and `reconcile()`, added `touch.dispose()` to `stop()`.
+- `app.ts` confirmed unchanged — `InputManager` constructor and `reconcile()` call signatures are unchanged.
+- Build validation: `npm run build` → 0 TS errors, 0 Vite errors; `dotnet build server/BelterLife.slnx` → 0 errors, 0 warnings.
+
 ### File List
+
+- `client/src/input/TouchInput.ts` — REPLACED (was empty stub; full implementation added)
+- `client/src/input/InputManager.ts` — MODIFIED (integrated TouchInput, added combination helpers)
+
+## Change Log
+
+| Date | Change |
+|---|---|
+| 2026-02-23 | Implemented Story 1.6: TouchInput virtual joystick + InputManager integration. Files: `client/src/input/TouchInput.ts` (new), `client/src/input/InputManager.ts` (updated). |
+| 2026-02-23 | Post-review UX improvement: switched joystick axis output from independent-per-axis to dominant-axis — minor axis is zeroed when the orthogonal axis has larger displacement, preventing accidental simultaneous thrust+rotation from diagonal drags. |
