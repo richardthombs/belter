@@ -99,6 +99,53 @@ Do **NOT** add `Microsoft.AspNetCore.SignalR` as an explicit package reference.
 
 ---
 
+### EF Core — InMemory Provider Divergence (hits every DB story)
+
+The InMemory provider behaves differently from production Postgres in three important ways:
+
+**1. No transaction support** — wrap EF operations in a `ProviderName` guard:
+```csharp
+if (db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
+{
+    await using var tx = await db.Database.BeginTransactionAsync();
+    // ... operations ...
+    await tx.CommitAsync();
+}
+```
+
+**2. `IsRelational()` throws on InMemory** — never use `db.Database.IsRelational()` in code paths that run in tests. Use `ProviderName` check instead.
+
+**3. `WebApplicationFactory` integration tests need `UseInternalServiceProvider`** to avoid "multiple providers" error:
+```csharp
+options.UseInMemoryDatabase("TestDb")
+    .UseInternalServiceProvider(
+        new ServiceCollection()
+            .AddEntityFrameworkInMemoryDatabase()
+            .BuildServiceProvider());
+```
+
+*Discovered: Stories 1.2, 1.3 — applies to every story that touches EF Core in tests.*
+
+---
+
+### PixiJS v8 — API Changes from v7
+
+Training data contains v7 patterns. Key v8 differences:
+
+| v7 (wrong) | v8 (correct) |
+|---|---|
+| `new Application(); app.init(...)` (sync) | `const app = new Application(); await app.init(...)` (async) |
+| `sprite.cacheAsBitmap = true` | `container.cacheAsTexture(true)` |
+| `new Graphics().beginFill(0xff0000)` | `new Graphics().fill(0xff0000)` (method chaining, new API) |
+
+**`Application.init()` is async in v8** — call it with `await` inside an `async` function. Never call synchronously.
+
+**`cacheAsTexture(true)`** is called on a `Container` instance, not a property assignment.
+
+*Discovered: Story 1.4 — applies to all PixiJS rendering stories.*
+
+---
+
 ### TypeScript — `noUnusedLocals: true` in `client/tsconfig.json`
 
 The Vite tsconfig has `noUnusedLocals: true` and `noUnusedParameters: true`. This means:
@@ -159,3 +206,8 @@ npx create-vite client --template vanilla-ts
 |---|---|
 | 1.1 Monorepo scaffold | `.slnx` not `.sln`; SignalR Protocols.MessagePack package; tsconfig noUnusedLocals |
 | 1.2 Player auth | `erasableSyntaxOnly` bans TS constructor parameter properties; `CanReadToken()` ≠ safe to parse (wrap ReadJwtToken in try/catch); UserManager test factory needs UserValidator + relaxed IdentityOptions; `dotnet-ef` global tool must be on PATH; `WebApplicationFactory` config overrides via `ConfigureAppConfiguration` arrive too late — use `Environment.SetEnvironmentVariable` in factory constructor; EF Core 10 `IsRelational()` throws on InMemory — check `ProviderName != "Microsoft.EntityFrameworkCore.InMemory"` instead; EF Core "multiple providers" error with `UseInMemoryDatabase` in integration tests — fix: `UseInternalServiceProvider(new ServiceCollection().AddEntityFrameworkInMemoryDatabase().BuildServiceProvider())` |
+| 1.3 Starting sector | `Forbid()` without auth middleware = 500; use `StatusCode(403)`. `IShardClient` interface required for Moq. `IDbContextTransaction` requires `ProviderName` guard for InMemory. `AddHttpClient<ShardClient>().AddTypedClient<IShardClient, ShardClient>()` registers both concrete + interface. |
+| 1.4 SignalR real-time | `replace_string_in_file` can duplicate a method body if context is ambiguous — verify result. `SendAsync` is an extension method, cannot be Moq'd — use `SendCoreAsync`. `IServiceScopeFactory` requires `using Microsoft.Extensions.DependencyInjection`. `AsNoTracking()` on Ships prevents EF from tracking mutations for `SaveChangesAsync` — remove it from the query used by the physics loop. Gateway/Program.cs still uses old InMemory check — do NOT replicate; use Environment check. |
+| 1.5 Ship flight | `InputManager.ts` constructor parameter shorthand (`private hubClient`) banned by `erasableSyntaxOnly` — use explicit field + assignment. `AsNoTracking()` removed from Ships in SimulationLoop so EF tracks mutations. |
+| 1.6 Touch input | `e.preventDefault()` in `touchmove` must be inside identifier-match guard — otherwise blocks all concurrent finger scrolling. Joystick DOM mount + event listeners should be guarded by `navigator.maxTouchPoints > 0` — joystick should not appear on desktop. Use dominant-axis output (zero minor axis when orthogonal axis is larger) to prevent diagonal-drag simultaneity bugs. |
+| 1.7 Session persistence | `SpawnController` was returning `(0, 0)` for returning players since Story 1.3 — latent bug surfaced here. Reset `Ship.Heading` to 0 on reposition (not just position). Toast/notification overlays need `pointer-events: none` to avoid blocking canvas interaction. |

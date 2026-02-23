@@ -52,7 +52,7 @@ development_status:
   1-5-ship-flight-assisted-newtonian-physics: done
   1-6-dual-input-touch-virtual-joystick-keyboard-mouse: done
   1-7-persistent-session-return-to-exact-state: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   # ─────────────────────────────────────────────────────────────
   # Epic 2: The Core Mining Loop — Discover, Extract, Sell
