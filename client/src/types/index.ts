@@ -9,45 +9,46 @@
  */
 
 export interface PlayerDto {
-    id: string;
-    username: string;
+	id: string;
+	username: string;
 }
 
 export interface ShipSnapshot {
-    shipId: number;
-    playerId: string;
-    x: number;
-    y: number;
-    velocityX: number;
-    velocityY: number;
-    heading: number;
-    /** Populated ~once/s for reconciliation; null all other ticks. */
-    thrust?: number | null;
-    /** Populated ~once/s for reconciliation; null all other ticks. */
-    torque?: number | null;
+	shipId: number;
+	playerId: string;
+	x: number;
+	y: number;
+	velocityX: number;
+	velocityY: number;
+	heading: number;
+	/** Populated ~once/s for reconciliation; null all other ticks. */
+	thrust?: number | null;
+	/** Populated ~once/s for reconciliation; null all other ticks. */
+	torque?: number | null;
 }
 
 export interface AsteroidSnapshot {
-    asteroidId: number;
-    x: number;
-    y: number;
-    radius: number;
-    vertexCount: number;
-    rotationOffset: number;
+	asteroidId: number;
+	x: number;
+	y: number;
+	radius: number;
+	vertexCount: number;
+	rotationOffset: number;
 }
 
 export interface WorldStateUpdate {
-    sectorId: number;
-    timestamp: number;
-    ships: ShipSnapshot[];
-    asteroids: AsteroidSnapshot[];
+	sectorId: number;
+	timestamp: number;
+	ships: ShipSnapshot[];
+	asteroids: AsteroidSnapshot[];
 }
 
 export interface SpawnResponse {
-    sectorId: number;
-    shipId: number;
-    spawnX: number;
-    spawnY: number;
+	sectorId: number;
+	shipId: number;
+	spawnX: number;
+	spawnY: number;
+	repositioned: boolean;
 }
 
 /** Mirrors BelterLife.Shared.Contracts.Hubs.InputEvent.
@@ -56,7 +57,7 @@ export interface SpawnResponse {
  *  Thrust: 1 = main engines (forward), -1 = retro thrusters, 0 = off.
  *  Torque: 1 = rotate right, -1 = rotate left, 0 = off. */
 export interface InputEvent {
-    thrust: number;
-    torque: number;
-    brake: boolean;
+	thrust: number;
+	torque: number;
+	brake: boolean;
 }

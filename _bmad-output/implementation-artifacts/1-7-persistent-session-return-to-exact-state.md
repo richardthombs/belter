@@ -1,6 +1,6 @@
 # Story 1.7: Persistent Session — Return to Exact State
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -22,19 +22,19 @@ so that the game respects my time and builds a habit of return.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Add `Credits` to `Player` entity and create EF migration (AC: 4)
-  - [ ] In `server/BelterLife.Shared/Entities/Player.cs`: add `public int Credits { get; set; }` property
-  - [ ] Run migration: `cd server && dotnet ef migrations add AddPlayerCredits --project BelterLife.Simulation --startup-project BelterLife.Simulation`
-  - [ ] Verify generated migration adds `credits integer NOT NULL DEFAULT 0` via `HasDefaultValue(0)` or check migration SQL
-  - [ ] Run `dotnet build server/BelterLife.slnx` → 0 errors
+- [x] Task 1 — Add `Credits` to `Player` entity and create EF migration (AC: 4)
+  - [x] In `server/BelterLife.Shared/Entities/Player.cs`: add `public int Credits { get; set; }` property
+  - [x] Run migration: `cd server && dotnet ef migrations add AddPlayerCredits --project BelterLife.Simulation --startup-project BelterLife.Simulation`
+  - [x] Verify generated migration adds `credits integer NOT NULL DEFAULT 0` via `HasDefaultValue(0)` or check migration SQL
+  - [x] Run `dotnet build server/BelterLife.slnx` → 0 errors
 
-- [ ] Task 2 — Extend `SpawnResponse` with `Repositioned` flag (AC: 3)
-  - [ ] In `server/BelterLife.Shared/Contracts/Api/SpawnResponse.cs`: change record to `record SpawnResponse(int SectorId, int ShipId, float SpawnX, float SpawnY, bool Repositioned = false)`
-  - [ ] Update `client/src/types/index.ts`: add `repositioned: boolean` to `SpawnResponse` interface
-  - [ ] Run `dotnet build server/BelterLife.slnx` and `cd client && npm run build` → 0 errors each
+- [x] Task 2 — Extend `SpawnResponse` with `Repositioned` flag (AC: 3)
+  - [x] In `server/BelterLife.Shared/Contracts/Api/SpawnResponse.cs`: change record to `record SpawnResponse(int SectorId, int ShipId, float SpawnX, float SpawnY, bool Repositioned = false)`
+  - [x] Update `client/src/types/index.ts`: add `repositioned: boolean` to `SpawnResponse` interface
+  - [x] Run `dotnet build server/BelterLife.slnx` and `cd client && npm run build` → 0 errors each
 
-- [ ] Task 3 — Fix `SpawnController` returning player path (AC: 2, 3, 4)
-  - [ ] In `server/BelterLife.Simulation/Api/SpawnController.cs`, rewrite the existing-player branch:
+- [x] Task 3 — Fix `SpawnController` returning player path (AC: 2, 3, 4)
+  - [x] In `server/BelterLife.Simulation/Api/SpawnController.cs`, rewrite the existing-player branch:
     - Load `Ship` from DB: `var ship = await _db.Ships.FirstOrDefaultAsync(s => s.Id == existing.ShipId);`
     - If `ship is null`, fall through to new-player creation (defensive; should never happen)
     - Load asteroids for sector: `var asteroids = await _db.Asteroids.Where(a => a.SectorId == existing.SectorId).AsNoTracking().ToListAsync();`
@@ -42,41 +42,41 @@ so that the game respects my time and builds a habit of return.
     - Update `existing.LastSeenAt = DateTimeOffset.UtcNow;`
     - If repositioned OR LastSeenAt changed: `await _db.SaveChangesAsync();` — track `existing` (no `AsNoTracking`) so EF picks up the change
     - Return `Ok(new SpawnResponse(existing.SectorId, existing.ShipId, ship.X, ship.Y, repositioned))`
-  - [ ] For new-player path: set `Credits = 500` on the new `Player` entity (starting credits)
-  - [ ] `BelterLife.Gateway.Tests` and `BelterLife.Gateway.Tests/Hubs/GameHubTests.cs` require **no changes** — their `new SpawnResponse(...)` calls use a subset of positional args and `Repositioned` defaults to `false`
-  - [ ] Run `dotnet build server/BelterLife.slnx` → 0 errors
+  - [x] For new-player path: set `Credits = 500` on the new `Player` entity (starting credits)
+  - [x] `BelterLife.Gateway.Tests` and `BelterLife.Gateway.Tests/Hubs/GameHubTests.cs` require **no changes** — their `new SpawnResponse(...)` calls use a subset of positional args and `Repositioned` defaults to `false`
+  - [x] Run `dotnet build server/BelterLife.slnx` → 0 errors
 
-- [ ] Task 4 — Client: initialise camera at saved spawn position (AC: 2)
-  - [ ] In `client/src/rendering/Renderer.ts`: add `initCameraAt(x: number, y: number): void` — see Dev Notes for exact implementation (uses `this.app.screen.width/height`, matching the existing `tick()` logic)
-  - [ ] In `client/src/app.ts`: after `await renderer.init(canvas)` and `renderer.setLocalShipId(...)`, add `renderer.initCameraAt(spawnResponse.spawnX, spawnResponse.spawnY)`
-  - [ ] Run `cd client && npm run build` → 0 TypeScript errors
+- [x] Task 4 — Client: initialise camera at saved spawn position (AC: 2)
+  - [x] In `client/src/rendering/Renderer.ts`: add `initCameraAt(x: number, y: number): void` — see Dev Notes for exact implementation (uses `this.app.screen.width/height`, matching the existing `tick()` logic)
+  - [x] In `client/src/app.ts`: after `await renderer.init(canvas)` and `renderer.setLocalShipId(...)`, add `renderer.initCameraAt(spawnResponse.spawnX, spawnResponse.spawnY)`
+  - [x] Run `cd client && npm run build` → 0 TypeScript errors
 
-- [ ] Task 5 — Client: show repositioned notification (AC: 3)
-  - [ ] In `client/src/app.ts`: after `renderer.initCameraAt(...)`, add:
+- [x] Task 5 — Client: show repositioned notification (AC: 3)
+  - [x] In `client/src/app.ts`: after `renderer.initCameraAt(...)`, add:
     ```typescript
     if (spawnResponse.repositioned) {
         showNotification("Your ship was repositioned — the belt moved while you were away");
     }
     ```
-  - [ ] Implement `showNotification(message: string)` as a simple DOM toast in `client/src/ui/Notification.ts`:
+  - [x] Implement `showNotification(message: string)` as a simple DOM toast in `client/src/ui/Notification.ts`:
     - Creates a fixed-position `div` with `role="status"` and `aria-live="polite"` (screen reader accessible)
     - Styled: `position:fixed; top:16px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:#fff; padding:12px 20px; border-radius:6px; z-index:200; font-size:14px`
     - Auto-removes after 5 000 ms via `setTimeout`
     - No animation (keep simple; UX animation system not yet established)
-  - [ ] Import and use in `app.ts`: `import { showNotification } from "./ui/Notification"`
-  - [ ] Run `cd client && npm run build` → 0 errors
+  - [x] Import and use in `app.ts`: `import { showNotification } from "./ui/Notification"`
+  - [x] Run `cd client && npm run build` → 0 errors
 
-- [ ] Task 6 — Tests: returning player spawn position and reposition (AC: 2, 3)
-  - [ ] In `server/BelterLife.Simulation.Tests/Api/SpawnControllerTests.cs`, add tests:
+- [x] Task 6 — Tests: returning player spawn position and reposition (AC: 2, 3)
+  - [x] In `server/BelterLife.Simulation.Tests/Api/SpawnControllerTests.cs`, add tests:
     - `Spawn_ReturningPlayer_ReturnsActualShipPosition()` — first spawn creates player at (0,0); manually update `Ship.X=50f, Ship.Y=50f` in DB (distance ≈ 71 units — safely inside the clear zone; `SectorGenerator` places asteroids at minimum 150 units from origin, so `<110 units` is always asteroid-free); second spawn returns `SpawnX=50f, SpawnY=50f` and `Repositioned=false`
     - `Spawn_ReturningPlayer_RepositionsShipWhenOverlapsAsteroid()` — create player; extract `sectorId` from first spawn response; insert `new Asteroid { SectorId = sectorId, X = 0f, Y = 0f, Radius = 100f, VertexCount = 6, RotationOffset = 0f }` into DB (must include `SectorId` to satisfy FK); second spawn returns `Repositioned=true` and a position that does NOT overlap the asteroid
     - `Spawn_NewPlayer_InitialisesCredits_500()` — verify new `Player.Credits == 500` after first spawn
-  - [ ] Run `cd server && dotnet test BelterLife.slnx` → all pass
+  - [x] Run `cd server && dotnet test BelterLife.slnx` → all pass
 
-- [ ] Task 7 — Build verification (full stack)
-  - [ ] `cd server && dotnet build BelterLife.slnx` → 0 errors
-  - [ ] `cd server && dotnet test BelterLife.slnx` → 0 failures
-  - [ ] `cd client && npm run build` → 0 errors
+- [x] Task 7 — Build verification (full stack)
+  - [x] `cd server && dotnet build BelterLife.slnx` → 0 errors
+  - [x] `cd server && dotnet test BelterLife.slnx` → 0 failures
+  - [x] `cd client && npm run build` → 0 errors
 
 ## Dev Notes
 
@@ -285,6 +285,27 @@ Claude Sonnet 4.6 (GitHub Copilot)
 
 ### Debug Log References
 
+None — implementation clean on first pass.
+
 ### Completion Notes List
 
+- Task 1: `Player.Credits` added; EF migration `20260223082123_AddPlayerCredits.cs` generated with `defaultValue: 0` on `credits` column — confirmed in migration `Up()` method.
+- Task 2: `SpawnResponse` extended with `Repositioned = false` default; `SpawnResponse` TypeScript interface updated with `repositioned: boolean`.
+- Task 3: Existing-player branch fully rewritten — loads `Ship` from DB, runs asteroid overlap check with expanding search (8 cardinal/diagonal candidates, 80px steps, 10 max), resets velocity on reposition, updates `LastSeenAt`, calls `SaveChangesAsync()` once unconditionally. New-player path sets `Credits = 500`. Gateway test files untouched (default param handles backward compat).
+- Task 4: `Renderer.initCameraAt()` added using same `worldLayer.position.set()` pattern as `tick()`. Called in `app.ts` after `setLocalShipId()`.
+- Task 5: `client/src/ui/Notification.ts` created with inline styles (no Tailwind), `role="status"`, `aria-live="polite"`, 5-second auto-remove. Wired in `app.ts` after `initCameraAt()`.
+- Task 6: Three new tests added — `Spawn_ReturningPlayer_ReturnsActualShipPosition`, `Spawn_ReturningPlayer_RepositionsShipWhenOverlapsAsteroid`, `Spawn_NewPlayer_InitialisesCredits_500`. All 55 tests (26 Simulation + 29 Gateway) pass.
+- Task 7: `dotnet build` → 0 errors; `dotnet test` → 55/55 passed; `npm run build` → 0 TypeScript errors.
+
 ### File List
+
+- `server/BelterLife.Shared/Entities/Player.cs` — added `Credits` property
+- `server/BelterLife.Shared/Contracts/Api/SpawnResponse.cs` — added `Repositioned = false`
+- `server/BelterLife.Simulation/Api/SpawnController.cs` — rewritten existing-player branch; new player gets Credits=500
+- `server/BelterLife.Simulation/Migrations/20260223082123_AddPlayerCredits.cs` — generated migration
+- `server/BelterLife.Simulation/Migrations/20260223082123_AddPlayerCredits.Designer.cs` — generated migration designer
+- `server/BelterLife.Simulation.Tests/Api/SpawnControllerTests.cs` — 3 new test methods + Asteroid using
+- `client/src/types/index.ts` — `repositioned: boolean` on SpawnResponse
+- `client/src/rendering/Renderer.ts` — `initCameraAt()` method
+- `client/src/ui/Notification.ts` — NEW: `showNotification()` toast
+- `client/src/app.ts` — `initCameraAt()` call + repositioned notification

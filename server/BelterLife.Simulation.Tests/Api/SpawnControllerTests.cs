@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using BelterLife.Shared.Contracts.Api;
+using BelterLife.Shared.Entities;
 using BelterLife.Simulation.Infrastructure;
 using BelterLife.Simulation.Physics;
 using Microsoft.AspNetCore.Hosting;
@@ -19,106 +20,200 @@ namespace BelterLife.Simulation.Tests.Api;
 /// </summary>
 public class SimulationWebApplicationFactory : WebApplicationFactory<Program>
 {
-    readonly SqliteConnection _connection = new("Data Source=:memory:");
+	readonly SqliteConnection _connection = new("Data Source=:memory:");
 
-    public SimulationWebApplicationFactory()
-    {
-        Environment.SetEnvironmentVariable("ConnectionStrings__Default", "Host=placeholder");
-        Environment.SetEnvironmentVariable("SHARD_SECRET", "test-shard-secret");
-        _connection.Open();
-    }
+	public SimulationWebApplicationFactory()
+	{
+		Environment.SetEnvironmentVariable("ConnectionStrings__Default", "Host=placeholder");
+		Environment.SetEnvironmentVariable("SHARD_SECRET", "test-shard-secret");
+		_connection.Open();
+	}
 
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
-    {
-        builder.UseEnvironment("Testing");
-        builder.ConfigureServices(services =>
-        {
-            // Remove SimulationLoop — prevents game loop from running during tests
-            var loopDescriptor = services.SingleOrDefault(d =>
-                d.ServiceType == typeof(IHostedService) &&
-                d.ImplementationType == typeof(SimulationLoop));
-            if (loopDescriptor != null) services.Remove(loopDescriptor);
+	protected override void ConfigureWebHost(IWebHostBuilder builder)
+	{
+		builder.UseEnvironment("Testing");
+		builder.ConfigureServices(services =>
+		{
+			// Remove SimulationLoop — prevents game loop from running during tests
+			var loopDescriptor = services.SingleOrDefault(d =>
+				d.ServiceType == typeof(IHostedService) &&
+				d.ImplementationType == typeof(SimulationLoop));
+			if (loopDescriptor != null) services.Remove(loopDescriptor);
 
-            // Program.cs skips Npgsql registration in Testing; add SQLite here as the sole provider
-            services.AddDbContext<AppDbContext>(opt =>
-                opt.UseSqlite(_connection)
-                   .UseSnakeCaseNamingConvention());
-        });
-    }
+			// Program.cs skips Npgsql registration in Testing; add SQLite here as the sole provider
+			services.AddDbContext<AppDbContext>(opt =>
+				opt.UseSqlite(_connection)
+				   .UseSnakeCaseNamingConvention());
+		});
+	}
 
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-        if (disposing) _connection.Dispose();
-    }
+	protected override void Dispose(bool disposing)
+	{
+		base.Dispose(disposing);
+		if (disposing) _connection.Dispose();
+	}
 }
 
 public class SpawnControllerTests : IClassFixture<SimulationWebApplicationFactory>
 {
-    readonly SimulationWebApplicationFactory _factory;
+	readonly SimulationWebApplicationFactory _factory;
 
-    public SpawnControllerTests(SimulationWebApplicationFactory factory)
-    {
-        _factory = factory;
-    }
+	public SpawnControllerTests(SimulationWebApplicationFactory factory)
+	{
+		_factory = factory;
+	}
 
-    HttpClient CreateClientWithSecret() =>
-        _factory.CreateClient();
+	HttpClient CreateClientWithSecret() =>
+		_factory.CreateClient();
 
-    static HttpRequestMessage SpawnRequest(string playerId, string? secret = "test-shard-secret")
-    {
-        var req = new HttpRequestMessage(HttpMethod.Post, "/api/internal/spawn")
-        {
-            Content = JsonContent.Create(new SpawnRequest(playerId)),
-        };
-        if (secret != null)
-            req.Headers.Add("X-Shard-Secret", secret);
-        return req;
-    }
+	static HttpRequestMessage SpawnRequest(string playerId, string? secret = "test-shard-secret")
+	{
+		var req = new HttpRequestMessage(HttpMethod.Post, "/api/internal/spawn")
+		{
+			Content = JsonContent.Create(new SpawnRequest(playerId)),
+		};
+		if (secret != null)
+			req.Headers.Add("X-Shard-Secret", secret);
+		return req;
+	}
 
-    /// <summary>AC 1 — new player spawn returns 201 with SpawnResponse.</summary>
-    [Fact]
-    public async Task Spawn_NewPlayer_Creates201WithSpawnResponse()
-    {
-        var client = CreateClientWithSecret();
-        var playerId = "player-" + Guid.NewGuid();
+	/// <summary>AC 1 — new player spawn returns 201 with SpawnResponse.</summary>
+	[Fact]
+	public async Task Spawn_NewPlayer_Creates201WithSpawnResponse()
+	{
+		var client = CreateClientWithSecret();
+		var playerId = "player-" + Guid.NewGuid();
 
-        var res = await client.SendAsync(SpawnRequest(playerId));
+		var res = await client.SendAsync(SpawnRequest(playerId));
 
-        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
-        var body = await res.Content.ReadFromJsonAsync<SpawnResponse>();
-        Assert.NotNull(body);
-        Assert.True(body.SectorId > 0);
-        Assert.True(body.ShipId > 0);
-        Assert.Equal(0f, body.SpawnX);
-        Assert.Equal(0f, body.SpawnY);
-    }
+		Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+		var body = await res.Content.ReadFromJsonAsync<SpawnResponse>();
+		Assert.NotNull(body);
+		Assert.True(body.SectorId > 0);
+		Assert.True(body.ShipId > 0);
+		Assert.Equal(0f, body.SpawnX);
+		Assert.Equal(0f, body.SpawnY);
+	}
 
-    /// <summary>AC 1 — repeated spawn for same player is idempotent (200 with same IDs).</summary>
-    [Fact]
-    public async Task Spawn_ExistingPlayer_Returns200WithSameIds()
-    {
-        var client = CreateClientWithSecret();
-        var playerId = "idem-" + Guid.NewGuid();
+	/// <summary>AC 1 — repeated spawn for same player is idempotent (200 with same IDs).</summary>
+	[Fact]
+	public async Task Spawn_ExistingPlayer_Returns200WithSameIds()
+	{
+		var client = CreateClientWithSecret();
+		var playerId = "idem-" + Guid.NewGuid();
 
-        var first = await client.SendAsync(SpawnRequest(playerId));
-        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
-        var firstBody = await first.Content.ReadFromJsonAsync<SpawnResponse>();
+		var first = await client.SendAsync(SpawnRequest(playerId));
+		Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+		var firstBody = await first.Content.ReadFromJsonAsync<SpawnResponse>();
 
-        var second = await client.SendAsync(SpawnRequest(playerId));
-        Assert.Equal(HttpStatusCode.OK, second.StatusCode);
-        var secondBody = await second.Content.ReadFromJsonAsync<SpawnResponse>();
+		var second = await client.SendAsync(SpawnRequest(playerId));
+		Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+		var secondBody = await second.Content.ReadFromJsonAsync<SpawnResponse>();
 
-        Assert.Equal(firstBody!.SectorId, secondBody!.SectorId);
-        Assert.Equal(firstBody.ShipId, secondBody.ShipId);
-    }
+		Assert.Equal(firstBody!.SectorId, secondBody!.SectorId);
+		Assert.Equal(firstBody.ShipId, secondBody.ShipId);
+	}
 
-    /// <summary>AC 1 — missing/wrong X-Shard-Secret returns 403.</summary>
-    [Fact]
-    public async Task Spawn_MissingShardSecret_Returns403()
-    {
-        var client = CreateClientWithSecret();
-        var res = await client.SendAsync(SpawnRequest("any-player", secret: null));
-        Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
-    }
+	/// <summary>AC 1 — missing/wrong X-Shard-Secret returns 403.</summary>
+	[Fact]
+	public async Task Spawn_MissingShardSecret_Returns403()
+	{
+		var client = CreateClientWithSecret();
+		var res = await client.SendAsync(SpawnRequest("any-player", secret: null));
+		Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
+	}
+
+	/// <summary>AC 2 — returning player spawn returns actual saved ship position.</summary>
+	[Fact]
+	public async Task Spawn_ReturningPlayer_ReturnsActualShipPosition()
+	{
+		var client = CreateClientWithSecret();
+		var playerId = "return-" + Guid.NewGuid();
+
+		// First spawn — creates player + ship at (0, 0)
+		var first = await client.SendAsync(SpawnRequest(playerId));
+		Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+		var firstBody = await first.Content.ReadFromJsonAsync<SpawnResponse>();
+		Assert.NotNull(firstBody);
+
+		// Move ship to (50, 50) — inside safe zone (<110 units from origin, always asteroid-free)
+		using (var scope = _factory.Services.CreateScope())
+		{
+			var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+			var ship = await db.Ships.FirstAsync(s => s.Id == firstBody.ShipId);
+			ship.X = 50f;
+			ship.Y = 50f;
+			await db.SaveChangesAsync();
+		}
+
+		// Second spawn — should return actual ship position
+		var second = await client.SendAsync(SpawnRequest(playerId));
+		Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+		var secondBody = await second.Content.ReadFromJsonAsync<SpawnResponse>();
+		Assert.NotNull(secondBody);
+		Assert.Equal(50f, secondBody.SpawnX);
+		Assert.Equal(50f, secondBody.SpawnY);
+		Assert.False(secondBody.Repositioned);
+	}
+
+	/// <summary>AC 3 — returning player is repositioned when ship overlaps an asteroid.</summary>
+	[Fact]
+	public async Task Spawn_ReturningPlayer_RepositionsShipWhenOverlapsAsteroid()
+	{
+		var client = CreateClientWithSecret();
+		var playerId = "reposition-" + Guid.NewGuid();
+
+		// First spawn — creates player + ship at (0, 0)
+		var first = await client.SendAsync(SpawnRequest(playerId));
+		Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+		var firstBody = await first.Content.ReadFromJsonAsync<SpawnResponse>();
+		Assert.NotNull(firstBody);
+
+		// Add a large asteroid at (0, 0) overlapping the ship
+		using (var scope = _factory.Services.CreateScope())
+		{
+			var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+			db.Asteroids.Add(new Asteroid
+			{
+				SectorId = firstBody.SectorId,
+				X = 0f,
+				Y = 0f,
+				Radius = 100f,
+				VertexCount = 6,
+				RotationOffset = 0f,
+			});
+			await db.SaveChangesAsync();
+		}
+
+		// Second spawn — should reposition the ship
+		var second = await client.SendAsync(SpawnRequest(playerId));
+		Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+		var secondBody = await second.Content.ReadFromJsonAsync<SpawnResponse>();
+		Assert.NotNull(secondBody);
+		Assert.True(secondBody.Repositioned);
+
+		// Verify new position does not overlap the asteroid (radius=100, margin=10)
+		const float minDist = 100f + 10f;
+		var distSq = MathF.Pow(secondBody.SpawnX, 2) + MathF.Pow(secondBody.SpawnY, 2);
+		Assert.True(distSq >= MathF.Pow(minDist, 2),
+			$"Ship at ({secondBody.SpawnX}, {secondBody.SpawnY}) still overlaps asteroid");
+	}
+
+	/// <summary>AC 4 — new player starts with 500 credits.</summary>
+	[Fact]
+	public async Task Spawn_NewPlayer_InitialisesCredits_500()
+	{
+		var client = CreateClientWithSecret();
+		var playerId = "credits-" + Guid.NewGuid();
+
+		var res = await client.SendAsync(SpawnRequest(playerId));
+		Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+		var body = await res.Content.ReadFromJsonAsync<SpawnResponse>();
+		Assert.NotNull(body);
+
+		using var scope = _factory.Services.CreateScope();
+		var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+		var player = await db.Players.FirstAsync(p => p.Id == playerId);
+		Assert.Equal(500, player.Credits);
+	}
 }
