@@ -7,6 +7,7 @@ export function showNotification(message: string): void {
 	el.textContent = message;
 	el.setAttribute("role", "status");
 	el.setAttribute("aria-live", "polite");
+	el.style.pointerEvents = "none";
 	el.style.position = "fixed";
 	el.style.top = "16px";
 	el.style.left = "50%";

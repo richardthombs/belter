@@ -78,6 +78,12 @@ so that the game respects my time and builds a habit of return.
   - [x] `cd server && dotnet test BelterLife.slnx` → 0 failures
   - [x] `cd client && npm run build` → 0 errors
 
+### Review Follow-ups (AI)
+
+- [ ] [AI-Review][LOW] Add test for fallback-to-origin reposition path (all 80 candidates blocked) — `server/BelterLife.Simulation.Tests/Api/SpawnControllerTests.cs`
+- [ ] [AI-Review][LOW] Add JSDoc or runtime guard to `Renderer.initCameraAt()` documenting that `init()` must be called first — `client/src/rendering/Renderer.ts:35`
+- [ ] [AI-Review][LOW] Add inline comment to `SpawnController` reposition candidate loop noting the intentional 8-direction coarseness and the SectorGenerator minimum-distance guarantee — `server/BelterLife.Simulation/Api/SpawnController.cs:63`
+
 ## Dev Notes
 
 ### Why Most of This Story is Already Working (But Incomplete)
@@ -287,6 +293,20 @@ Claude Sonnet 4.6 (GitHub Copilot)
 
 None — implementation clean on first pass.
 
+### Code Review — 2026-02-23
+
+**Reviewer:** Amelia (Dev Agent) — Claude Sonnet 4.6  
+**Result:** APPROVED — 0 High · 3 Medium fixed · 3 Low deferred as action items
+
+**Medium fixes applied:**
+- M1: Fixed misleading comment in `SpawnController.cs` (`// fall through to new-player creation` → `// fail fast`) — [`SpawnController.cs:39`](server/BelterLife.Simulation/Api/SpawnController.cs)
+- M2: Added `ship.Heading = 0f` reset on reposition to prevent re-entry into hazard — [`SpawnController.cs:78`](server/BelterLife.Simulation/Api/SpawnController.cs)
+- M3: Added `el.style.pointerEvents = "none"` to toast to prevent input blocking during 5s display — [`Notification.ts:10`](client/src/ui/Notification.ts)
+
+**Verification:** `dotnet test` → 55/55 passed; `npm run build` → 0 errors.
+
+---
+
 ### Completion Notes List
 
 - Task 1: `Player.Credits` added; EF migration `20260223082123_AddPlayerCredits.cs` generated with `defaultValue: 0` on `credits` column — confirmed in migration `Up()` method.
@@ -296,6 +316,7 @@ None — implementation clean on first pass.
 - Task 5: `client/src/ui/Notification.ts` created with inline styles (no Tailwind), `role="status"`, `aria-live="polite"`, 5-second auto-remove. Wired in `app.ts` after `initCameraAt()`.
 - Task 6: Three new tests added — `Spawn_ReturningPlayer_ReturnsActualShipPosition`, `Spawn_ReturningPlayer_RepositionsShipWhenOverlapsAsteroid`, `Spawn_NewPlayer_InitialisesCredits_500`. All 55 tests (26 Simulation + 29 Gateway) pass.
 - Task 7: `dotnet build` → 0 errors; `dotnet test` → 55/55 passed; `npm run build` → 0 TypeScript errors.
+- Code Review (2026-02-23): M1 comment fix, M2 `Heading` reset on reposition, M3 `pointer-events:none` on toast. 55/55 tests still passing.
 
 ### File List
 

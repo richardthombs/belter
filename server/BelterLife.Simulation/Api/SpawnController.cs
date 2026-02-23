@@ -35,7 +35,7 @@ public class SpawnController : ControllerBase
 			var ship = await _db.Ships.FirstOrDefaultAsync(s => s.Id == existing.ShipId);
 			if (ship is null)
 			{
-				// Defensive: should never happen — fall through to new-player creation
+				// Defensive: ship row must always exist for a persisted player — fail fast
 				return StatusCode(500);
 			}
 
@@ -75,6 +75,7 @@ public class SpawnController : ControllerBase
 				if (!found) { ship.X = 0f; ship.Y = 0f; }
 				ship.VelocityX = 0f;
 				ship.VelocityY = 0f;
+				ship.Heading = 0f;
 				ship.AngularVelocity = 0f;
 				repositioned = true;
 			}
