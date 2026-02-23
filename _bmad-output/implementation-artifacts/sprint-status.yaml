@@ -50,7 +50,7 @@ development_status:
   1-4-real-time-game-world-via-signalr: done
   1-4b-login-register-screen: done
   1-5-ship-flight-assisted-newtonian-physics: done
-  1-6-dual-input-touch-virtual-joystick-keyboard-mouse: review
+  1-6-dual-input-touch-virtual-joystick-keyboard-mouse: done
   1-7-persistent-session-return-to-exact-state: ready-for-dev
   epic-1-retrospective: optional
 

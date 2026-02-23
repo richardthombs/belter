@@ -1,6 +1,6 @@
 # Story 1.6: Dual Input — Touch Virtual Joystick & Keyboard/Mouse
 
-Status: review
+Status: done
 
 ## Story
 
@@ -236,3 +236,4 @@ None — implementation proceeded without errors.
 |---|---|
 | 2026-02-23 | Implemented Story 1.6: TouchInput virtual joystick + InputManager integration. Files: `client/src/input/TouchInput.ts` (new), `client/src/input/InputManager.ts` (updated). |
 | 2026-02-23 | Post-review UX improvement: switched joystick axis output from independent-per-axis to dominant-axis — minor axis is zeroed when the orthogonal axis has larger displacement, preventing accidental simultaneous thrust+rotation from diagonal drags. |
+| 2026-02-23 | Code review fixes: prettier formatting (tabs → 4-space spaces per .editorconfig) applied to TouchInput.ts and InputManager.ts; `_updateNub` made `private`; added tie-break comment (thrust wins at 45°). |
