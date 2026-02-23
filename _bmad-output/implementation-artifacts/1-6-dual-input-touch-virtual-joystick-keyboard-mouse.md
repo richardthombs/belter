@@ -229,6 +229,10 @@ None — implementation proceeded without errors.
 
 - `client/src/input/TouchInput.ts` — REPLACED (was empty stub; full implementation added)
 - `client/src/input/InputManager.ts` — MODIFIED (integrated TouchInput, added combination helpers)
+- `client/src/input/TouchInput.test.ts` — NEW (30 unit tests: DOM mounting, reduced-motion, dead zone, normalisation, dominant-axis, dispose lifecycle)
+- `client/src/input/InputManager.test.ts` — NEW (11 unit tests: clamping, sendIfChanged, reconcile, dispose)
+- `client/vite.config.ts` — MODIFIED (added vitest jsdom test environment config)
+- `client/package.json` — MODIFIED (added vitest, jsdom, @vitest/coverage-v8 devDependencies; added test/test:watch scripts)
 
 ## Change Log
 
@@ -237,3 +241,4 @@ None — implementation proceeded without errors.
 | 2026-02-23 | Implemented Story 1.6: TouchInput virtual joystick + InputManager integration. Files: `client/src/input/TouchInput.ts` (new), `client/src/input/InputManager.ts` (updated). |
 | 2026-02-23 | Post-review UX improvement: switched joystick axis output from independent-per-axis to dominant-axis — minor axis is zeroed when the orthogonal axis has larger displacement, preventing accidental simultaneous thrust+rotation from diagonal drags. |
 | 2026-02-23 | Code review fixes: prettier formatting (tabs → 4-space spaces per .editorconfig) applied to TouchInput.ts and InputManager.ts; `_updateNub` made `private`; added tie-break comment (thrust wins at 45°). |
+| 2026-02-23 | Code review (2nd pass) fixes: [H2] `e.preventDefault()` moved inside identifier-match guard in `handleTouchMove` — no longer blocks concurrent finger scrolling; [M1] `_updateNub` renamed `updateNub` (camelCase per naming conventions); [M2] DOM mount and event listener registration guarded by `navigator.maxTouchPoints > 0` — joystick invisible on desktop; [H1] Vitest + jsdom test infrastructure scaffolded — 30 tests across TouchInput and InputManager, all passing. |

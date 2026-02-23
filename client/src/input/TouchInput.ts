@@ -67,21 +67,24 @@ export class TouchInput {
 
         this.ring.appendChild(this.nub);
         this.zone.appendChild(this.ring);
-        document.body.appendChild(this.zone);
 
-        // Bind event handlers
+        // Bind event handlers (always bound so dispose() can safely call removeEventListener)
         this.onTouchStart = this.handleTouchStart.bind(this);
         this.onTouchMove = this.handleTouchMove.bind(this);
         this.onTouchEnd = this.handleTouchEnd.bind(this);
 
-        this.zone.addEventListener("touchstart", this.onTouchStart, {
-            passive: false,
-        });
-        window.addEventListener("touchmove", this.onTouchMove, {
-            passive: false,
-        });
-        window.addEventListener("touchend", this.onTouchEnd);
-        window.addEventListener("touchcancel", this.onTouchEnd);
+        // Only mount and register listeners on touch-capable devices
+        if (navigator.maxTouchPoints > 0) {
+            document.body.appendChild(this.zone);
+            this.zone.addEventListener("touchstart", this.onTouchStart, {
+                passive: false,
+            });
+            window.addEventListener("touchmove", this.onTouchMove, {
+                passive: false,
+            });
+            window.addEventListener("touchend", this.onTouchEnd);
+            window.addEventListener("touchcancel", this.onTouchEnd);
+        }
     }
 
     private handleTouchStart(e: TouchEvent): void {
@@ -101,11 +104,11 @@ export class TouchInput {
 
     private handleTouchMove(e: TouchEvent): void {
         if (this.activeTouch === null) return;
-        e.preventDefault();
 
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches[i];
             if (touch.identifier === this.activeTouch) {
+                e.preventDefault(); // only suppress scroll for the tracked finger
                 this.processTouchPosition(touch.clientX, touch.clientY);
                 return;
             }
@@ -118,7 +121,7 @@ export class TouchInput {
         for (let i = 0; i < e.changedTouches.length; i++) {
             if (e.changedTouches[i].identifier === this.activeTouch) {
                 this.activeTouch = null;
-                this._updateNub(0, 0);
+                this.updateNub(0, 0);
                 this.onChange(0, 0);
                 return;
             }
@@ -151,7 +154,7 @@ export class TouchInput {
         const torque =
             absDx > absDy ? this.applyDeadZoneAndNormalise(rawDx) : 0;
 
-        this._updateNub(offsetX, offsetY);
+        this.updateNub(offsetX, offsetY);
         this.onChange(thrust, torque);
     }
 
@@ -163,7 +166,7 @@ export class TouchInput {
         return Math.max(-1, Math.min(1, normalised));
     }
 
-    private _updateNub(offsetX: number, offsetY: number): void {
+    private updateNub(offsetX: number, offsetY: number): void {
         this.nub.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
     }
 

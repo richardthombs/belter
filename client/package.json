@@ -7,15 +7,20 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "format": "npx prettier --write \"src/**/*.ts\""
+    "format": "npx prettier --write \"src/**/*.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@radix-ui/themes": "^3.3.0",
     "@tailwindcss/vite": "^4.2.0",
+    "@vitest/coverage-v8": "^3.0.0",
+    "jsdom": "^26.0.0",
     "prettier": "^3.5.2",
     "tailwindcss": "^4.2.0",
     "typescript": "~5.9.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^3.0.0"
   },
   "dependencies": {
     "@microsoft/signalr": "^10.0.0",

@@ -1,8 +1,12 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
 	plugins: [tailwindcss()],
+	test: {
+		environment: 'jsdom',
+		globals: true,
+	},
 	server: {
 		proxy: {
 			// Proxy REST API calls to the Gateway in local development
