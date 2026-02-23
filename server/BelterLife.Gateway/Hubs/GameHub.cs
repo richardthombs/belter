@@ -17,50 +17,50 @@ namespace BelterLife.Gateway.Hubs;
 [Authorize]
 public class GameHub : Hub
 {
-	readonly IShardClient _shardClient;
-	private string? _sectorGroup;
+    readonly IShardClient _shardClient;
+    private string? _sectorGroup;
 
-	public GameHub(IShardClient shardClient)
-	{
-		_shardClient = shardClient;
-	}
+    public GameHub(IShardClient shardClient)
+    {
+        _shardClient = shardClient;
+    }
 
-	public override async Task OnConnectedAsync()
-	{
-		var userId = Context.User?.FindFirstValue(JwtRegisteredClaimNames.Sub);
-		if (userId is null)
-		{
-			Context.Abort();
-			return;
-		}
+    public override async Task OnConnectedAsync()
+    {
+        var userId = Context.User?.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (userId is null)
+        {
+            Context.Abort();
+            return;
+        }
 
-		var response = await _shardClient.SpawnAsync(userId);
-		if (response is null)
-		{
-			Context.Abort();
-			return;
-		}
+        var response = await _shardClient.SpawnAsync(userId);
+        if (response is null)
+        {
+            Context.Abort();
+            return;
+        }
 
-		_sectorGroup = $"sector-{response.SectorId}";
-		await Groups.AddToGroupAsync(Context.ConnectionId, _sectorGroup);
-		await base.OnConnectedAsync();
-	}
+        _sectorGroup = $"sector-{response.SectorId}";
+        await Groups.AddToGroupAsync(Context.ConnectionId, _sectorGroup);
+        await base.OnConnectedAsync();
+    }
 
-	public override async Task OnDisconnectedAsync(Exception? exception)
-	{
-		if (_sectorGroup is not null)
-			await Groups.RemoveFromGroupAsync(Context.ConnectionId, _sectorGroup);
-		await base.OnDisconnectedAsync(exception);
-	}
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        if (_sectorGroup is not null)
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, _sectorGroup);
+        await base.OnDisconnectedAsync(exception);
+    }
 
-	/// <summary>
-	/// Receives player input and forwards to the shard.
-	/// Client sends PascalCase fields: { Thrust, Torque, Brake } via ContractlessStandardResolver.
-	/// </summary>
-	public async Task SendInput(InputEvent input)
-	{
-		var userId = Context.User?.FindFirstValue(JwtRegisteredClaimNames.Sub);
-		if (userId is null) return;
-		await _shardClient.SendInputAsync(userId, input);
-	}
+    /// <summary>
+    /// Receives player input and forwards to the shard.
+    /// Client sends PascalCase fields: { Thrust, Torque, Brake } via ContractlessStandardResolver.
+    /// </summary>
+    public async Task SendInput(InputEvent input)
+    {
+        var userId = Context.User?.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (userId is null) return;
+        await _shardClient.SendInputAsync(userId, input);
+    }
 }

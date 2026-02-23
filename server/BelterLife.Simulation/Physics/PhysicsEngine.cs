@@ -12,13 +12,13 @@ namespace BelterLife.Simulation.Physics;
 /// </summary>
 public class PhysicsEngine
 {
-    public const float ThrustForce       = 150f;   // main engine acceleration, units / s²
-    public const float RetroForce        = 100f;   // retro thruster acceleration, units / s²
-    public const float MaxSpeed          = 300f;   // speed cap, units / s
-    public const float AngularAccel      = 4.0f;   // angular acceleration, rad / s²
-    public const float MaxAngularSpeed   = 2.5f;   // angular speed cap, rad / s
-    public const float AngularDamping    = 4.0f;   // rotation braking coefficient, 1/s
-    public const float BrakeDamping      = 4.0f;   // linear brake damping coefficient, 1/s
+    public const float ThrustForce = 150f;   // main engine acceleration, units / s²
+    public const float RetroForce = 100f;   // retro thruster acceleration, units / s²
+    public const float MaxSpeed = 300f;   // speed cap, units / s
+    public const float AngularAccel = 4.0f;   // angular acceleration, rad / s²
+    public const float MaxAngularSpeed = 2.5f;   // angular speed cap, rad / s
+    public const float AngularDamping = 4.0f;   // rotation braking coefficient, 1/s
+    public const float BrakeDamping = 4.0f;   // linear brake damping coefficient, 1/s
 
     /// <summary>
     /// Applies one physics tick to <paramref name="ship"/>.
@@ -28,7 +28,7 @@ public class PhysicsEngine
     {
         float thrust = input?.Thrust ?? 0f;
         float torque = input?.Torque ?? 0f;
-        bool  brake  = input?.Brake  ?? false;
+        bool brake = input?.Brake ?? false;
 
         // 1. Rotation — angular velocity with assisted damping.
         if (torque != 0f)
