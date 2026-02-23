@@ -50,6 +50,46 @@ Violating these will break the entire stack — enforce on every file you touch.
 
 ---
 
+## World Coordinate System — Critical
+
+Decided 2026-02-23. Every story from Epic 2 onwards must follow these rules.
+
+| Rule | Value |
+|---|---|
+| Position fields (`X`, `Y`) on all entities | `long` (int64) — 1 unit = 1 mm |
+| Velocity fields (`VelocityX`, `VelocityY`) | `float` mm/s |
+| Force/acceleration constants | `float` mm/s² |
+| Position integration | `ship.X += (long)(ship.VelocityX * deltaSeconds)` |
+| Sector size | 50km × 50km — `RegionBounds.SectorSize = 50_000_000L` |
+| Sector grid address | `Sector.GridX`, `Sector.GridY` — both `long` |
+| Lazy generation | `Sector.IsGenerated` — false until first player arrival triggers `SectorGenerator` |
+
+**PhysicsEngine constants (DO NOT change without a story):**
+```
+MaxSpeed    = 300_000f   // mm/s = 300 m/s
+ThrustForce = 150_000f   // mm/s²
+RetroForce  = 100_000f   // mm/s²
+AngularAccel, MaxAngularSpeed, AngularDamping, BrakeDamping — unchanged (radians / dimensionless)
+```
+
+**RegionBounds (canonical — never hardcode sector size inline):**
+```csharp
+RegionBounds.SectorSize = 50_000_000L  // 50km
+RegionBounds.HalfSector = 25_000_000L  // ±25km local range per sector
+```
+
+**PostgreSQL migration gotcha — float→bigint requires USING clause:**
+EF Core does not auto-generate the `USING x::bigint` cast for column type changes. If migrating a live DB with existing data, add manually:
+```csharp
+migrationBuilder.Sql("ALTER TABLE asteroids ALTER COLUMN x TYPE bigint USING x::bigint");
+```
+SQLite (test DBs via EnsureCreated) handles this automatically — no USING needed.
+
+**Overlap / distance math — use `double` not `float`:**
+When computing squared distances between two `long` coordinates (e.g. in `SpawnController` reposition logic), cast to `double` via `Math.Pow`. Do NOT use `MathF.Pow` — float loses precision on large mm values.
+
+---
+
 ## Architecture Rules — Never Violate
 
 - **Server-authoritative physics** — client NEVER submits positions; only input events
@@ -204,6 +244,7 @@ npx create-vite client --template vanilla-ts
 
 | Story | Key Finding |
 |---|---|
+| 2.0 Coordinate system | All entity X/Y are `long` (int64 mm). PhysicsEngine position integration uses `(long)` cast. float→bigint EF migration needs manual `USING x::bigint` SQL for live DBs. Overlap checks use `double`/`Math.Pow`, not float. `RegionBounds` is canonical for sector size — never hardcode. |
 | 1.1 Monorepo scaffold | `.slnx` not `.sln`; SignalR Protocols.MessagePack package; tsconfig noUnusedLocals |
 | 1.2 Player auth | `erasableSyntaxOnly` bans TS constructor parameter properties; `CanReadToken()` ≠ safe to parse (wrap ReadJwtToken in try/catch); UserManager test factory needs UserValidator + relaxed IdentityOptions; `dotnet-ef` global tool must be on PATH; `WebApplicationFactory` config overrides via `ConfigureAppConfiguration` arrive too late — use `Environment.SetEnvironmentVariable` in factory constructor; EF Core 10 `IsRelational()` throws on InMemory — check `ProviderName != "Microsoft.EntityFrameworkCore.InMemory"` instead; EF Core "multiple providers" error with `UseInMemoryDatabase` in integration tests — fix: `UseInternalServiceProvider(new ServiceCollection().AddEntityFrameworkInMemoryDatabase().BuildServiceProvider())` |
 | 1.3 Starting sector | `Forbid()` without auth middleware = 500; use `StatusCode(403)`. `IShardClient` interface required for Moq. `IDbContextTransaction` requires `ProviderName` guard for InMemory. `AddHttpClient<ShardClient>().AddTypedClient<IShardClient, ShardClient>()` registers both concrete + interface. |

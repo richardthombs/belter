@@ -141,6 +141,50 @@ cd client && npm install pixi.js
 | Navigation catalogue | Relational rows: (player_id, asteroid_id, trajectory_data, composition_data, recorded_at) | Clean model, indexed lookups, EF-natural |
 | Region registry | PostgreSQL `regions` table + IMemoryCache on gateway | Durable shared state; invalidated on every split/coalesce |
 
+### World Coordinate System & Sector Model
+
+**Decided in Epic 2 pre-work (2026-02-23).**
+
+| Concept | Decision |
+|---|---|
+| Position type | `long` (int64) on all entity X/Y fields (`Asteroid`, `Ship`, `NpcStation`) |
+| Unit | 1 unit = 1 mm — no conversion layer |
+| World extent | ±9.2 × 10¹² m (±60 AU) — determined by int64 range |
+| Velocity/force type | `float` (mm/s, mm/s²) — ~7 sig figs is sufficient at game speeds |
+| Position integration | `(long)` cast per tick: `ship.X += (long)(ship.VelocityX * dt)` — ≤1mm truncation error |
+| Sector size | 50km × 50km = `50_000_000 × 50_000_000` units (see `RegionBounds`) |
+| Sector grid address | `Sector.GridX`, `Sector.GridY` — both `long` (int32 overflows at ~2×10⁹ sectors) |
+| Lazy generation | `Sector.IsGenerated` flag — asteroid generation deferred until first player arrival |
+| Client coordinates | JS `Number` receives long values; safe for all gameplay distances (≤ 2⁵³ = ±4.5×10¹⁵) |
+
+**`RegionBounds` (canonical constants — never hardcode):**
+```csharp
+public const long SectorSize  = 50_000_000L; // 50km
+public const long HalfSector  = 25_000_000L; // ±25km local range
+```
+
+**Shard / Region / Sector model (refined from original architecture):**
+- `Sector` = fixed-size grid cell. Created on demand when first approached. Permanent once created.
+- `Region` = **set of sector IDs** owned by a shard. NOT an arbitrary spatial rectangle.
+- `Shard` = K8s pod. Owns one or more whole sectors. Splits and coalesces transfer whole sectors — never fractional geometry.
+- The `regions` table maps `sector_id → shard_instance_id`. Gateway caches it via `IMemoryCache`.
+- `RegionSplitter` and `RegionCoalescer` transfer sector ID ownership, not spatial bounds. `RegionBounds` provides the fixed sector geometry that follows automatically.
+
+**SectorGenerator scale (mm):**
+| Parameter | Value |
+|---|---|
+| Asteroid distance from centre | 500,000 – 22,000,000 mm (500m – 22km) |
+| Asteroid radius | 10,000 – 500,000 mm (10m – 500m) |
+| NPC station distance | 2,000,000 – 15,000,000 mm (2km – 15km) |
+
+**PhysicsEngine constants (mm/s):**
+| Constant | Value | Real-world |
+|---|---|---|
+| `MaxSpeed` | 300,000 mm/s | 300 m/s |
+| `ThrustForce` | 150,000 mm/s² | 150 m/s² (15g) |
+| `RetroForce` | 100,000 mm/s² | 100 m/s² |
+| Angular constants | unchanged | radians — scale-independent |
+
 ### Authentication & Security
 
 | Decision | Choice |

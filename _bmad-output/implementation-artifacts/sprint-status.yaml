@@ -58,7 +58,8 @@ development_status:
   # Epic 2: The Core Mining Loop — Discover, Extract, Sell
   # ─────────────────────────────────────────────────────────────
   epic-2: in-progress
-  2-1-living-belt-asteroid-physics-simulation: ready-for-dev
+  2-0-int64-coordinate-system-and-scale: ready-for-dev
+  2-1-living-belt-asteroid-physics-simulation: backlog
   2-2-hud-bottom-bar-pulse-indicator: backlog
   2-3-context-panel-tap-to-select-with-live-range-updates: backlog
   2-4-asteroid-scanning: backlog
