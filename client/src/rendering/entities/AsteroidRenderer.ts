@@ -21,7 +21,7 @@ export class AsteroidRenderer extends Container {
         super();
         const g = new Graphics();
         const points = buildPolygonPoints(snapshot);
-        g.poly(points).fill(0x888888);
+        g.poly(points).fill(0x000000).stroke({ color: 0xffffff, width: 1 });
         this.addChild(g);
         this.cacheAsTexture(true);
     }

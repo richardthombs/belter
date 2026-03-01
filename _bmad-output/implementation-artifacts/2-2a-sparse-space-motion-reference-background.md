@@ -111,7 +111,7 @@ GPT-5.3-Codex
 ### Implementation Plan
 
 - Expand `BackgroundLayer` into an explicit renderable/updateable layer that stays non-interactive.
-- Keep runtime default to starfield for MVP while enabling development-time candidate selection for evaluation.
+- Set runtime default to grid for MVP after candidate evaluation while retaining non-default treatment override support for evaluation/debug.
 - Generate deterministic star points from tile-hashed world coordinates so repeated camera frames are stable and testable.
 - Add reduced-motion branch that suppresses motion phase offsets while preserving orientation cues.
 - Verify draw order remains `BackgroundLayer -> WorldLayer -> EffectsLayer -> UiLayer` and capture this in a renderer unit test.
@@ -123,7 +123,7 @@ GPT-5.3-Codex
 - Scope constrained to client BackgroundLayer and UX-compliant visual subtlety.
 - Implemented deterministic sparse starfield treatment with subtle parallax and faint luminance profile.
 - Implemented optional sector-aligned faint grid treatment with coarse spacing for orientation only.
-- Added development-time treatment switch via `?bgRef=starfield|grid`; default MVP runtime treatment is `starfield` (grid inactive unless selected in development mode).
+- Added treatment switch via `?bgRef=starfield|grid` (plus `?bgRef=stars` alias); default MVP runtime treatment is `grid` and `starfield` remains non-default for evaluation/debug overrides.
 - Added reduced-motion branch honoring `prefers-reduced-motion` to keep background static/minimally animated.
 - Added renderer and background-layer tests covering layer order, deterministic generation, treatment switching, non-interactive behavior, and reduced-motion behavior.
 - Fixed `formatCoarseLocation` aliasing in HUD coarse location encoding so distant positions no longer collide to identical coarse codes.

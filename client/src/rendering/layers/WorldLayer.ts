@@ -8,6 +8,11 @@ export class WorldLayer extends Container {
     private asteroidMap = new Map<number, AsteroidRenderer>();
     private localShipId: number | null = null;
 
+    constructor() {
+        super();
+        this.sortableChildren = true;
+    }
+
     setLocalShipId(id: number): void {
         this.localShipId = id;
     }
@@ -30,6 +35,7 @@ export class WorldLayer extends Container {
             let r = this.shipMap.get(ship.shipId);
             if (!r) {
                 r = new ShipRenderer();
+                r.zIndex = 10;
                 this.addChild(r);
                 this.shipMap.set(ship.shipId, r);
             }
@@ -51,6 +57,7 @@ export class WorldLayer extends Container {
             let r = this.asteroidMap.get(asteroid.asteroidId);
             if (!r) {
                 r = new AsteroidRenderer(asteroid);
+                r.zIndex = 0;
                 this.addChild(r);
                 this.asteroidMap.set(asteroid.asteroidId, r);
             }

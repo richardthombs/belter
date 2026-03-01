@@ -586,6 +586,10 @@ So that I can perceive ship travel direction and drift even when no asteroids ar
 **When** enabled,
 **Then** the motion-reference layer renders static or minimally animated
 
+**Planning Note:**
+- Selected MVP default treatment is **sector-aligned grid**.
+- `starfield` is retained only as a non-default explicit evaluation/debug override path.
+
 ---
 
 ### Story 2.3: Context Panel — Tap-to-Select with Live Range Updates
