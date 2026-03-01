@@ -142,6 +142,7 @@ This means:
 - **Relief is designed → post-jump beat** — arrival sequence gives the player a moment of scanning before the music settles; this is intentional pacing
 - **Competence → contextual UI** — the right actions surface automatically; the player is never left in a vacuum
 - **Calm engagement → ambient HUD** — no urgent alerts for non-urgent events; UI whispers, never shouts
+- **Sparse-space orientation → subtle background reference** — when nearby objects are absent, provide a very faint motion-reference backdrop (evaluate starfield vs sector-aligned grid) so travel direction remains readable without competing with HUD or world entities
 - **Ownership → persistent spatial markers** — claimed asteroids, personal catalogue, wreck log accumulate the player's history
 - **Wonder → living world signals** — distant collisions, drifting asteroids, expanding frontier make the world feel alive
 - **Recovery → death design** — starter ship floor ensures death is a setback, never a catastrophe

@@ -11,12 +11,16 @@ export function formatCoarseLocation(sectorId: number, x: number, y: number): st
 	const xMeters = clamp(Math.floor((x + halfSectorMm) / 1000), 0, 49_999);
 	const yMeters = clamp(Math.floor((y + halfSectorMm) / 1000), 0, 49_999);
 
-	const withinSquareE = xMeters % 10_000;
-	const withinSquareN = yMeters % 10_000;
+	const eastTenThousands = Math.floor(xMeters / 10_000);
+	const northTenThousands = Math.floor(yMeters / 10_000);
+	const eastThousands = Math.floor((xMeters % 10_000) / 1_000);
+	const northThousands = Math.floor((yMeters % 10_000) / 1_000);
+	const eastHundreds = Math.floor((xMeters % 1_000) / 100);
+	const northHundreds = Math.floor((yMeters % 1_000) / 100);
 
-	const pair1 = `${Math.floor(withinSquareE / 1_000)}${Math.floor(withinSquareN / 1_000)}`;
-	const pair2 = `${Math.floor((withinSquareE % 1_000) / 100)}${Math.floor((withinSquareN % 1_000) / 100)}`;
-	const pair3 = `${Math.floor((withinSquareE % 100) / 10)}${Math.floor((withinSquareN % 100) / 10)}`;
+	const pair1 = `${eastTenThousands}${northTenThousands}`;
+	const pair2 = `${eastThousands}${northThousands}`;
+	const pair3 = `${eastHundreds}${northHundreds}`;
 
 	return `S${sectorId} ${pair1} ${pair2} ${pair3}`;
 }

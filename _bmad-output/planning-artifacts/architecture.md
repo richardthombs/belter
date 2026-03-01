@@ -222,6 +222,7 @@ ASP.NET Core's JWT middleware defaults to remapping standard claim names to long
 | Input abstraction | `InputManager` normalises touch + keyboard/mouse → unified `InputEvent { thrust: Vector2; brake: boolean; interact: boolean }` from day one |
 | Rendering approach | PixiJS Graphics API (vector) + `cacheAsTexture()` for static/semi-static shapes; cache cleared on fragmentation |
 | Rendering layers | Stage → BackgroundLayer → WorldLayer → EffectsLayer → UILayer |
+| Sparse-space orientation aid | Visual-only motion reference (faint starfield or faint sector-aligned grid) belongs in `BackgroundLayer` only; keep world entities in `WorldLayer` and HUD/context overlays in HTML overlay layer |
 | Navigation catalogue projection | `NavigationCatalogueProjector` — pure client-side linear extrapolation; `confidence` score (0–1) based on data age drives visual uncertainty; server validates actual jump safety |
 | Asset strategy | No sprite sheets; PixiJS Assets manifest for any raster assets (UI icons etc.); WebGPU renderer lazy-loaded |
 

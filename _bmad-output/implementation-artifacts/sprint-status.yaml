@@ -61,6 +61,7 @@ development_status:
   2-0-int64-coordinate-system-and-scale: done
   2-1-living-belt-asteroid-physics-simulation: done
   2-2-hud-bottom-bar-pulse-indicator: review
+  2-2a-sparse-space-motion-reference-background: review
   2-3-context-panel-tap-to-select-with-live-range-updates: backlog
   2-4-asteroid-scanning: backlog
   2-5-asteroid-mining: backlog

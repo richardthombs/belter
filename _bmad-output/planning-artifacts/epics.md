@@ -558,6 +558,36 @@ So that I always have ambient situational awareness without any interaction requ
 
 ---
 
+### Story 2.2a: Sparse-Space Motion Reference Background
+
+As a **player**,
+I want a very faint background motion reference while flying in sparse space,
+So that I can perceive ship travel direction and drift even when no asteroids are visible.
+
+**Acceptance Criteria:**
+
+**Given** open-space flight with no nearby visible asteroids,
+**When** rendering updates,
+**Then** a faint non-intrusive motion-reference layer remains visible in the background
+
+**Given** evaluation mode,
+**When** candidate treatments are compared,
+**Then** both a faint starfield and a faint sector-aligned grid are available for side-by-side review
+
+**Given** final MVP selection,
+**When** evaluation completes,
+**Then** one treatment is selected as default and the non-selected treatment is removed from MVP scope
+
+**Given** HUD/context overlays are present,
+**When** the motion-reference layer renders,
+**Then** HUD readability and interaction clarity are not degraded
+
+**Given** `prefers-reduced-motion`,
+**When** enabled,
+**Then** the motion-reference layer renders static or minimally animated
+
+---
+
 ### Story 2.3: Context Panel — Tap-to-Select with Live Range Updates
 
 As a **player**,

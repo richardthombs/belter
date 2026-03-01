@@ -1,170 +1,127 @@
-# Sprint Change Proposal — Epic 2 HUD Location Context Refinement
+# Sprint Change Proposal — Sparse-Space Motion Reference Background
 
 Date: 2026-03-01  
 Workflow: Correct Course (`bmad-bmm-correct-course`)  
-Trigger Story: `2-2-hud-bottom-bar-pulse-indicator`
+Trigger Area: In-flight readability during sparse asteroid visibility
 
 ## 1) Issue Summary
 
 ### Problem Statement
-During story clarification, a new requirement emerged for Story 2.2: the HUD should include **approximate location context** (sector number + coarse position inside sector), without meter-level precision.
+When there are no asteroids visible on-screen, players lack a stable visual reference and cannot reliably infer ship travel direction or drift.
 
 ### Discovery Context
-- Triggered during implementation-readiness review of Story 2.2.
-- Existing story only covers credits, hold %, and speed.
-- UX intent supports ambient situational awareness, and HUD has an expandable zone for additional stat slots.
+- Triggered from active play feedback during Epic 2 implementation.
+- Current client render stack includes an empty BackgroundLayer and therefore no low-contrast motion cue.
+- HUD location context exists but does not provide immediate directional feel while flying moment-to-moment.
 
 ### Evidence
-- Current Story 2.2 ACs omit location context entirely.
-- UX spec states HUD purpose is ambient awareness and includes an expandable zone.
-- Current world snapshots already include `sectorId` and ship `x`,`y` (mm), enabling derived coarse in-sector context with no precision overload.
+- Player-reported friction: “extremely hard… to tell which direction their ship is travelling in” when screen is empty.
+- Existing background implementation is effectively blank in `BackgroundLayer`.
+- Current UX/docs do not explicitly require sparse-space motion-reference visuals.
 
 ## 2) Impact Analysis
 
 ### Epic Impact
-- **Epic 2 affected:** Story 2.2 scope expands slightly within same epic.
+- **Epic 2 affected:** Add a small story-scoped UX/rendering enhancement for ambient orientation.
 - No new epic required.
 - No epic resequencing required.
 
 ### Story Impact
-- **Directly impacted:** `2-2-hud-bottom-bar-pulse-indicator` (acceptance criteria, tasks, dev notes).
-- **Potentially impacted later:** Story 2.3 context panel may optionally reuse the same coarse-location formatter, but no mandatory change now.
+- **Directly impacted:** Add a new story after Story 2.2 (proposed `2.2a`) focused on in-flight motion reference background.
+- **Indirectly impacted:** Story 2.2 remains unchanged functionally, but benefits from improved readability alongside the HUD bottom bar.
 
 ### Artifact Conflicts
-- **Epics:** Story 2.2 definition in `epics.md` needs to reflect the location-context requirement.
-- **Implementation artifact:** Story 2.2 implementation guide needs AC/task updates.
-- **UX spec:** HUD anatomy/behavior section should explicitly include location context slot behavior.
-- **PRD:** No conflict; FR35 remains valid and this is a refinement inside existing UX intent.
-- **Architecture:** No structural conflict; uses existing world model and contracts.
+- **Epics:** `epics.md` should include a dedicated story for sparse-space motion reference.
+- **UX spec:** needs explicit guidance for faint background orientation cues and reduced-motion variant.
+- **Architecture:** add implementation note to keep this in BackgroundLayer only.
+- **PRD:** no conflict; this is consistent with FR35 ambient contextual readability.
 
 ### Technical Impact
-- Minor client/server contract extension likely needed to avoid brittle client-side sector math:
-  - Preferred: include ship `sectorId` in ship snapshot payload.
-  - Keep location display coarse via quantization (subsector label and rounded local km).
-- No infra, deployment, or CI/CD changes required.
+- Client-only rendering work in `BackgroundLayer` with minimal integration risk.
+- Candidate evaluation requires two variants:
+  1. Faint starfield constellation
+  2. Faint sector-aligned grid
+- Must preserve readability of HUD/context UI and respect reduced-motion preference.
+- No server, infra, schema, or API contract changes required.
 
 ## 3) Recommended Approach
 
 ### Selected Path: Direct Adjustment (Option 1)
 
-Refine Story 2.2 and supporting planning docs to include a **coarse location indicator** in the HUD:
-- Sector number/id
-- Subsector bucket (e.g., grid cell label)
-- Rounded in-sector coordinates (coarse, non-meter precision)
+Introduce a dedicated story (`2.2a`) that implements and evaluates both motion-reference candidates in `BackgroundLayer`, then selects one for MVP.
 
 ### Option Evaluation
 - **Option 1 Direct Adjustment:** **Viable** (Effort: Low/Medium, Risk: Low)
-- **Option 2 Rollback:** Not viable (no implemented code to revert for this story)
-- **Option 3 MVP Review:** Not viable (MVP unaffected; this is an in-scope refinement)
+- **Option 2 Potential Rollback:** Not viable (no prior implementation to revert)
+- **Option 3 MVP Review:** Not viable (MVP goals unchanged; this is a clarity enhancement)
 
 ### Rationale
-- Meets user requirement with minimal disruption.
-- Aligns with HUD ambient-awareness goals.
-- Keeps UI simple and non-noisy by design.
+- Solves the exact gameplay friction with minimal surface area.
+- Leverages existing architecture seam (`BackgroundLayer`) without adding UI complexity.
+- Keeps solution reversible and testable while preserving current epic momentum.
 
 ## 4) Detailed Change Proposals
 
 ### A) Story Changes
 
-#### Story: `2-2-hud-bottom-bar-pulse-indicator`  
-Section: Story statement
+#### Story: New `2.2a` (insert between 2.2 and 2.3)
+Section: Story definition
 
 **OLD:**
-As a **player**,  
-I want a persistent bottom bar showing my credits, cargo hold percentage, and speed at all times during flight,  
-so that I always have ambient situational awareness without any interaction required.
+- No dedicated story for sparse-space directional readability when nearby objects are absent.
 
 **NEW:**
 As a **player**,  
-I want a persistent bottom bar showing my credits, cargo hold percentage, speed, and coarse location context (sector + approximate in-sector position) at all times during flight,  
-so that I always have ambient situational awareness without any interaction required.
+I want a very faint background motion reference while flying in sparse space,  
+so that I can perceive ship travel direction and drift even when no asteroids are visible.
 
-**Rationale:** Adds explicit requirement coverage for location context.
+**Proposed Acceptance Criteria:**
+1. **Given** open-space flight with no nearby visible asteroids, **when** rendering updates, **then** a faint non-intrusive motion-reference layer remains visible in the background.
+2. **Given** evaluation mode, **when** the candidate treatments are compared, **then** both a faint starfield and a faint sector-aligned grid are available for side-by-side review.
+3. **Given** final MVP selection, **when** evaluation completes, **then** one treatment is selected as default and the non-selected treatment is removed from MVP scope.
+4. **Given** HUD/context overlays are present, **when** the motion-reference layer renders, **then** HUD readability and interaction clarity are not degraded.
+5. **Given** reduced-motion preference, **when** enabled, **then** the motion-reference layer renders static or minimally animated.
 
----
-
-#### Story: `2-2-hud-bottom-bar-pulse-indicator`  
-Section: Acceptance Criteria (additions)
-
-**OLD:**
-- No AC for location context precision/format.
-
-**NEW (add AC 7 and AC 8):**
-7. **Given** the player is in flight,  
-   **when** the HUD renders location context,  
-   **then** it displays sector identifier plus coarse in-sector position (subsector-style bucket and rounded local coordinates), not meter-level precision.
-
-8. **Given** location context values update during movement,  
-   **when** the player crosses a coarse boundary,  
-   **then** the location display updates without pulse animation and without `aria-live` announcements.
-
-**Rationale:** Defines coarse-detail requirement and non-noisy behavior.
+**Rationale:** Captures user-reported directional readability pain as a focused, testable story.
 
 ---
 
-#### Story: `2-2-hud-bottom-bar-pulse-indicator`  
-Section: Tasks/Subtasks (additions)
+### B) UX Specification Changes
+
+#### Artifact: `_bmad-output/planning-artifacts/ux-design-specification.md`
+Section: Visual/ambient flight guidance
 
 **OLD:**
-- No implementation tasks for location context formatting or display.
-
-**NEW (add under Task 5 and Task 6):**
-- Add location formatter utility for coarse output:
-  - Convert ship world position to local sector coordinates.
-  - Quantize to coarse increments (recommended: rounded km) and subsector bucket (recommended: fixed grid label).
-  - Clamp/format for negative and boundary transitions.
-- Add HUD rendering for location slot (sector + subsector + coarse local coords).
-- Add tests for quantization, boundary crossing, and stability (no high-frequency precision jitter).
-
-**Rationale:** Makes implementation deterministic and testable.
-
----
-
-### B) Epic/Planning Changes
-
-#### Artifact: `_bmad-output/planning-artifacts/epics.md`  
-Section: Epic 2, Story 2.2 ACs
-
-**OLD:**
-- Story 2.2 ACs end at reduced-motion behavior.
+- No explicit requirement for sparse-space background directional cues.
 
 **NEW:**
-- Append coarse location-context ACs equivalent to Story changes above.
+- Add a sparse-space orientation guideline:
+  - Render a very subtle motion-reference background during empty-field flight.
+  - Evaluate starfield and sector-aligned grid patterns; choose one for MVP.
+  - Keep contrast intentionally low so gameplay objects and HUD remain dominant.
+  - Provide reduced-motion behavior (static/minimal animation).
 
-**Rationale:** Keeps planning and implementation artifacts aligned.
+**Rationale:** Prevents regressions and makes directional readability a documented UX contract.
 
 ---
 
-### C) UX Specification Changes
+### C) Architecture / Implementation Notes
 
-#### Artifact: `_bmad-output/planning-artifacts/ux-design-specification.md`  
-Section: HUD Bottom Bar anatomy/states
+#### Artifact: `_bmad-output/planning-artifacts/architecture.md` + implementation story notes
 
 **OLD:**
-- Anatomy: Credits, Hold, Speed, expandable zone.
+- No explicit architectural note for motion-reference background ownership.
 
 **NEW:**
-- Anatomy: Credits, Hold, Speed, **Location Context** (sector + subsector + coarse local coordinates).
-- Behavior notes:
-  - Coarse precision only; no meter-level detail.
-  - Updates are quiet (no pulse, no live region announcements).
-  - Designed for orientation, not exact targeting.
+- Add implementation note: motion-reference rendering belongs exclusively to `BackgroundLayer` in client renderer layering.
+- Keep world entities in `WorldLayer` and HUD/context overlays in HTML overlay layer.
+- Do not introduce gameplay logic coupling to this visual aid.
 
-**Rationale:** Ensures UX contract explicitly covers your requested display semantics.
+**Rationale:** Preserves clean boundaries and minimizes implementation risk.
 
----
+### D) PRD Changes
 
-### D) Architecture / PRD Changes
-
-#### Architecture
-**OLD:** No explicit HUD location quantization note.
-
-**NEW:** No architecture rewrite required; add implementation note in story only:
-- Derive display from existing `sectorId` + ship position data.
-- Keep quantization client-side and presentation-only.
-
-#### PRD
-No changes required.
+No PRD modifications required.
 
 ## 5) Implementation Handoff
 
@@ -172,35 +129,35 @@ No changes required.
 **Minor**
 
 ### Handoff Recipients and Responsibilities
-- **Development team:** implement Story 2.2 refinements (HUD location slot + formatter + tests).
-- **Scrum Master / PO:** apply planning artifact updates (`epics.md`, Story 2.2 artifact).
-- **UX designer/maintainer:** update HUD anatomy/behavior language in UX spec.
+- **Development team:** implement `2.2a` in client renderer (`BackgroundLayer`) with two candidate treatments and final selection.
+- **PO/SM:** add new story entry and ordering in `epics.md`, align sprint sequencing.
+- **UX maintainer:** add sparse-space orientation guideline to UX specification.
 
 ### Success Criteria
-- Story 2.2 explicitly includes coarse location requirement and AC coverage.
-- HUD shows sector + subsector/coarse local coordinates without precision noise.
-- No pulse/aria-live behavior added for location updates.
-- Epics and UX docs remain consistent with implementation artifact.
+- Players can perceive travel direction during empty-field flight.
+- Selected visual aid remains faint and non-distracting.
+- No HUD/context readability regression.
+- Reduced-motion behavior is preserved.
 
-## Checklist Outcome (Batch Execution)
+## Checklist Outcome (Interactive Execution)
 
 ### Section 1 — Trigger and Context
-- 1.1 Trigger story identified: **[x] Done** (`2-2-hud-bottom-bar-pulse-indicator`)
-- 1.2 Core problem defined: **[x] Done** (new requirement emerged)
+- 1.1 Trigger story/area identified: **[x] Done** (sparse-space directional readability)
+- 1.2 Core problem defined: **[x] Done**
 - 1.3 Evidence gathered: **[x] Done**
 
 ### Section 2 — Epic Impact Assessment
-- 2.1 Current epic viability: **[x] Done** (still viable)
-- 2.2 Epic-level changes: **[x] Done** (modify existing story scope)
-- 2.3 Remaining epics review: **[N/A] Skip** (no cross-epic dependency impact)
+- 2.1 Current epic viability: **[x] Done** (Epic 2 remains viable)
+- 2.2 Epic-level changes: **[x] Done** (add focused story 2.2a)
+- 2.3 Remaining epics review: **[N/A] Skip** (no downstream invalidation)
 - 2.4 Future epic invalidation check: **[N/A] Skip**
-- 2.5 Epic order/priority check: **[N/A] Skip**
+- 2.5 Epic order/priority check: **[x] Done** (story insertion after 2.2)
 
 ### Section 3 — Artifact Conflict Analysis
-- 3.1 PRD conflict check: **[x] Done** (no PRD conflict)
-- 3.2 Architecture conflict check: **[x] Done** (no structural conflict)
-- 3.3 UI/UX conflict check: **[x] Done** (HUD section update needed)
-- 3.4 Other artifacts check: **[N/A] Skip**
+- 3.1 PRD conflict check: **[x] Done** (none)
+- 3.2 Architecture conflict check: **[x] Done** (boundary note required only)
+- 3.3 UI/UX conflict check: **[x] Done** (UX spec update needed)
+- 3.4 Other artifacts check: **[x] Done** (epics + implementation docs)
 
 ### Section 4 — Path Forward Evaluation
 - 4.1 Direct adjustment: **[x] Viable**
@@ -219,7 +176,7 @@ No changes required.
 - 6.1 Checklist completion: **[x] Done**
 - 6.2 Proposal accuracy verification: **[x] Done**
 - 6.3 User approval: **[x] Done** (approved: yes)
-- 6.4 `sprint-status.yaml` epic changes: **[N/A] Skip** (no epic/story list changes)
+- 6.4 `sprint-status.yaml` update: **[x] Done** (added `2-2a-sparse-space-motion-reference-background: backlog`)
 - 6.5 Next steps confirmation: **[x] Done**
 
 ## Approval and Routing Record
@@ -229,18 +186,17 @@ No changes required.
 - Approval Date: 2026-03-01
 - Scope Classification: **Minor**
 - Route To: **Development team (direct implementation)**
-- Supporting Coordination: **PO/SM for artifact wording alignment**
 
 ### Routing Deliverables
 
-1. Update Story 2.2 implementation artifact to include coarse location context ACs and tasks.
-2. Update Epic 2 Story 2.2 entry in planning epics for wording parity.
-3. Update UX HUD Bottom Bar section to include location-context anatomy and quiet-update behavior.
-4. Preserve sprint structure/status entries (no sprint-status restructuring required).
+1. Added Story 2.2a in epics planning with acceptance criteria for sparse-space motion reference evaluation and selection.
+2. Added sprint tracker entry `2-2a-sparse-space-motion-reference-background: backlog`.
+3. Added UX guidance for sparse-space motion-reference behavior.
+4. Added architecture boundary note constraining implementation to `BackgroundLayer`.
 
 ### Implementation Success Criteria
 
-- HUD shows sector identifier plus coarse in-sector location context (subsector-style and rounded coordinates).
-- Location display avoids meter-level precision.
-- Location updates are non-noisy (no pulse, no aria-live updates).
-- Story, epics, and UX artifacts remain aligned.
+- Empty-field flight provides a faint directional cue.
+- Candidate comparison (starfield vs sector-aligned grid) is performed and one is selected for MVP.
+- HUD/context readability remains unaffected.
+- Reduced-motion behavior is respected.
