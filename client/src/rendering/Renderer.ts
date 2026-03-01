@@ -18,6 +18,7 @@ export class Renderer {
 		await this.app.init({
 			canvas,
 			resizeTo: window,
+			antialias: true,
 			backgroundColor: 0x0a0a1a,
 		});
 
