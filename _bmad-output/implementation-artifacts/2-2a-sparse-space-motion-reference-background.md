@@ -1,6 +1,6 @@
 # Story 2.2a: Sparse-Space Motion Reference Background
 
-Status: review
+Status: done
 
 ## Story
 
@@ -20,7 +20,7 @@ so that I can perceive ship travel direction and drift even when no asteroids ar
 
 3. **Given** final MVP selection,
    **when** evaluation completes,
-   **then** one treatment is selected as default and the non-selected treatment is removed from MVP scope.
+  **then** one treatment is selected as the default, while the alternate treatment may remain available via non-default development/evaluation selection.
 
 4. **Given** HUD/context overlays are present,
    **when** the motion-reference layer renders,
@@ -50,7 +50,7 @@ so that I can perceive ship travel direction and drift even when no asteroids ar
 - [x] Task 4 — Add treatment selection and MVP default (AC: 3)
   - [x] Add a development-time selection mechanism to switch between `starfield` and `grid` for side-by-side evaluation.
   - [x] Record selected default treatment in implementation notes for this story.
-  - [x] Remove/deactivate non-selected treatment from MVP runtime path before marking story done.
+  - [x] Keep non-selected treatment available behind development/evaluation override while defaulting MVP runtime to the selected treatment.
 
 - [x] Task 5 — Reduced-motion behavior (AC: 5)
   - [x] Respect `prefers-reduced-motion` in background update logic.
@@ -147,3 +147,4 @@ GPT-5.3-Codex
 - 2026-03-01: Implemented sparse-space motion reference background (starfield + grid evaluation path), wired render update hooks, and added rendering tests.
 - 2026-03-01: Resolved HUD coarse-location aliasing regression and completed full client validation gates; story moved to `review`.
 - 2026-03-01: Fixed live runtime background visibility issue (camera transform math), added selector alias (`bgRef=stars`), and revalidated client tests/build.
+- 2026-03-01: Review accepted as-is; retained both background treatments with `grid` as default and dev/evaluation override support; status set to `done`.
