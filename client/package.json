@@ -4,9 +4,9 @@
 	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
-		"dev": "vite",
+		"dev": "npx vite",
 		"build": "tsc && vite build",
-		"preview": "vite preview",
+		"preview": "npx vite preview",
 		"format": "npx prettier --write \"src/**/*.ts\"",
 		"test": "vitest run",
 		"test:watch": "vitest"

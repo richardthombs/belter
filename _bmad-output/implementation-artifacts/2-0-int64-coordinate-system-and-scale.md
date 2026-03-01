@@ -24,7 +24,13 @@ so that the game world has correct physical scale, can expand infinitely without
 
 7. **Given** `AsteroidSnapshot` and `ShipSnapshot`, **when** broadcast, **then** `X` and `Y` are `long`; client `types/index.ts` receives `number` (JS integers ≤ 2⁵³ = safely within JS Number precision for belt-scale play).
 
-8. **Given** the full solution build, **then** `dotnet build` → 0 errors, `dotnet test` → all 96 existing tests pass (with updated coordinate values), `npm run build` → 0 TypeScript errors.
+8. **Given** the full solution build, **then** `dotnet build` → 0 errors, `dotnet test` → all existing tests pass (current baseline: 55 tests), `npm run build` → 0 TypeScript errors.
+
+## Scope Guardrails (Do Not Expand in Story 2.0)
+
+- Do **not** add `AsteroidManager.cs` in this story (introduced in Story 2.1).
+- Do **not** add `Asteroid.VelocityX`/`VelocityY` fields in this story (introduced in Story 2.1).
+- Do **not** change angular physics constants (`AngularAccel`, `MaxAngularSpeed`, `AngularDamping`) in this story.
 
 ## Tasks / Subtasks
 
@@ -324,7 +330,9 @@ so that the game world has correct physical scale, can expand infinitely without
     - `sectors.grid_x` (new): `bigint NOT NULL DEFAULT 0`
     - `sectors.grid_y` (new): `bigint NOT NULL DEFAULT 0`
     - `sectors.is_generated` (new): `boolean NOT NULL DEFAULT false`
-    - Column type changes for float→bigint may require an explicit `USING x::bigint` cast in the migration for PostgreSQL — if EF generates an `ALTER COLUMN` without a USING clause, add it manually:
+    - Column type changes for float→bigint may require an explicit `USING x::bigint` cast in the migration for PostgreSQL.
+      - **If the database already contains data:** if EF generates an `ALTER COLUMN` without a USING clause, add manual SQL as below.
+      - **If this is a fresh/empty local database:** manual `USING` SQL is usually unnecessary; prefer standard generated migration.
       ```csharp
       migrationBuilder.Sql("ALTER TABLE asteroids ALTER COLUMN x TYPE bigint USING x::bigint");
       migrationBuilder.Sql("ALTER TABLE asteroids ALTER COLUMN y TYPE bigint USING y::bigint");
@@ -356,11 +364,11 @@ so that the game world has correct physical scale, can expand infinitely without
           $"Ship at ({secondBody.SpawnX}, {secondBody.SpawnY}) still overlaps asteroid");
       ```
   - [ ] **`SimulationLoopTests.cs`** — ship and asteroid positions use small literals (`X = 1f, Y = 2f`, `X = 10f, Y = 20f`). Change these to `long` equivalents (`X = 1L, Y = 2L`, `X = 10L, Y = 20L`). The tick tests only check `updated.Y < 0f` — change to `updated.Y < 0`. The `Tick_WithInputBuffer_UpdatesShipPosition` test asserts `updated.Y < 0f` and `updated.X == 0f` with `precision: 3` — since position is now `long`, use `Assert.Equal(0L, updated.X)` and `Assert.True(updated.Y < 0)`.
-  - [ ] Run `cd server && dotnet test BelterLife.slnx` → all 96 tests pass
+  - [ ] Run `cd server && dotnet test BelterLife.slnx` → all existing tests pass (current baseline: 55)
 
 - [ ] Task 15 — Build verification
   - [ ] `cd server && dotnet build BelterLife.slnx` → 0 errors
-  - [ ] `cd server && dotnet test BelterLife.slnx` → 0 failures (96 tests)
+  - [ ] `cd server && dotnet test BelterLife.slnx` → 0 failures (all existing tests; current baseline: 55)
   - [ ] `cd client && npm run build` → 0 errors
 
 ## Dev Notes
@@ -385,7 +393,7 @@ JS `Number` can represent integers exactly up to 2⁵³ ≈ 9 × 10¹⁵. The ma
 
 EF Core generates `AlterColumn` for float → bigint changes but does NOT automatically add the PostgreSQL `USING x::bigint` cast clause. Without it the migration fails on a live database with existing data. The manual Sql() statements in Task 13 are required for any database that has been populated.
 
-For fresh local dev via `docker-compose` with no data, you can `dotnet ef database drop` and re-migrate. For the test database (SQLite via EnsureCreated), the new schema is generated directly from the model — no migration runs.
+For fresh local dev via `docker-compose` with no data, manual `USING` SQL is generally not required; standard generated migration is preferred. For existing populated databases, manual `USING` SQL is required where EF omits it. For the test database (SQLite via EnsureCreated), the new schema is generated directly from the model — no migration runs.
 
 ### SpawnController Overlap Check — double Arithmetic Required
 
@@ -427,6 +435,13 @@ Old: asteroids placed at minimum 150 units (150mm) from origin. New: minimum 500
 | `server/BelterLife.Simulation.Tests/Physics/PhysicsEngineTests.cs` | `< 0f` → `< 0`; float position assertions → long |
 | `server/BelterLife.Simulation.Tests/Api/SpawnControllerTests.cs` | Update coordinate literals; minDist in mm |
 | `server/BelterLife.Simulation.Tests/Physics/SimulationLoopTests.cs` | float literals → long in position assertions |
+
+### Source References
+
+- `_bmad-output/planning-artifacts/epics.md` — Epic 2 / Story 2.0 scope and acceptance criteria intent.
+- `_bmad-output/planning-artifacts/architecture.md` — canonical coordinate system, sector model, and physics constraints.
+- `project-context.md` — int64 migration rules, `RegionBounds` constants, and PostgreSQL `USING` migration caveat.
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — current story status and implementation order context.
 
 ## Dev Agent Record
 
