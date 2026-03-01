@@ -11,7 +11,7 @@ so that movement feels physical and responsive without requiring constant correc
 ## Acceptance Criteria
 
 1. **Given** the player's ship, **when** thrust input is applied via WASD or arrow keys, **then** the ship accelerates in the thrust direction — velocity accumulates via Newtonian physics (velocity += thrustForce * dt).
-2. **Given** a moving ship with no thrust input, **when** no brake is engaged, **then** the ship maintains velocity unchanged (pure Newtonian drift) — to decelerate the player uses retro thrusters (Thrust = -1) or the Brake flag.
+2. **Given** a moving ship with no thrust input and no brake, **when** ship speed is at or above 10 m/s, **then** velocity remains unchanged (Newtonian drift); and **when** speed is below 10 m/s, **then** assisted low-speed damping gradually reduces velocity to a full stop.
 3. **Given** the ship at speed, **when** thrust is applied, **then** velocity accumulates in the ship's current heading direction via vector addition; heading is controlled independently by Torque input.
 4. **Given** any client-submitted position or velocity state, **when** received by the server, **then** it is rejected — the server only accepts `InputEvent` vectors; all physics are server-authoritative (NFR12).
 5. **Given** `SendInput` called on the SignalR hub with a valid `InputEvent`, **when** processed by the shard on the next tick, **then** the ship's physics state (position + velocity) is updated and reflected in the next `WorldStateUpdate`.
@@ -61,7 +61,7 @@ so that movement feels physical and responsive without requiring constant correc
       - `BrakeDamping = 4.0f` (linear brake damping coefficient, 1/s)
     - `ApplyPhysics(Ship ship, InputEvent? input, float deltaSeconds)` — heading-based flight model:
       1. Rotation: apply torque → `ship.AngularVelocity += torque * AngularAccel * dt`, clamp to `MaxAngularSpeed`; when no torque, decay angular velocity via `AngularDamping`; integrate: `ship.Heading += ship.AngularVelocity * dt`
-      2. Linear thrust in heading direction — facing vector: `(sin θ, −cos θ)`. Main engines (Thrust > 0) accelerate along facing; retros (Thrust < 0) decelerate. Zero thrust = pure Newtonian drift (velocity unchanged)
+      2. Linear thrust in heading direction — facing vector: `(sin θ, −cos θ)`. Main engines (Thrust > 0) accelerate along facing; retros (Thrust < 0) decelerate. Zero thrust keeps Newtonian drift at normal speeds, with low-speed assisted damping below 10 m/s.
       3. Brake flag: apply strong linear damping (`BrakeDamping`) to both velocity components
       4. Clamp speed to `MaxSpeed`
       5. Integrate position: `ship.X += ship.VelocityX * dt; ship.Y += ship.VelocityY * dt`
@@ -380,6 +380,7 @@ Claude Sonnet 4.6
 - All 52 server tests pass — 23 Simulation + 29 Gateway (`dotnet test` — 0 failures).
   - Includes 3 new `InputControllerTests` added during code review (secret validation, buffer interaction).
 - Client TypeScript build clean (`npm run build` — 0 errors).
+- 2026-03-01 follow-up behavior adjustment: ship now auto-damps and snaps to rest at very low speed (<10 m/s) while preserving Newtonian drift at higher speeds.
 - `AsNoTracking()` removed from Ships query in `SimulationLoop.TickAsync` so EF tracks mutations for `SaveChangesAsync`.
 - `InputBuffer` is a singleton — last-write-wins per player, never cleared. Zero-thrust events sent by client on key release trigger assisted braking.
 - `SendInput` hub method added to `GameHub`; PascalCase wire mapping handled in `GameHubClient.sendInput()` to satisfy ContractlessStandardResolver.

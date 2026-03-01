@@ -43,7 +43,7 @@ WITH reroll AS (
         (25000000.0 - radius::double precision - 3000000.0)
       ) - (150000.0 + radius::double precision)
     ) AS dist_range,
-        (250.0 + random() * 1500.0) AS drift_speed
+        (500.0 + random() * 15000.0) AS drift_speed
     FROM asteroids
     WHERE sector_id = ${SECTOR_ID}
       AND is_destroyed = false

@@ -15,6 +15,9 @@ public class PhysicsEngine
     public const float ThrustForce = 150_000f;   // main engine acceleration, mm / s²
     public const float RetroForce = 100_000f;   // retro thruster acceleration, mm / s²
     public const float MaxSpeed = 300_000f;   // speed cap, mm / s
+    public const float AutoStopSpeedThreshold = 10_000f;   // engage assist below 10 m/s, mm / s
+    public const float AutoStopDamping = 2.0f;   // low-speed damping coefficient, 1/s
+    public const float AutoStopSnapSpeed = 100f;   // snap to zero below 0.1 m/s, mm / s
     public const float AngularAccel = 4.0f;   // angular acceleration, rad / s²
     public const float MaxAngularSpeed = 2.5f;   // angular speed cap, rad / s
     public const float AngularDamping = 4.0f;   // rotation braking coefficient, 1/s
@@ -60,7 +63,7 @@ public class PhysicsEngine
             ship.VelocityX -= facingX * RetroForce * deltaSeconds;
             ship.VelocityY -= facingY * RetroForce * deltaSeconds;
         }
-        // No else — zero thrust leaves velocity untouched (pure Newtonian drift).
+        // No else — zero thrust leaves velocity untouched except low-speed stop assist below threshold.
 
         // 3. Brake flag — linear damping on demand (manual stop assist).
         if (brake)
@@ -68,6 +71,25 @@ public class PhysicsEngine
             float friction = MathF.Max(0f, 1f - BrakeDamping * deltaSeconds);
             ship.VelocityX *= friction;
             ship.VelocityY *= friction;
+        }
+
+        // 3b. Low-speed stop assist — only when not actively thrusting and not braking.
+        if (!brake && thrust == 0f)
+        {
+            float lowSpeed = MathF.Sqrt(ship.VelocityX * ship.VelocityX + ship.VelocityY * ship.VelocityY);
+            if (lowSpeed > 0f && lowSpeed < AutoStopSpeedThreshold)
+            {
+                float friction = MathF.Max(0f, 1f - AutoStopDamping * deltaSeconds);
+                ship.VelocityX *= friction;
+                ship.VelocityY *= friction;
+
+                float postDampedSpeed = MathF.Sqrt(ship.VelocityX * ship.VelocityX + ship.VelocityY * ship.VelocityY);
+                if (postDampedSpeed < AutoStopSnapSpeed)
+                {
+                    ship.VelocityX = 0f;
+                    ship.VelocityY = 0f;
+                }
+            }
         }
 
         // 4. Clamp to MaxSpeed.

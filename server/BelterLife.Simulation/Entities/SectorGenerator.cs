@@ -32,7 +32,7 @@ public class SectorGenerator
             var distanceRange = Math.Max(0f, maxCenterDistance - minCenterDistance);
             double dist = minCenterDistance + (rng.NextDouble() * distanceRange);
             double tangentAngle = angle + (Math.PI / 2);
-            float driftSpeed = 250f + (float)(rng.NextDouble() * 1_500f);
+            float driftSpeed = 500f + (float)(rng.NextDouble() * 15_000f);
             asteroids.Add(new Asteroid
             {
                 X = (long)(Math.Cos(angle) * dist),

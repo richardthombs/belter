@@ -18,11 +18,11 @@ UPDATE asteroids
 SET
     velocity_x = (
         COS(ATAN2(y::double precision, x::double precision) + (PI() / 2.0))
-        * (250.0 + MOD(((id * 1664525)::bigint + (sector_id * 69069)::bigint + 1013904223), 1501)::double precision)
+        * (500.0 + MOD(((id * 1664525)::bigint + (sector_id * 69069)::bigint + 1013904223), 15001)::double precision)
     )::real,
     velocity_y = (
         SIN(ATAN2(y::double precision, x::double precision) + (PI() / 2.0))
-        * (250.0 + MOD(((id * 1664525)::bigint + (sector_id * 69069)::bigint + 1013904223), 1501)::double precision)
+        * (500.0 + MOD(((id * 1664525)::bigint + (sector_id * 69069)::bigint + 1013904223), 15001)::double precision)
     )::real
 WHERE is_destroyed = FALSE
   AND velocity_x = 0

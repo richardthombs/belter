@@ -31,15 +31,42 @@ public class PhysicsEngineTests
     }
 
     [Fact]
-    public void ApplyPhysics_NoInput_VelocityUnchanged()
+    public void ApplyPhysics_NoInput_AboveAutoStopThreshold_VelocityUnchanged()
     {
-        // Pure Newtonian — linear velocity must NOT decay when there is no thrust input.
+        // Above threshold, pure Newtonian drift should remain unchanged.
         var ship = ShipFacingUp();
-        ship.VelocityX = 100f;
+        ship.VelocityX = PhysicsEngine.AutoStopSpeedThreshold + 100f;
 
         _engine.ApplyPhysics(ship, null, Dt);
 
-        Assert.Equal(100f, ship.VelocityX, precision: 4);
+        Assert.Equal(PhysicsEngine.AutoStopSpeedThreshold + 100f, ship.VelocityX, precision: 4);
+        Assert.Equal(0f, ship.VelocityY, precision: 4);
+    }
+
+    [Fact]
+    public void ApplyPhysics_NoInput_BelowAutoStopThreshold_VelocityDecays()
+    {
+        var ship = ShipFacingUp();
+        ship.VelocityX = PhysicsEngine.AutoStopSpeedThreshold - 1_000f;
+
+        _engine.ApplyPhysics(ship, null, Dt);
+
+        Assert.True(ship.VelocityX < PhysicsEngine.AutoStopSpeedThreshold - 1_000f);
+        Assert.Equal(0f, ship.VelocityY, precision: 4);
+    }
+
+    [Fact]
+    public void ApplyPhysics_NoInput_LowSpeedEventuallySnapsToZero()
+    {
+        var ship = ShipFacingUp();
+        ship.VelocityX = 1_000f;
+
+        for (int i = 0; i < 180; i++)
+        {
+            _engine.ApplyPhysics(ship, null, Dt);
+        }
+
+        Assert.Equal(0f, ship.VelocityX, precision: 4);
         Assert.Equal(0f, ship.VelocityY, precision: 4);
     }
 
