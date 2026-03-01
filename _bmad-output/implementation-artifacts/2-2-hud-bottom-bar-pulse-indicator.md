@@ -1,6 +1,6 @@
 # Story 2.2: HUD Bottom Bar & Pulse Indicator
 
-Status: review
+Status: done
 
 ## Story
 
@@ -16,7 +16,7 @@ so that I always have ambient situational awareness without any interaction requ
 
 2. **Given** the credits display,
    **when** the credit value changes,
-   **then** a pulse animation plays: 150ms ease-out scale to 1.08 + brightness +20%, return over 300ms.
+  **then** a subtle pulse animation plays using the current `pulse-subtle` behavior (single ~450ms ease-out pulse with transient scale/brightness emphasis), and no pulse is played on first hydration.
 
 3. **Given** the hold capacity bar,
    **when** ore is deposited,
@@ -36,7 +36,7 @@ so that I always have ambient situational awareness without any interaction requ
 
 7. **Given** the player is in flight,
    **when** the HUD renders location context,
-   **then** it displays sector identifier plus coarse in-sector position (subsector-style bucket and rounded local coordinates), not meter-level precision.
+  **then** it displays sector identifier plus coarse in-sector position using the current subsector-style bucket format (`S{sectorId} NN NN NN`), not meter-level precision.
 
 8. **Given** location context values update during movement,
    **when** the player crosses a coarse boundary,
@@ -71,7 +71,7 @@ so that I always have ambient situational awareness without any interaction requ
   - [x] Compute or consume speed in a consistent unit (mm/s source; display conversion documented in UI component).
   - [x] Update speed continuously without pulse animation.
   - [x] Exclude speed from `aria-live` announcements to avoid excessive chatter.
-  - [x] Add location formatter utility for coarse output (subsector bucket + rounded local coordinates).
+  - [x] Add location formatter utility for coarse output (subsector bucket format, e.g. `S{sectorId} NN NN NN`).
   - [x] Ensure location display is orientation-focused, not precise tracking (no meter-level values).
   - [x] Update location quietly (no pulse animation, no `aria-live`).
 
@@ -228,3 +228,4 @@ GPT-5.3-Codex
 - 2026-03-01: Story created via BMAD create-story workflow; status set to `ready-for-dev`.
 - 2026-03-01: Correct-course refinement approved; added coarse location context (sector + approximate in-sector position) to Story 2.2 requirements, tasks, and test expectations.
 - 2026-03-01: Implemented Story 2.2 HUD bottom bar, pulse indicator behavior, authoritative snapshot extensions, and test coverage; status set to `review`.
+- 2026-03-01: Story reviewed and accepted as-is; acceptance criteria/task wording aligned to current HUD behavior; status set to `done`.
