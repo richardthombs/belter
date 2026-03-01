@@ -111,7 +111,7 @@ describe("HudBottomBar", () => {
 		hud.unmount();
 	});
 
-	it("shows negative speed when moving backward relative to heading", () => {
+	it("shows speed magnitude independent of heading sign", () => {
 		const hud = new HudBottomBar(10);
 		hud.mount(document.body);
 
@@ -126,7 +126,7 @@ describe("HudBottomBar", () => {
 		const speedValue = Array.from(document.querySelectorAll("span")).find((el) =>
 			el.textContent?.includes("m/s"),
 		);
-		expect(speedValue?.textContent).toBe("-1.0 m/s");
+		expect(speedValue?.textContent).toBe("1.0 m/s");
 		hud.unmount();
 	});
 

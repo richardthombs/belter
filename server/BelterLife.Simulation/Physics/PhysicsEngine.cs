@@ -15,7 +15,7 @@ public class PhysicsEngine
     public const float ThrustForce = 150_000f;   // main engine acceleration, mm / s²
     public const float RetroForce = 100_000f;   // retro thruster acceleration, mm / s²
     public const float MaxSpeed = 300_000f;   // speed cap, mm / s
-    public const float AutoStopSpeedThreshold = 10_000f;   // engage assist below 10 m/s, mm / s
+    public const float AutoStopSpeedThreshold = 20_000f;   // engage assist below 20 m/s, mm / s
     public const float AutoStopDamping = 2.0f;   // low-speed damping coefficient, 1/s
     public const float AutoStopSnapSpeed = 100f;   // snap to zero below 0.1 m/s, mm / s
     public const float AngularAccel = 4.0f;   // angular acceleration, rad / s²

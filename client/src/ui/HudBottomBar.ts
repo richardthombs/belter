@@ -21,12 +21,9 @@ export function formatCoarseLocation(sectorId: number, x: number, y: number): st
 	return `S${sectorId} ${pair1} ${pair2} ${pair3}`;
 }
 
-function toSignedSpeedMetersPerSecond(ship: ShipSnapshot): number {
-	const forwardX = Math.sin(ship.heading);
-	const forwardY = -Math.cos(ship.heading);
-	const signedMmPerSecond =
-		ship.velocityX * forwardX + ship.velocityY * forwardY;
-	return signedMmPerSecond / 1000;
+function toSpeedMetersPerSecond(ship: ShipSnapshot): number {
+	const mmPerSecond = Math.hypot(ship.velocityX, ship.velocityY);
+	return mmPerSecond / 1000;
 }
 
 export class HudBottomBar {
@@ -119,7 +116,7 @@ export class HudBottomBar {
 		this.updateCredits(ship.credits);
 		this.updateHold(ship.cargoHoldUsed, ship.cargoHoldCapacity);
 
-		const speedMps = toSignedSpeedMetersPerSecond(ship);
+		const speedMps = toSpeedMetersPerSecond(ship);
 		this.speedValueEl.textContent = `${speedMps.toFixed(1)} m/s`;
 	}
 

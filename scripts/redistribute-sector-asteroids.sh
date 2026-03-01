@@ -65,10 +65,19 @@ SET
 FROM coords c
 WHERE a.id = c.id;
 
+UPDATE ships
+SET
+  x = 0,
+  y = 0,
+  velocity_x = 0,
+  velocity_y = 0,
+  angular_velocity = 0
+WHERE sector_id = ${SECTOR_ID};
+
 COMMIT;
 EOF
 
-echo "Redistributing asteroids in sector ${SECTOR_ID} on ${PGHOST}:${PGPORT}/${PGDATABASE} as ${PGUSER}"
+echo "Redistributing asteroids and resetting ships in sector ${SECTOR_ID} on ${PGHOST}:${PGPORT}/${PGDATABASE} as ${PGUSER}"
 
 SQL_SINGLE_LINE="${SQL//$'\n'/ }"
 
