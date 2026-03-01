@@ -21,6 +21,7 @@ import type {
 let ships: ShipSnapshot[] = [];
 let asteroids: AsteroidSnapshot[] = [];
 let timestamp = 0;
+let sectorId = 0;
 
 /** Recursively converts top-level and nested object keys from PascalCase to camelCase. */
 function normalizeKeys<T>(obj: Record<string, unknown>): T {
@@ -45,6 +46,7 @@ export function apply(raw: WorldStateUpdate): void {
     const update = normalizeKeys<WorldStateUpdate>(
         raw as unknown as Record<string, unknown>,
     );
+    sectorId = update.sectorId;
     ships = update.ships;
     asteroids = update.asteroids;
     timestamp = update.timestamp;
@@ -62,5 +64,9 @@ export function getTimestamp(): number {
     return timestamp;
 }
 
+export function getSectorId(): number {
+    return sectorId;
+}
+
 /** @deprecated use named exports; kept for backward compat */
-export const WorldState = { apply, getShips, getAsteroids, getTimestamp };
+export const WorldState = { apply, getShips, getAsteroids, getTimestamp, getSectorId };

@@ -3,9 +3,10 @@
 import { Renderer } from "./rendering/Renderer";
 import { GameHubClient } from "./network/GameHubClient";
 import { InputManager } from "./input/InputManager";
-import { apply, getShips } from "./state/WorldState";
+import { apply, getSectorId, getShips } from "./state/WorldState";
 import { spawn, AuthError, logout } from "./network/RestClient";
 import { showNotification } from "./ui/Notification";
+import { HudBottomBar } from "./ui/HudBottomBar";
 
 export async function app(): Promise<void> {
 	console.log("Belter Life initialising...");
@@ -36,6 +37,9 @@ export async function app(): Promise<void> {
 
 	renderer.start();
 
+	const hudBottomBar = new HudBottomBar(spawnResponse.shipId);
+	hudBottomBar.mount(document.body);
+
 	const hubClient = new GameHubClient();
 	await hubClient.start();
 	const input = new InputManager(hubClient);
@@ -43,6 +47,7 @@ export async function app(): Promise<void> {
 
 	hubClient.onWorldStateUpdate((update) => {
 		apply(update);
+		hudBottomBar.update(getShips(), getSectorId());
 		// Reconcile ~once/s when server includes input state in snapshot.
 		const ownShip = getShips().find(
 			(s) => s.shipId === spawnResponse.shipId,
@@ -51,4 +56,13 @@ export async function app(): Promise<void> {
 			input.reconcile(ownShip.thrust, ownShip.torque);
 		}
 	});
+
+	window.addEventListener(
+		"beforeunload",
+		() => {
+			input.stop();
+			hudBottomBar.unmount();
+		},
+		{ once: true },
+	);
 }

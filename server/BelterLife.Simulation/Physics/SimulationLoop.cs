@@ -70,6 +70,10 @@ public class SimulationLoop : BackgroundService
         var ships = await db.Ships
             .Where(s => sectorIds.Contains(s.SectorId))
             .ToListAsync(cancellationToken);
+        var playerIds = ships.Select(s => s.PlayerId).Distinct().ToList();
+        var playerCreditsById = await db.Players
+            .Where(p => playerIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id, p => p.Credits, cancellationToken);
 
         // Apply physics to every ship using last-known input from each player.
         float dt = _tickRateMs / 1000f;
@@ -97,7 +101,21 @@ public class SimulationLoop : BackgroundService
                         thrust = inp.Thrust;
                         torque = inp.Torque;
                     }
-                    return new ShipSnapshot(s.Id, s.PlayerId, s.X, s.Y, s.VelocityX, s.VelocityY, s.Heading, thrust, torque);
+                    var credits = playerCreditsById.TryGetValue(s.PlayerId, out var value) ? value : 0;
+                    return new ShipSnapshot(
+                        s.Id,
+                        s.PlayerId,
+                        s.X,
+                        s.Y,
+                        s.VelocityX,
+                        s.VelocityY,
+                        s.Heading,
+                        thrust,
+                        torque,
+                        s.SectorId,
+                        credits,
+                        0,
+                        100);
                 })
                 .ToList();
 

@@ -52,9 +52,27 @@ public class SimulationLoopTests
         await db.SaveChangesAsync();
 
         var asteroid = new Asteroid { SectorId = sector.Id, X = 10L, Y = 20L, Radius = 5f, VertexCount = 8, RotationOffset = 0f };
-        var ship = new Ship { SectorId = sector.Id, PlayerId = "player-1", X = 1L, Y = 2L, VelocityX = 0f, VelocityY = 0f, Heading = 0f };
+        var ship = new Ship
+        {
+            SectorId = sector.Id,
+            PlayerId = "player-1",
+            X = 1L,
+            Y = 2L,
+            VelocityX = 0f,
+            VelocityY = 0f,
+            Heading = 0f,
+        };
+        var player = new Player
+        {
+            Id = "player-1",
+            SectorId = sector.Id,
+            ShipId = ship.Id,
+            LastSeenAt = DateTimeOffset.UtcNow,
+            Credits = 750,
+        };
         await db.Asteroids.AddAsync(asteroid);
         await db.Ships.AddAsync(ship);
+        await db.Players.AddAsync(player);
         await db.SaveChangesAsync();
 
         var mockGateway = new Mock<IGatewayClient>();
@@ -77,6 +95,10 @@ public class SimulationLoopTests
             g => g.BroadcastAsync(It.Is<WorldStateUpdate>(u =>
                 u.SectorId == sector.Id &&
                 u.Ships.Count == 1 &&
+                u.Ships[0].SectorId == sector.Id &&
+                u.Ships[0].Credits == 750 &&
+                u.Ships[0].CargoHoldUsed == 0 &&
+                u.Ships[0].CargoHoldCapacity == 100 &&
                 u.Asteroids.Count == 1 &&
                 u.Timestamp > 0)),
             Times.Once());

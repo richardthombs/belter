@@ -1,1 +1,50 @@
 @import "tailwindcss";
+
+@keyframes pulse-subtle-keyframes {
+	0% {
+		transform: scale(1);
+		filter: brightness(1);
+	}
+	30% {
+		transform: scale(1.08);
+		filter: brightness(1.2);
+	}
+	100% {
+		transform: scale(1);
+		filter: brightness(1);
+	}
+}
+
+@keyframes pulse-emphatic-keyframes {
+	0% {
+		transform: scale(1);
+		filter: brightness(1);
+	}
+	35% {
+		transform: scale(1.12);
+		filter: brightness(1.28);
+	}
+	100% {
+		transform: scale(1);
+		filter: brightness(1);
+	}
+}
+
+.pulse-subtle {
+	animation: pulse-subtle-keyframes 450ms ease-out;
+}
+
+.pulse-emphatic {
+	animation: pulse-emphatic-keyframes 450ms ease-out;
+}
+
+.hud-hold-fill-full {
+	background-color: var(--color-amber-400);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.pulse-subtle,
+	.pulse-emphatic {
+		animation: none;
+	}
+}

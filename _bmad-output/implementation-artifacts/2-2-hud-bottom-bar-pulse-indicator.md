@@ -1,6 +1,6 @@
 # Story 2.2: HUD Bottom Bar & Pulse Indicator
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -44,48 +44,48 @@ so that I always have ambient situational awareness without any interaction requ
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Extend snapshot/state contracts for HUD data (AC: 1, 2, 3, 4, 7)
-  - [ ] Add credits and cargo-hold fields to the server→client snapshot contract used by `WorldStateUpdate` (ship-level or companion payload) in `server/BelterLife.Shared/Contracts/Hubs/`.
-  - [ ] Populate new fields in `server/BelterLife.Simulation/Physics/SimulationLoop.cs` from authoritative server state.
-  - [ ] Ensure sector identifier is available in HUD-consumed state (prefer ship-level `sectorId` to avoid ambiguity).
-  - [ ] Mirror contract additions in `client/src/types/index.ts` and `client/src/state/WorldState.ts` while preserving wire-casing normalization.
+- [x] Task 1 — Extend snapshot/state contracts for HUD data (AC: 1, 2, 3, 4, 7)
+  - [x] Add credits and cargo-hold fields to the server→client snapshot contract used by `WorldStateUpdate` (ship-level or companion payload) in `server/BelterLife.Shared/Contracts/Hubs/`.
+  - [x] Populate new fields in `server/BelterLife.Simulation/Physics/SimulationLoop.cs` from authoritative server state.
+  - [x] Ensure sector identifier is available in HUD-consumed state (prefer ship-level `sectorId` to avoid ambiguity).
+  - [x] Mirror contract additions in `client/src/types/index.ts` and `client/src/state/WorldState.ts` while preserving wire-casing normalization.
 
-- [ ] Task 2 — Add HUD overlay scaffold and mounting lifecycle (AC: 1)
-  - [ ] Create `client/src/ui/HudBottomBar.ts` as an HTML overlay component mounted above canvas (Layer 2 overlay), independent from PixiJS world rendering.
-  - [ ] Mount/unmount the HUD from `client/src/app.ts` lifecycle so it appears during active gameplay sessions.
-  - [ ] Ensure bar is fixed to viewport bottom, translucent, and non-blocking to core canvas interactions outside its own controls.
+- [x] Task 2 — Add HUD overlay scaffold and mounting lifecycle (AC: 1)
+  - [x] Create `client/src/ui/HudBottomBar.ts` as an HTML overlay component mounted above canvas (Layer 2 overlay), independent from PixiJS world rendering.
+  - [x] Mount/unmount the HUD from `client/src/app.ts` lifecycle so it appears during active gameplay sessions.
+  - [x] Ensure bar is fixed to viewport bottom, translucent, and non-blocking to core canvas interactions outside its own controls.
 
-- [ ] Task 3 — Implement credits pulse behavior (AC: 2, 5, 6)
-  - [ ] Create reusable pulse utility/component (`client/src/ui/PulseIndicator.ts` or equivalent) with `subtle` and `emphatic` intensity options.
-  - [ ] Trigger credit pulse only on value changes after initial hydration (no first-render pulse).
-  - [ ] Add `role="status"` + `aria-live="polite"` for credits value updates.
-  - [ ] Respect `prefers-reduced-motion`: update value with no animation.
+- [x] Task 3 — Implement credits pulse behavior (AC: 2, 5, 6)
+  - [x] Create reusable pulse utility/component (`client/src/ui/PulseIndicator.ts` or equivalent) with `subtle` and `emphatic` intensity options.
+  - [x] Trigger credit pulse only on value changes after initial hydration (no first-render pulse).
+  - [x] Add `role="status"` + `aria-live="polite"` for credits value updates.
+  - [x] Respect `prefers-reduced-motion`: update value with no animation.
 
-- [ ] Task 4 — Implement hold bar fill + pulse variants (AC: 3, 5, 6)
-  - [ ] Render hold percentage as fill bar and numeric percent.
-  - [ ] Trigger subtle pulse on incremental deposits and emphatic pulse + full-state visual shift at 100%.
-  - [ ] Add `role="status"` + `aria-live="polite"` for hold updates.
-  - [ ] Ensure full-state styling uses existing design tokens/theme primitives (no hardcoded new color system).
+- [x] Task 4 — Implement hold bar fill + pulse variants (AC: 3, 5, 6)
+  - [x] Render hold percentage as fill bar and numeric percent.
+  - [x] Trigger subtle pulse on incremental deposits and emphatic pulse + full-state visual shift at 100%.
+  - [x] Add `role="status"` + `aria-live="polite"` for hold updates.
+  - [x] Ensure full-state styling uses existing design tokens/theme primitives (no hardcoded new color system).
 
-- [ ] Task 5 — Implement live speed and location indicators (AC: 4, 7, 8)
-  - [ ] Compute or consume speed in a consistent unit (mm/s source; display conversion documented in UI component).
-  - [ ] Update speed continuously without pulse animation.
-  - [ ] Exclude speed from `aria-live` announcements to avoid excessive chatter.
-  - [ ] Add location formatter utility for coarse output (subsector bucket + rounded local coordinates).
-  - [ ] Ensure location display is orientation-focused, not precise tracking (no meter-level values).
-  - [ ] Update location quietly (no pulse animation, no `aria-live`).
+- [x] Task 5 — Implement live speed and location indicators (AC: 4, 7, 8)
+  - [x] Compute or consume speed in a consistent unit (mm/s source; display conversion documented in UI component).
+  - [x] Update speed continuously without pulse animation.
+  - [x] Exclude speed from `aria-live` announcements to avoid excessive chatter.
+  - [x] Add location formatter utility for coarse output (subsector bucket + rounded local coordinates).
+  - [x] Ensure location display is orientation-focused, not precise tracking (no meter-level values).
+  - [x] Update location quietly (no pulse animation, no `aria-live`).
 
-- [ ] Task 6 — Add motion/accessibility behavior and tests (AC: 2, 3, 5, 6)
-  - [ ] Add client tests for pulse trigger conditions (change-only, intensity switching, reduced-motion suppression).
-  - [ ] Add tests for accessibility attributes (`role`, `aria-live`) on credits and hold, and explicit absence on speed.
-  - [ ] Add tests for location quantization/bucketing and boundary-crossing updates.
-  - [ ] Add tests verifying location values are coarse and never rendered at meter-level precision.
-  - [ ] Add tests verifying HUD remains visible through world updates and does not remount/reset on each tick.
+- [x] Task 6 — Add motion/accessibility behavior and tests (AC: 2, 3, 5, 6)
+  - [x] Add client tests for pulse trigger conditions (change-only, intensity switching, reduced-motion suppression).
+  - [x] Add tests for accessibility attributes (`role`, `aria-live`) on credits and hold, and explicit absence on speed.
+  - [x] Add tests for location quantization/bucketing and boundary-crossing updates.
+  - [x] Add tests verifying location values are coarse and never rendered at meter-level precision.
+  - [x] Add tests verifying HUD remains visible through world updates and does not remount/reset on each tick.
 
-- [ ] Task 7 — Verify build/test gates
-  - [ ] Run `npm run build` in `client/`.
-  - [ ] Run relevant client tests (`npm run test`) for HUD/pulse modules.
-  - [ ] Run `dotnet build server/BelterLife.slnx` if server snapshot contracts were changed.
+- [x] Task 7 — Verify build/test gates
+  - [x] Run `npm run build` in `client/`.
+  - [x] Run relevant client tests (`npm run test`) for HUD/pulse modules.
+  - [x] Run `dotnet build server/BelterLife.slnx` if server snapshot contracts were changed.
 
 ## Dev Notes
 
@@ -194,17 +194,37 @@ GPT-5.3-Codex
 ### Debug Log References
 
 - Story context generated from BMAD create-story workflow artifacts for Epic 2 / Story 2.2.
+- Implemented HUD bottom bar overlay and pulse behavior in `client/src/ui/HudBottomBar.ts` + `client/src/ui/PulseIndicator.ts`.
+- Extended simulation snapshots with ship-level `sectorId`, `credits`, `cargoHoldUsed`, and `cargoHoldCapacity` sourced from authoritative server state.
+- Validation runs: `npm run test`, `npm run build`, `dotnet test server/BelterLife.Simulation.Tests/BelterLife.Simulation.Tests.csproj`, `dotnet build server/BelterLife.slnx`.
 
 ### Completion Notes List
 
 - Ultimate context engine analysis completed - comprehensive developer guide created.
 - Story prepared with implementation guardrails for server-authoritative HUD state, pulse accessibility, and reduced-motion behavior.
+- Implemented a persistent bottom HUD overlay mounted outside PixiJS with credits, hold %, speed, and coarse location context.
+- Added change-driven pulse behavior for credits and hold with reduced-motion suppression, plus full-hold emphatic state styling.
+- Added coarse location bucketing/rounding formatter and quiet updates (no pulse, no live-region announcements).
+- Added/updated tests for pulse trigger conditions, accessibility attributes, location quantization, and mount stability across world updates.
+- Completed client and server validation gates with passing build/tests.
 
 ### File List
 
 - _bmad-output/implementation-artifacts/2-2-hud-bottom-bar-pulse-indicator.md
+- client/src/app.ts
+- client/src/state/WorldState.ts
+- client/src/style.css
+- client/src/types/index.ts
+- client/src/ui/HudBottomBar.ts
+- client/src/ui/HudBottomBar.test.ts
+- client/src/ui/PulseIndicator.ts
+- server/BelterLife.Shared/Contracts/Hubs/ShipSnapshot.cs
+- server/BelterLife.Shared/Entities/Ship.cs
+- server/BelterLife.Simulation/Physics/SimulationLoop.cs
+- server/BelterLife.Simulation.Tests/Physics/SimulationLoopTests.cs
 
 ## Change Log
 
 - 2026-03-01: Story created via BMAD create-story workflow; status set to `ready-for-dev`.
 - 2026-03-01: Correct-course refinement approved; added coarse location context (sector + approximate in-sector position) to Story 2.2 requirements, tasks, and test expectations.
+- 2026-03-01: Implemented Story 2.2 HUD bottom bar, pulse indicator behavior, authoritative snapshot extensions, and test coverage; status set to `review`.

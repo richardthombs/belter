@@ -16,11 +16,15 @@ export interface PlayerDto {
 export interface ShipSnapshot {
 	shipId: number;
 	playerId: string;
+	sectorId: number;
 	x: number; // int64 mm
 	y: number; // int64 mm
 	velocityX: number;
 	velocityY: number;
 	heading: number;
+	credits: number;
+	cargoHoldUsed: number;
+	cargoHoldCapacity: number;
 	/** Populated ~once/s for reconciliation; null all other ticks. */
 	thrust?: number | null;
 	/** Populated ~once/s for reconciliation; null all other ticks. */
