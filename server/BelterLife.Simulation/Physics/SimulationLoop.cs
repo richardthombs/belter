@@ -15,6 +15,7 @@ public class SimulationLoop : BackgroundService
     readonly IGatewayClient _gatewayClient;
     readonly IInputBuffer _inputBuffer;
     readonly PhysicsEngine _physicsEngine;
+    readonly AsteroidManager _asteroidManager;
     readonly int _tickRateMs;
     readonly ILogger<SimulationLoop> _logger;
     int _tickCount = 0;
@@ -27,6 +28,7 @@ public class SimulationLoop : BackgroundService
         IGatewayClient gatewayClient,
         IInputBuffer inputBuffer,
         PhysicsEngine physicsEngine,
+        AsteroidManager asteroidManager,
         IConfiguration config,
         ILogger<SimulationLoop> logger)
     {
@@ -34,6 +36,7 @@ public class SimulationLoop : BackgroundService
         _gatewayClient = gatewayClient;
         _inputBuffer = inputBuffer;
         _physicsEngine = physicsEngine;
+        _asteroidManager = asteroidManager;
         _tickRateMs = config.GetValue<int>("TickRateMs", 33);
         _logger = logger;
     }
@@ -67,10 +70,6 @@ public class SimulationLoop : BackgroundService
         var ships = await db.Ships
             .Where(s => sectorIds.Contains(s.SectorId))
             .ToListAsync(cancellationToken);
-        var asteroids = await db.Asteroids
-            .AsNoTracking()
-            .Where(a => sectorIds.Contains(a.SectorId))
-            .ToListAsync(cancellationToken);
 
         // Apply physics to every ship using last-known input from each player.
         float dt = _tickRateMs / 1000f;
@@ -80,6 +79,8 @@ public class SimulationLoop : BackgroundService
             inputs.TryGetValue(ship.PlayerId, out var input);
             _physicsEngine.ApplyPhysics(ship, input, dt);
         }
+
+        var asteroids = await _asteroidManager.UpdateAsync(db, sectorIds, dt, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
 
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -100,7 +101,8 @@ public class SimulationLoop : BackgroundService
                 })
                 .ToList();
 
-            var sectorAsteroids = asteroids.Where(a => a.SectorId == sector.Id)
+            var sectorAsteroids = asteroids
+                .Where(a => a.SectorId == sector.Id && !a.IsDestroyed)
                 .Select(a => new AsteroidSnapshot(a.Id, a.X, a.Y, a.Radius, a.VertexCount, a.RotationOffset))
                 .ToList();
 

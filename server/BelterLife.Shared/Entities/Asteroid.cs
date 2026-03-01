@@ -6,7 +6,10 @@ public class Asteroid
     public int SectorId { get; set; }
     public long X { get; set; }
     public long Y { get; set; }
+    public float VelocityX { get; set; }
+    public float VelocityY { get; set; }
     public float Radius { get; set; }
     public int VertexCount { get; set; }
     public float RotationOffset { get; set; }
+    public bool IsDestroyed { get; set; }
 }

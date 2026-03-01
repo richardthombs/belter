@@ -110,5 +110,22 @@ public class PhysicsEngineTests
         Assert.True(ship.VelocityX > 0f, "Should accelerate right");
         Assert.Equal(0f, ship.VelocityY, precision: 3);
     }
+
+    [Fact]
+    public void ApplyAsteroidDrift_IntegratesLongPositionFromVelocity()
+    {
+        var asteroid = new Asteroid
+        {
+            X = 1_000,
+            Y = -2_000,
+            VelocityX = 3_000f,
+            VelocityY = -1_500f,
+        };
+
+        _engine.ApplyAsteroidDrift(asteroid, 0.5f);
+
+        Assert.Equal(2_500, asteroid.X);
+        Assert.Equal(-2_750, asteroid.Y);
+    }
 }
 

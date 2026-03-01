@@ -82,4 +82,14 @@ public class PhysicsEngine
         ship.X += (long)(ship.VelocityX * deltaSeconds);
         ship.Y += (long)(ship.VelocityY * deltaSeconds);
     }
+
+    /// <summary>
+    /// Applies one drift-only physics tick to an asteroid.
+    /// Uses int64 position integration from float velocity in mm/s.
+    /// </summary>
+    public void ApplyAsteroidDrift(Asteroid asteroid, float deltaSeconds)
+    {
+        asteroid.X += (long)(asteroid.VelocityX * deltaSeconds);
+        asteroid.Y += (long)(asteroid.VelocityY * deltaSeconds);
+    }
 }

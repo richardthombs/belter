@@ -36,6 +36,11 @@ public class SimulationLoopTests
         return mock.Object;
     }
 
+    private static AsteroidManager CreateAsteroidManager()
+    {
+        return new AsteroidManager(new PhysicsEngine(), new CollisionResolver());
+    }
+
     [Fact]
     public async Task Tick_BroadcastsWorldStateUpdate_ForEachSector()
     {
@@ -60,6 +65,7 @@ public class SimulationLoopTests
             mockGateway.Object,
             EmptyBuffer(),
             new PhysicsEngine(),
+            CreateAsteroidManager(),
             BuildConfig(),
             NullLogger<SimulationLoop>.Instance);
 
@@ -95,6 +101,7 @@ public class SimulationLoopTests
             mockGateway.Object,
             EmptyBuffer(),
             new PhysicsEngine(),
+            CreateAsteroidManager(),
             BuildConfig(),
             NullLogger<SimulationLoop>.Instance);
 
@@ -134,6 +141,7 @@ public class SimulationLoopTests
             mockGateway.Object,
             inputMock.Object,
             new PhysicsEngine(),
+            CreateAsteroidManager(),
             BuildConfig(),
             NullLogger<SimulationLoop>.Instance);
 
@@ -146,5 +154,113 @@ public class SimulationLoopTests
         Assert.NotNull(updated);
         Assert.True(updated!.Y < 0, "Ship Y should have decreased (moved upward) after forward thrust with heading=0");
         Assert.Equal(0L, updated.X);
+    }
+
+    [Fact]
+    public async Task Tick_UpdatesAsteroidDrift_ServerAuthoritatively()
+    {
+        await using var db = CreateDb();
+
+        var sector = new Sector { Seed = 4 };
+        await db.Sectors.AddAsync(sector);
+        await db.SaveChangesAsync();
+
+        var asteroid = new Asteroid
+        {
+            SectorId = sector.Id,
+            X = 100,
+            Y = 200,
+            VelocityX = 3_000f,
+            VelocityY = -1_500f,
+            Radius = 5_000f,
+            VertexCount = 7,
+        };
+        var startX = asteroid.X;
+        var startY = asteroid.Y;
+
+        await db.Asteroids.AddAsync(asteroid);
+        await db.SaveChangesAsync();
+
+        WorldStateUpdate? captured = null;
+        var mockGateway = new Mock<IGatewayClient>();
+        mockGateway
+            .Setup(g => g.BroadcastAsync(It.IsAny<WorldStateUpdate>()))
+            .Callback<WorldStateUpdate>(update => captured = update)
+            .Returns(Task.CompletedTask);
+
+        var loop = new SimulationLoop(
+            new Mock<IServiceScopeFactory>().Object,
+            mockGateway.Object,
+            EmptyBuffer(),
+            new PhysicsEngine(),
+            CreateAsteroidManager(),
+            BuildConfig(),
+            NullLogger<SimulationLoop>.Instance);
+
+        await loop.TickAsync(db, CancellationToken.None);
+
+        var updated = await db.Asteroids.SingleAsync(a => a.Id == asteroid.Id);
+        Assert.True(updated.X > startX);
+        Assert.True(updated.Y < startY);
+        Assert.NotNull(captured);
+        Assert.Contains(captured!.Asteroids, a => a.AsteroidId == asteroid.Id);
+    }
+
+    [Fact]
+    public async Task Tick_ExcludesDestroyedAsteroids_FromWorldSnapshot()
+    {
+        await using var db = CreateDb();
+
+        var sector = new Sector { Seed = 5 };
+        await db.Sectors.AddAsync(sector);
+        await db.SaveChangesAsync();
+
+        var heavy = new Asteroid
+        {
+            SectorId = sector.Id,
+            X = 0,
+            Y = 0,
+            Radius = 30_000f,
+            VelocityX = -70_000f,
+            VelocityY = 0f,
+            VertexCount = 9,
+            RotationOffset = 1f,
+        };
+        var light = new Asteroid
+        {
+            SectorId = sector.Id,
+            X = 10_000,
+            Y = 0,
+            Radius = 10_000f,
+            VelocityX = 70_000f,
+            VelocityY = 0f,
+            VertexCount = 8,
+            RotationOffset = 2f,
+        };
+
+        await db.Asteroids.AddRangeAsync(heavy, light);
+        await db.SaveChangesAsync();
+
+        WorldStateUpdate? captured = null;
+        var mockGateway = new Mock<IGatewayClient>();
+        mockGateway
+            .Setup(g => g.BroadcastAsync(It.IsAny<WorldStateUpdate>()))
+            .Callback<WorldStateUpdate>(update => captured = update)
+            .Returns(Task.CompletedTask);
+
+        var loop = new SimulationLoop(
+            new Mock<IServiceScopeFactory>().Object,
+            mockGateway.Object,
+            EmptyBuffer(),
+            new PhysicsEngine(),
+            CreateAsteroidManager(),
+            BuildConfig(),
+            NullLogger<SimulationLoop>.Instance);
+
+        await loop.TickAsync(db, CancellationToken.None);
+
+        var activeCount = await db.Asteroids.CountAsync(a => a.SectorId == sector.Id && !a.IsDestroyed);
+        Assert.NotNull(captured);
+        Assert.Equal(activeCount, captured!.Asteroids.Count);
     }
 }

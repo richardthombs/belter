@@ -15,6 +15,8 @@ if (!builder.Environment.IsEnvironment("Testing"))
 builder.Services.AddSingleton<SectorGenerator>();
 builder.Services.AddSingleton<IInputBuffer, InputBuffer>();
 builder.Services.AddSingleton<PhysicsEngine>();
+builder.Services.AddSingleton<CollisionResolver>();
+builder.Services.AddSingleton<AsteroidManager>();
 builder.Services.AddHttpClient<GatewayClient>(c =>
     c.BaseAddress = new Uri(builder.Configuration["GATEWAY_URL"] ?? "http://gateway:5080"))
     .AddTypedClient<IGatewayClient, GatewayClient>();

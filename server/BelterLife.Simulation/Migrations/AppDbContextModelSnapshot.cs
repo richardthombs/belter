@@ -31,6 +31,10 @@ namespace BelterLife.Simulation.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("IsDestroyed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_destroyed");
+
                     b.Property<float>("Radius")
                         .HasColumnType("real")
                         .HasColumnName("radius");
@@ -46,6 +50,14 @@ namespace BelterLife.Simulation.Migrations
                     b.Property<int>("VertexCount")
                         .HasColumnType("integer")
                         .HasColumnName("vertex_count");
+
+                    b.Property<float>("VelocityX")
+                        .HasColumnType("real")
+                        .HasColumnName("velocity_x");
+
+                    b.Property<float>("VelocityY")
+                        .HasColumnType("real")
+                        .HasColumnName("velocity_y");
 
                     b.Property<long>("X")
                         .HasColumnType("bigint")
