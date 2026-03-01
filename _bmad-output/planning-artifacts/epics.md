@@ -456,6 +456,40 @@ So that the game respects my time and builds a habit of return.
 
 A player can scan asteroids to discover composition, mine resources into their cargo hold, manage fuel, dock at NPC stations, and sell cargo for credits at a dynamic NPC-floor price. If their ship is destroyed by a collision, they receive a free starter replacement.
 
+### Story 2.0: int64 Coordinate System and Scale Migration
+
+As a **developer**,  
+I want all world coordinates stored as `long` (int64) with 1 unit = 1 millimetre, sector geometry standardized at 50km × 50km, and physics constants rescaled to mm units,  
+So that Epic 2+ gameplay systems build on a coherent, precision-safe world model.
+
+**Acceptance Criteria:**
+
+**Given** core world entities (`Asteroid`, `Ship`, `NpcStation`),  
+**When** persisted and transmitted,  
+**Then** `X` and `Y` are int64 (`long`) millimetre coordinates
+
+**Given** a `Sector`,  
+**When** stored,  
+**Then** `GridX`, `GridY` are `long` and `IsGenerated` tracks lazy generation state
+
+**Given** canonical bounds usage,  
+**When** consulted by simulation and generation logic,  
+**Then** `RegionBounds.SectorSize = 50_000_000L` and `RegionBounds.HalfSector = 25_000_000L`
+
+**Given** `PhysicsEngine` translational constants,  
+**When** examined,  
+**Then** they are mm-scale (`MaxSpeed = 300_000f`, `ThrustForce = 150_000f`, `RetroForce = 100_000f`) and position integration uses `(long)` casting
+
+**Given** sector generation and spawn flows,  
+**When** evaluated,  
+**Then** asteroid/station placement and safe-margin checks use mm-scale ranges and `SpawnResponse`/snapshot contracts carry int64 positions
+
+**Given** full project verification,  
+**When** build and tests run,  
+**Then** server/client builds pass and all existing tests pass under the new coordinate model
+
+---
+
 ### Story 2.1: Living Belt — Asteroid Physics Simulation
 
 As a **player**,
