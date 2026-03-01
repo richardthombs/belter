@@ -5,6 +5,7 @@ import { BackgroundLayer } from "./layers/BackgroundLayer";
 import { WorldLayer } from "./layers/WorldLayer";
 import { EffectsLayer } from "./layers/EffectsLayer";
 import { UiLayer } from "./layers/UiLayer";
+import { toScreen } from "./worldScale";
 
 export class Renderer {
 	private app: Application = new Application();
@@ -35,8 +36,8 @@ export class Renderer {
 	initCameraAt(x: number, y: number): void {
 		// Pre-position the camera before the first tick to avoid a 1-frame snap from origin.
 		this.worldLayer.position.set(
-			this.app.screen.width / 2 - x,
-			this.app.screen.height / 2 - y,
+			this.app.screen.width / 2 - toScreen(x),
+			this.app.screen.height / 2 - toScreen(y),
 		);
 	}
 
@@ -48,8 +49,8 @@ export class Renderer {
 		const shipPos = this.worldLayer.update();
 		if (shipPos) {
 			this.worldLayer.position.set(
-				this.app.screen.width / 2 - shipPos.x,
-				this.app.screen.height / 2 - shipPos.y,
+				this.app.screen.width / 2 - toScreen(shipPos.x),
+				this.app.screen.height / 2 - toScreen(shipPos.y),
 			);
 		}
 	}

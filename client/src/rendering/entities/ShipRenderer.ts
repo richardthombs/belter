@@ -1,5 +1,6 @@
 import { Container, Graphics } from "pixi.js";
 import type { ShipSnapshot } from "../../types";
+import { toScreen } from "../worldScale";
 
 export class ShipRenderer extends Container {
     constructor() {
@@ -14,7 +15,7 @@ export class ShipRenderer extends Container {
     }
 
     update(snapshot: ShipSnapshot): void {
-        this.position.set(snapshot.x, snapshot.y);
+        this.position.set(toScreen(snapshot.x), toScreen(snapshot.y));
         this.rotation = snapshot.heading;
     }
 }

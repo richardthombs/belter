@@ -2,6 +2,7 @@ using BelterLife.Shared.Contracts.Api;
 using BelterLife.Shared.Entities;
 using BelterLife.Simulation.Entities;
 using BelterLife.Simulation.Infrastructure;
+using BelterLife.Simulation.Physics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,6 +30,9 @@ public class SpawnController : ControllerBase
 		if (!Request.Headers.TryGetValue("X-Shard-Secret", out var header) || header != secret)
 			return StatusCode(403);
 
+		if (string.IsNullOrWhiteSpace(request.PlayerId))
+			return BadRequest();
+
 		var existing = await _db.Players.FirstOrDefaultAsync(p => p.Id == request.PlayerId);
 		if (existing != null)
 		{
@@ -44,35 +48,64 @@ public class SpawnController : ControllerBase
 				.AsNoTracking()
 				.ToListAsync();
 
-			const float SafeMargin = 10f;
-			const float StepSize = 80f;
+			const float SafeMargin = 10_000f;
+			const float StepSize = 80_000f;
 			const int MaxSteps = 10;
+			int maxSearchSteps = (int)Math.Ceiling(RegionBounds.HalfSector / (double)StepSize);
 
-			bool Overlaps(float x, float y) =>
-				asteroids.Any(a => MathF.Pow(a.X - x, 2) + MathF.Pow(a.Y - y, 2)
-								   < MathF.Pow(a.Radius + SafeMargin, 2));
+			bool Overlaps(long x, long y) =>
+				asteroids.Any(a =>
+				{
+					double dx = (double)a.X - x;
+					double dy = (double)a.Y - y;
+					double minDistance = a.Radius + SafeMargin;
+					return dx * dx + dy * dy < minDistance * minDistance;
+				});
+
+			bool TryFindSafePosition(long originX, long originY, int searchSteps, out long safeX, out long safeY)
+			{
+				for (int step = 1; step <= searchSteps; step++)
+				{
+					long d = (long)(step * StepSize);
+					var candidates = new (long dx, long dy)[]
+						{ (d, 0L), (-d, 0L), (0L, d), (0L, -d), (d, d), (-d, d), (d, -d), (-d, -d) };
+					foreach (var (dx, dy) in candidates)
+					{
+						long candidateX = originX + dx;
+						long candidateY = originY + dy;
+						if (!Overlaps(candidateX, candidateY))
+						{
+							safeX = candidateX;
+							safeY = candidateY;
+							return true;
+						}
+					}
+				}
+
+				safeX = originX;
+				safeY = originY;
+				return false;
+			}
 
 			bool repositioned = false;
 			if (Overlaps(ship.X, ship.Y))
 			{
-				bool found = false;
-				for (int step = 1; step <= MaxSteps && !found; step++)
+				long originX = ship.X;
+				long originY = ship.Y;
+				bool found = TryFindSafePosition(originX, originY, MaxSteps, out var safeX, out var safeY);
+				if (!found)
+					found = TryFindSafePosition(originX, originY, maxSearchSteps, out safeX, out safeY);
+				if (!found && !Overlaps(0L, 0L))
 				{
-					float d = step * StepSize;
-					var candidates = new (float dx, float dy)[]
-						{ (d, 0f), (-d, 0f), (0f, d), (0f, -d), (d, d), (-d, d), (d, -d), (-d, -d) };
-					foreach (var (dx, dy) in candidates)
-					{
-						if (!Overlaps(ship.X + dx, ship.Y + dy))
-						{
-							ship.X += dx;
-							ship.Y += dy;
-							found = true;
-							break;
-						}
-					}
+					safeX = 0L;
+					safeY = 0L;
+					found = true;
 				}
-				if (!found) { ship.X = 0f; ship.Y = 0f; }
+				if (!found)
+					return Conflict();
+
+				ship.X = safeX;
+				ship.Y = safeY;
 				ship.VelocityX = 0f;
 				ship.VelocityY = 0f;
 				ship.Heading = 0f;
@@ -86,7 +119,7 @@ public class SpawnController : ControllerBase
 			return Ok(new SpawnResponse(existing.SectorId, existing.ShipId, ship.X, ship.Y, repositioned));
 		}
 
-		var (sector, asteroidList, stations) = _sectorGenerator.Generate(_sectorGenerator.NewSeed());
+		var (sector, asteroidList, stations) = _sectorGenerator.Generate(_sectorGenerator.NewSeed(), gridX: 0, gridY: 0);
 
 		await using var tx = await _db.Database.BeginTransactionAsync();
 		try
@@ -105,11 +138,11 @@ public class SpawnController : ControllerBase
 			{
 				PlayerId = request.PlayerId,
 				SectorId = sector.Id,
-				X = 0,
-				Y = 0,
-				VelocityX = 0,
-				VelocityY = 0,
-				Heading = 0,
+				X = 0L,
+				Y = 0L,
+				VelocityX = 0f,
+				VelocityY = 0f,
+				Heading = 0f,
 			};
 			await _db.Ships.AddAsync(ship);
 			await _db.SaveChangesAsync(); // resolves ship.Id
@@ -127,7 +160,7 @@ public class SpawnController : ControllerBase
 			await _db.SaveChangesAsync();
 			await tx.CommitAsync();
 
-			return StatusCode(201, new SpawnResponse(sector.Id, ship.Id, 0f, 0f));
+			return StatusCode(201, new SpawnResponse(sector.Id, ship.Id, 0L, 0L));
 		}
 		catch
 		{
@@ -135,4 +168,5 @@ public class SpawnController : ControllerBase
 			throw;
 		}
 	}
+
 }

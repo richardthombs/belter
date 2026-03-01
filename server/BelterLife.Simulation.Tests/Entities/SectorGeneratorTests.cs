@@ -21,12 +21,12 @@ public class SectorGeneratorTests
     }
 
     [Fact]
-    public void GenerateSector_NpcStation_IsWithin600UnitsOfOrigin()
+    public void GenerateSector_NpcStation_IsBetween2kmAnd15kmFromOrigin()
     {
         var (_, _, stations) = _generator.Generate(42L);
         var station = stations[0];
         var dist = Math.Sqrt(station.X * station.X + station.Y * station.Y);
-        Assert.True(dist <= 600.0, $"Station distance {dist} exceeds 600 units");
+        Assert.InRange(dist, 2_000_000d, 15_000_000d);
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public class SectorGeneratorTests
     }
 
     [Fact]
-    public void GenerateSector_NoAsteroid_IsWithin150UnitsOfOrigin()
+    public void GenerateSector_NoAsteroid_IsWithin500mOfOrigin()
     {
         for (long seed = 0; seed < 20; seed++)
         {
@@ -48,7 +48,7 @@ public class SectorGeneratorTests
             foreach (var a in asteroids)
             {
                 var dist = Math.Sqrt(a.X * a.X + a.Y * a.Y);
-                Assert.True(dist >= 150.0, $"Seed {seed}: asteroid at distance {dist} is within minimum placement distance (< 150 units)");
+                Assert.True(dist >= 500_000d, $"Seed {seed}: asteroid at distance {dist} is within minimum placement distance (< 500m)");
             }
         }
     }

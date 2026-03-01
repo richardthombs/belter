@@ -16,8 +16,8 @@ export interface PlayerDto {
 export interface ShipSnapshot {
 	shipId: number;
 	playerId: string;
-	x: number;
-	y: number;
+	x: number; // int64 mm
+	y: number; // int64 mm
 	velocityX: number;
 	velocityY: number;
 	heading: number;
@@ -29,8 +29,8 @@ export interface ShipSnapshot {
 
 export interface AsteroidSnapshot {
 	asteroidId: number;
-	x: number;
-	y: number;
+	x: number; // int64 mm — safe as JS number (values ≤ 2⁵³ within belt-scale play)
+	y: number; // int64 mm
 	radius: number;
 	vertexCount: number;
 	rotationOffset: number;
@@ -46,8 +46,8 @@ export interface WorldStateUpdate {
 export interface SpawnResponse {
 	sectorId: number;
 	shipId: number;
-	spawnX: number;
-	spawnY: number;
+	spawnX: number; // int64 mm
+	spawnY: number; // int64 mm
 	repositioned: boolean;
 }
 

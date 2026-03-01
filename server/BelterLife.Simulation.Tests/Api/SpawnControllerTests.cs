@@ -91,8 +91,8 @@ public class SpawnControllerTests : IClassFixture<SimulationWebApplicationFactor
 		Assert.NotNull(body);
 		Assert.True(body.SectorId > 0);
 		Assert.True(body.ShipId > 0);
-		Assert.Equal(0f, body.SpawnX);
-		Assert.Equal(0f, body.SpawnY);
+		Assert.Equal(0L, body.SpawnX);
+		Assert.Equal(0L, body.SpawnY);
 	}
 
 	/// <summary>AC 1 — repeated spawn for same player is idempotent (200 with same IDs).</summary>
@@ -123,6 +123,14 @@ public class SpawnControllerTests : IClassFixture<SimulationWebApplicationFactor
 		Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
 	}
 
+	[Fact]
+	public async Task Spawn_EmptyPlayerId_Returns400()
+	{
+		var client = CreateClientWithSecret();
+		var res = await client.SendAsync(SpawnRequest("   "));
+		Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+	}
+
 	/// <summary>AC 2 — returning player spawn returns actual saved ship position.</summary>
 	[Fact]
 	public async Task Spawn_ReturningPlayer_ReturnsActualShipPosition()
@@ -136,13 +144,13 @@ public class SpawnControllerTests : IClassFixture<SimulationWebApplicationFactor
 		var firstBody = await first.Content.ReadFromJsonAsync<SpawnResponse>();
 		Assert.NotNull(firstBody);
 
-		// Move ship to (50, 50) — inside safe zone (<110 units from origin, always asteroid-free)
+		// Move ship to (250m, 250m) — inside the 500m minimum asteroid distance from generator.
 		using (var scope = _factory.Services.CreateScope())
 		{
 			var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 			var ship = await db.Ships.FirstAsync(s => s.Id == firstBody.ShipId);
-			ship.X = 50f;
-			ship.Y = 50f;
+			ship.X = 250_000L;
+			ship.Y = 250_000L;
 			await db.SaveChangesAsync();
 		}
 
@@ -151,8 +159,8 @@ public class SpawnControllerTests : IClassFixture<SimulationWebApplicationFactor
 		Assert.Equal(HttpStatusCode.OK, second.StatusCode);
 		var secondBody = await second.Content.ReadFromJsonAsync<SpawnResponse>();
 		Assert.NotNull(secondBody);
-		Assert.Equal(50f, secondBody.SpawnX);
-		Assert.Equal(50f, secondBody.SpawnY);
+		Assert.Equal(250_000L, secondBody.SpawnX);
+		Assert.Equal(250_000L, secondBody.SpawnY);
 		Assert.False(secondBody.Repositioned);
 	}
 
@@ -176,9 +184,9 @@ public class SpawnControllerTests : IClassFixture<SimulationWebApplicationFactor
 			db.Asteroids.Add(new Asteroid
 			{
 				SectorId = firstBody.SectorId,
-				X = 0f,
-				Y = 0f,
-				Radius = 100f,
+				X = 0L,
+				Y = 0L,
+				Radius = 100_000f,
 				VertexCount = 6,
 				RotationOffset = 0f,
 			});
@@ -192,11 +200,70 @@ public class SpawnControllerTests : IClassFixture<SimulationWebApplicationFactor
 		Assert.NotNull(secondBody);
 		Assert.True(secondBody.Repositioned);
 
-		// Verify new position does not overlap the asteroid (radius=100, margin=10)
-		const float minDist = 100f + 10f;
-		var distSq = MathF.Pow(secondBody.SpawnX, 2) + MathF.Pow(secondBody.SpawnY, 2);
-		Assert.True(distSq >= MathF.Pow(minDist, 2),
+		// Verify new position does not overlap the asteroid (radius=100m, margin=10m)
+		const double minDist = 100_000.0 + 10_000.0;
+		double distSq = Math.Pow(secondBody.SpawnX, 2) + Math.Pow(secondBody.SpawnY, 2);
+		Assert.True(distSq >= Math.Pow(minDist, 2),
 			$"Ship at ({secondBody.SpawnX}, {secondBody.SpawnY}) still overlaps asteroid");
+	}
+
+	[Fact]
+	public async Task Spawn_ReturningPlayer_SearchesBeyondInitialMaxSteps_WhenNeeded()
+	{
+		var client = CreateClientWithSecret();
+		var playerId = "extended-search-" + Guid.NewGuid();
+
+		var first = await client.SendAsync(SpawnRequest(playerId));
+		Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+		var firstBody = await first.Content.ReadFromJsonAsync<SpawnResponse>();
+		Assert.NotNull(firstBody);
+
+		using (var scope = _factory.Services.CreateScope())
+		{
+			var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+			db.Asteroids.Add(new Asteroid
+			{
+				SectorId = firstBody.SectorId,
+				X = 0L,
+				Y = 0L,
+				Radius = 100_000f,
+				VertexCount = 8,
+				RotationOffset = 0f,
+			});
+
+			for (int step = 1; step <= 10; step++)
+			{
+				long d = step * 80_000L;
+				var candidates = new (long x, long y)[]
+				{
+					(d, 0L), (-d, 0L), (0L, d), (0L, -d),
+					(d, d), (-d, d), (d, -d), (-d, -d),
+				};
+
+				foreach (var (x, y) in candidates)
+				{
+					db.Asteroids.Add(new Asteroid
+					{
+						SectorId = firstBody.SectorId,
+						X = x,
+						Y = y,
+						Radius = 30_000f,
+						VertexCount = 8,
+						RotationOffset = 0f,
+					});
+				}
+			}
+
+			await db.SaveChangesAsync();
+		}
+
+		var second = await client.SendAsync(SpawnRequest(playerId));
+		Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+		var secondBody = await second.Content.ReadFromJsonAsync<SpawnResponse>();
+		Assert.NotNull(secondBody);
+		Assert.True(secondBody.Repositioned);
+		Assert.NotEqual(0L, secondBody.SpawnX);
 	}
 
 	/// <summary>AC 4 — new player starts with 500 credits.</summary>

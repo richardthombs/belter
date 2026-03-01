@@ -17,8 +17,8 @@ public class BroadcastControllerTests
 
     private static WorldStateUpdate SampleUpdate(int sectorId = 1) =>
         new WorldStateUpdate(sectorId, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            new List<ShipSnapshot> { new ShipSnapshot(1, "player-1", 0f, 0f, 0f, 0f, 0f) },
-            new List<AsteroidSnapshot> { new AsteroidSnapshot(1, 100f, 100f, 20f, 8, 0f) });
+            new List<ShipSnapshot> { new ShipSnapshot(1, "player-1", 0L, 0L, 0f, 0f, 0f) },
+            new List<AsteroidSnapshot> { new AsteroidSnapshot(1, 100L, 100L, 20f, 8, 0f) });
 
     private static BroadcastController CreateController(
         IHubContext<GameHub> hubContext,

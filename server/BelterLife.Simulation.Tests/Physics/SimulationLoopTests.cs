@@ -46,8 +46,8 @@ public class SimulationLoopTests
         await db.Sectors.AddAsync(sector);
         await db.SaveChangesAsync();
 
-        var asteroid = new Asteroid { SectorId = sector.Id, X = 10f, Y = 20f, Radius = 5f, VertexCount = 8, RotationOffset = 0f };
-        var ship = new Ship { SectorId = sector.Id, PlayerId = "player-1", X = 1f, Y = 2f, VelocityX = 0f, VelocityY = 0f, Heading = 0f };
+        var asteroid = new Asteroid { SectorId = sector.Id, X = 10L, Y = 20L, Radius = 5f, VertexCount = 8, RotationOffset = 0f };
+        var ship = new Ship { SectorId = sector.Id, PlayerId = "player-1", X = 1L, Y = 2L, VelocityX = 0f, VelocityY = 0f, Heading = 0f };
         await db.Asteroids.AddAsync(asteroid);
         await db.Ships.AddAsync(ship);
         await db.SaveChangesAsync();
@@ -115,7 +115,7 @@ public class SimulationLoopTests
         await db.Sectors.AddAsync(sector);
         await db.SaveChangesAsync();
 
-        var ship = new Ship { SectorId = sector.Id, PlayerId = "player-1", X = 0f, Y = 0f, VelocityX = 0f, VelocityY = 0f, Heading = 0f };
+        var ship = new Ship { SectorId = sector.Id, PlayerId = "player-1", X = 0L, Y = 0L, VelocityX = 0f, VelocityY = 0f, Heading = 0f };
         await db.Ships.AddAsync(ship);
         await db.SaveChangesAsync();
 
@@ -144,7 +144,7 @@ public class SimulationLoopTests
         // so Y < 0 (moved upward in screen-space). X stays 0.
         var updated = await db.Ships.FindAsync(ship.Id);
         Assert.NotNull(updated);
-        Assert.True(updated!.Y < 0f, "Ship Y should have decreased (moved upward) after forward thrust with heading=0");
-        Assert.Equal(0f, updated.X, precision: 3);
+        Assert.True(updated!.Y < 0, "Ship Y should have decreased (moved upward) after forward thrust with heading=0");
+        Assert.Equal(0L, updated.X);
     }
 }

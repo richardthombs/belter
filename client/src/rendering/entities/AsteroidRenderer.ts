@@ -1,6 +1,7 @@
 // Vector polygon with cacheAsTexture for performance.
 import { Container, Graphics } from "pixi.js";
 import type { AsteroidSnapshot } from "../../types";
+import { toScreen } from "../worldScale";
 
 function buildPolygonPoints(snapshot: AsteroidSnapshot): number[] {
     const points: number[] = [];
@@ -8,7 +9,7 @@ function buildPolygonPoints(snapshot: AsteroidSnapshot): number[] {
         const angle =
             (i / snapshot.vertexCount) * Math.PI * 2 + snapshot.rotationOffset;
         const r =
-            snapshot.radius *
+            toScreen(snapshot.radius) *
             (0.8 + (0.2 * ((snapshot.asteroidId * 17 + i * 31) % 100)) / 100);
         points.push(Math.cos(angle) * r, Math.sin(angle) * r);
     }
@@ -26,6 +27,6 @@ export class AsteroidRenderer extends Container {
     }
 
     update(snapshot: AsteroidSnapshot): void {
-        this.position.set(snapshot.x, snapshot.y);
+        this.position.set(toScreen(snapshot.x), toScreen(snapshot.y));
     }
 }

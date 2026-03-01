@@ -30,7 +30,7 @@ public class PlayersControllerTests
     [Fact]
     public async Task Spawn_AuthenticatedUser_CallsShardAndReturnsOk()
     {
-        var expected = new SpawnResponse(1, 1, 0f, 0f);
+        var expected = new SpawnResponse(1, 1, 0L, 0L);
         var mock = new Mock<IShardClient>();
         mock.Setup(s => s.SpawnAsync("user-abc")).ReturnsAsync(expected);
         var controller = CreateController(mock.Object, "user-abc");

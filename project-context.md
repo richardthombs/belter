@@ -85,6 +85,8 @@ migrationBuilder.Sql("ALTER TABLE asteroids ALTER COLUMN x TYPE bigint USING x::
 ```
 SQLite (test DBs via EnsureCreated) handles this automatically — no USING needed.
 
+**Legacy coordinate data policy:** legacy pre-mm values must be corrected via EF migration (`20260301103000_ScaleLegacySectorDataToMillimetres`) and NOT via runtime spawn/request paths.
+
 **Overlap / distance math — use `double` not `float`:**
 When computing squared distances between two `long` coordinates (e.g. in `SpawnController` reposition logic), cast to `double` via `Math.Pow`. Do NOT use `MathF.Pow` — float loses precision on large mm values.
 

@@ -44,7 +44,7 @@ public class GameHubTests
         var mockShardClient = new Mock<IShardClient>();
         mockShardClient
             .Setup(s => s.SpawnAsync("user-1"))
-            .ReturnsAsync(new SpawnResponse(SectorId: 1, ShipId: 10, SpawnX: 0f, SpawnY: 0f));
+            .ReturnsAsync(new SpawnResponse(SectorId: 1, ShipId: 10, SpawnX: 0L, SpawnY: 0L));
 
         var hub = CreateHub(mockShardClient.Object, out var mockContext, out var mockGroups);
 
@@ -109,7 +109,7 @@ public class GameHubTests
         var mockShardClient = new Mock<IShardClient>();
         mockShardClient
             .Setup(s => s.SpawnAsync("user-1"))
-            .ReturnsAsync(new SpawnResponse(SectorId: 5, ShipId: 10, SpawnX: 0f, SpawnY: 0f));
+            .ReturnsAsync(new SpawnResponse(SectorId: 5, ShipId: 10, SpawnX: 0L, SpawnY: 0L));
 
         var hub = CreateHub(mockShardClient.Object, out var mockContext, out var mockGroups);
         mockGroups

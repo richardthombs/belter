@@ -12,9 +12,9 @@ namespace BelterLife.Simulation.Physics;
 /// </summary>
 public class PhysicsEngine
 {
-    public const float ThrustForce = 150f;   // main engine acceleration, units / s²
-    public const float RetroForce = 100f;   // retro thruster acceleration, units / s²
-    public const float MaxSpeed = 300f;   // speed cap, units / s
+    public const float ThrustForce = 150_000f;   // main engine acceleration, mm / s²
+    public const float RetroForce = 100_000f;   // retro thruster acceleration, mm / s²
+    public const float MaxSpeed = 300_000f;   // speed cap, mm / s
     public const float AngularAccel = 4.0f;   // angular acceleration, rad / s²
     public const float MaxAngularSpeed = 2.5f;   // angular speed cap, rad / s
     public const float AngularDamping = 4.0f;   // rotation braking coefficient, 1/s
@@ -79,7 +79,7 @@ public class PhysicsEngine
         }
 
         // 5. Integrate position.
-        ship.X += ship.VelocityX * deltaSeconds;
-        ship.Y += ship.VelocityY * deltaSeconds;
+        ship.X += (long)(ship.VelocityX * deltaSeconds);
+        ship.Y += (long)(ship.VelocityY * deltaSeconds);
     }
 }

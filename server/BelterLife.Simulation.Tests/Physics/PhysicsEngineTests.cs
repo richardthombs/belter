@@ -27,7 +27,7 @@ public class PhysicsEngineTests
         Assert.Equal(0f, ship.VelocityX, precision: 4);
         Assert.True(ship.VelocityY < 0f, "Should accelerate upward (neg-Y) when facing up");
         Assert.Equal(-PhysicsEngine.ThrustForce * Dt, ship.VelocityY, precision: 3);
-        Assert.True(ship.Y < 0f, "Ship should have moved upward");
+        Assert.True(ship.Y < 0, "Ship should have moved upward");
     }
 
     [Fact]

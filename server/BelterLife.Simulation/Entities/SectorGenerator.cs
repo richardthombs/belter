@@ -7,35 +7,43 @@ public class SectorGenerator
 {
     public long NewSeed() => new Random().NextInt64();
 
-    public (Sector sector, List<Asteroid> asteroids, List<NpcStation> stations) Generate(long seed)
+    public (Sector sector, List<Asteroid> asteroids, List<NpcStation> stations) Generate(long seed, long gridX = 0, long gridY = 0)
     {
-        var sector = new Sector { Seed = seed, CreatedAt = DateTimeOffset.UtcNow };
+        var sector = new Sector
+        {
+            GridX = gridX,
+            GridY = gridY,
+            Seed = seed,
+            IsGenerated = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
         var rng = new Random((int)(seed ^ (seed >> 32)));
 
         var asteroids = new List<Asteroid>();
         int count = rng.Next(20, 51);
         for (int i = 0; i < count; i++)
         {
-            var angle = rng.NextDouble() * Math.PI * 2;
-            var dist = 150 + rng.NextDouble() * 750; // 150–900 units from origin
+            double angle = rng.NextDouble() * Math.PI * 2;
+            double dist = 500_000 + rng.NextDouble() * 21_500_000;
+            float radius = 10_000f + (float)(rng.NextDouble() * 490_000f);
             asteroids.Add(new Asteroid
             {
-                X = (float)(Math.Cos(angle) * dist),
-                Y = (float)(Math.Sin(angle) * dist),
-                Radius = 5f + (float)(rng.NextDouble() * 35f),
+                X = (long)(Math.Cos(angle) * dist),
+                Y = (long)(Math.Sin(angle) * dist),
+                Radius = radius,
                 VertexCount = rng.Next(6, 13),
                 RotationOffset = (float)(rng.NextDouble() * Math.PI * 2),
             });
         }
 
-        var stationAngle = rng.NextDouble() * Math.PI * 2;
-        var stationDist = 200 + rng.NextDouble() * 400; // 200–600 units from origin
+        double stationAngle = rng.NextDouble() * Math.PI * 2;
+        double stationDist = 2_000_000 + rng.NextDouble() * 13_000_000;
         var stations = new List<NpcStation>
         {
             new NpcStation
             {
-                X = (float)(Math.Cos(stationAngle) * stationDist),
-                Y = (float)(Math.Sin(stationAngle) * stationDist),
+                X = (long)(Math.Cos(stationAngle) * stationDist),
+                Y = (long)(Math.Sin(stationAngle) * stationDist),
                 Name = "Station Alpha",
             }
         };

@@ -45,7 +45,7 @@ public class SendInputTests
         var mockShard = new Mock<IShardClient>();
         mockShard
             .Setup(s => s.SpawnAsync(It.IsAny<string>()))
-            .ReturnsAsync(new SpawnResponse(SectorId: 1, ShipId: 10, SpawnX: 0f, SpawnY: 0f));
+            .ReturnsAsync(new SpawnResponse(SectorId: 1, ShipId: 10, SpawnX: 0L, SpawnY: 0L));
         mockShard
             .Setup(s => s.SendInputAsync(It.IsAny<string>(), It.IsAny<InputEvent>()))
             .Returns(Task.CompletedTask);

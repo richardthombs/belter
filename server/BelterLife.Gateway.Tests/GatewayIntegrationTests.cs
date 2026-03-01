@@ -228,7 +228,7 @@ public class RegisterLoginSpawnIntegrationTests : IDisposable
     {
         var client = _factory.CreateClient();
         var username = "spawn_" + Guid.NewGuid().ToString("N")[..8];
-        var expectedSpawn = new SpawnResponse(SectorId: 1, ShipId: 42, SpawnX: 100f, SpawnY: 200f);
+        var expectedSpawn = new SpawnResponse(SectorId: 1, ShipId: 42, SpawnX: 100L, SpawnY: 200L);
 
         // The mock accepts any non-null playerId and returns the canned SpawnResponse.
         _factory.ShardMock
