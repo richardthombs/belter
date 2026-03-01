@@ -263,4 +263,74 @@ public class SimulationLoopTests
         Assert.NotNull(captured);
         Assert.Equal(activeCount, captured!.Asteroids.Count);
     }
+
+    [Fact]
+    public async Task Tick_PersistsFragments_AndIncludesThemInSubsequentWorldStateUpdate()
+    {
+        await using var db = CreateDb();
+
+        var sector = new Sector { Seed = 6 };
+        await db.Sectors.AddAsync(sector);
+        await db.SaveChangesAsync();
+
+        var heavy = new Asteroid
+        {
+            SectorId = sector.Id,
+            X = 0,
+            Y = 0,
+            Radius = 3_000f,
+            VelocityX = 100_000f,
+            VelocityY = 0f,
+            VertexCount = 9,
+            RotationOffset = 0f,
+        };
+        var light = new Asteroid
+        {
+            SectorId = sector.Id,
+            X = 10_000,
+            Y = 0,
+            Radius = 2_000f,
+            VelocityX = -100_000f,
+            VelocityY = 0f,
+            VertexCount = 8,
+            RotationOffset = 0f,
+        };
+
+        await db.Asteroids.AddRangeAsync(heavy, light);
+        await db.SaveChangesAsync();
+
+        var originalIds = new HashSet<int> { heavy.Id, light.Id };
+
+        var broadcasts = new List<WorldStateUpdate>();
+        var mockGateway = new Mock<IGatewayClient>();
+        mockGateway
+            .Setup(g => g.BroadcastAsync(It.IsAny<WorldStateUpdate>()))
+            .Callback<WorldStateUpdate>(update => broadcasts.Add(update))
+            .Returns(Task.CompletedTask);
+
+        var loop = new SimulationLoop(
+            new Mock<IServiceScopeFactory>().Object,
+            mockGateway.Object,
+            EmptyBuffer(),
+            new PhysicsEngine(),
+            CreateAsteroidManager(),
+            BuildConfig(),
+            NullLogger<SimulationLoop>.Instance);
+
+        await loop.TickAsync(db, CancellationToken.None);
+
+        var persistedFragmentIds = await db.Asteroids
+            .Where(a => a.SectorId == sector.Id && !a.IsDestroyed && !originalIds.Contains(a.Id))
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        Assert.Equal(2, persistedFragmentIds.Count);
+
+        await loop.TickAsync(db, CancellationToken.None);
+
+        Assert.True(broadcasts.Count >= 2);
+        var secondUpdate = broadcasts[1];
+        Assert.All(persistedFragmentIds, fragmentId =>
+            Assert.Contains(secondUpdate.Asteroids, snapshot => snapshot.AsteroidId == fragmentId));
+    }
 }

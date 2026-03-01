@@ -36,7 +36,12 @@ public class AsteroidManager
             physicsEngine.ApplyAsteroidDrift(asteroid, deltaSeconds);
         }
 
-        var fragments = collisionResolver.ResolveAsteroidCollisions(asteroids);
+        var fragments = new List<Asteroid>();
+        foreach (var sectorAsteroids in asteroids.GroupBy(a => a.SectorId))
+        {
+            fragments.AddRange(collisionResolver.ResolveAsteroidCollisions(sectorAsteroids.ToList()));
+        }
+
         if (fragments.Count > 0)
         {
             await db.Asteroids.AddRangeAsync(fragments, cancellationToken);

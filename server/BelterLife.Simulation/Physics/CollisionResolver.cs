@@ -20,7 +20,7 @@ public class CollisionResolver
 				continue;
 			}
 
-			for (int j = i + 1; j < asteroids.Count; j++)
+			for (int j = i + 1; j < asteroids.Count && !first.IsDestroyed; j++)
 			{
 				var second = asteroids[j];
 				if (second.IsDestroyed)
@@ -44,6 +44,10 @@ public class CollisionResolver
 				var destroyedParent = ChooseDestroyedParent(first, second);
 				destroyedParent.IsDestroyed = true;
 				fragments.AddRange(CreateFragments(destroyedParent));
+				if (ReferenceEquals(destroyedParent, first))
+				{
+					break;
+				}
 			}
 		}
 

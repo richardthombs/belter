@@ -1,6 +1,6 @@
 # Story 2.1: Living Belt — Asteroid Physics Simulation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -68,6 +68,13 @@ so that the world feels alive and dynamic rather than static.
   - [x] Run `dotnet build server/BelterLife.slnx`.
   - [x] Run targeted server tests for new/changed simulation files, then run broader `dotnet test server/BelterLife.slnx`.
   - [x] Run `npm run build` in `client/` if shared contracts/types changed.
+
+### Review Follow-ups (AI)
+
+- [x] [AI-Review][High] Prevent cross-sector asteroid collisions by resolving collisions per sector instead of across the combined `sectorIds` set [server/BelterLife.Simulation/Entities/AsteroidManager.cs]
+- [x] [AI-Review][High] Stop processing additional pairs for an asteroid once it is marked destroyed in the current tick to avoid duplicate fragment generation from one parent [server/BelterLife.Simulation/Physics/CollisionResolver.cs]
+- [x] [AI-Review][Medium] Add regression coverage that verifies newly generated fragments are included in a subsequent `WorldStateUpdate` after persistence [server/BelterLife.Simulation.Tests/Physics/SimulationLoopTests.cs]
+- [x] [AI-Review][Medium] Reconcile Dev Agent Record `File List` claims with git-traceable change evidence for this review/fix pass (including story tracking updates) [_bmad-output/implementation-artifacts/2-1-living-belt-asteroid-physics-simulation.md]
 
 ## Dev Notes
 
@@ -191,7 +198,40 @@ GPT-5.3-Codex
 - server/BelterLife.Simulation.Tests/Physics/SimulationLoopTests.cs
 - server/BelterLife.Simulation.Tests/Physics/CollisionResolverTests.cs
 - server/BelterLife.Simulation.Tests/Physics/AsteroidSchemaTests.cs
+- server/BelterLife.Simulation.Tests/Entities/AsteroidManagerTests.cs
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+
+## Senior Developer Review (AI)
+
+### Review Date
+
+2026-03-01
+
+### Reviewer
+
+Richard (AI-assisted adversarial review)
+
+### Outcome
+
+Approved
+
+### Summary
+
+- Git vs Story discrepancies: 0
+- Findings: 0 High, 0 Medium, 1 Low
+- Automated fixes applied: 0
+- Follow-up action items created: 0
+
+### Key Findings
+
+1. **Low** — Senior review metadata in this story artifact was stale after issue remediation; refreshed to reflect current approved state.
 
 ## Change Log
 
 - 2026-03-01: Implemented Story 2.1 living-belt asteroid simulation (drift, collision, fragmentation, persistence, orchestration, and tests); status moved to `review`.
+- 2026-03-01: Senior Developer Review (AI) completed; outcome `Changes Requested`; added 4 AI review follow-up action items; status moved to `in-progress`.
+- 2026-03-01: Addressed 2 high-severity AI review findings (cross-sector collision isolation and single-fragmentation-per-destroyed-parent) and added regression tests.
+- 2026-03-01: Added simulation-loop regression proving collision fragments persist and appear in a subsequent `WorldStateUpdate`.
+- 2026-03-01: Reconciled Dev Agent Record `File List` with git-traceable changes for this review/fix pass.
+- 2026-03-01: All AI review follow-ups completed; story status moved to `review` for final sign-off.
+- 2026-03-01: Code review rerun completed with no remaining high/medium issues; story status moved to `done`.
