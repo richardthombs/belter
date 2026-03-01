@@ -519,7 +519,7 @@ So that the world feels alive and dynamic rather than static.
 ### Story 2.2: HUD Bottom Bar & Pulse Indicator
 
 As a **player**,
-I want a persistent bottom bar showing my credits, cargo hold percentage, and speed at all times during flight,
+I want a persistent bottom bar showing my credits, cargo hold percentage, speed, and coarse location context (sector + approximate in-sector position) at all times during flight,
 So that I always have ambient situational awareness without any interaction required.
 
 **Acceptance Criteria:**
@@ -547,6 +547,14 @@ So that I always have ambient situational awareness without any interaction requ
 **Given** `prefers-reduced-motion`,
 **When** enabled,
 **Then** pulse animations are suppressed; values update without animation
+
+**Given** the player is in flight,
+**When** the HUD renders location context,
+**Then** it displays sector identifier plus coarse in-sector position (subsector-style bucket and rounded local coordinates), not meter-level precision
+
+**Given** location context values update during movement,
+**When** the player crosses a coarse boundary,
+**Then** the location display updates without pulse animation and without `aria-live` announcements
 
 ---
 

@@ -669,6 +669,7 @@ Appears in Flows 2 and 3 identically: sector resolves → quiet scan window → 
 - Credits display (left)
 - Hold capacity bar + percentage (centre)
 - Speed indicator (right)
+- Location context (sector + subsector + coarse local coordinates)
 - Expandable zone: additional stat slots for future use
 
 **States / variants:**
@@ -678,10 +679,13 @@ Appears in Flows 2 and 3 identically: sector resolves → quiet scan window → 
 | Credits | Pulses (scale + brightness flash) on any change |
 | Hold % | Bar fills left-to-right; pulses on each ore deposit; emphatic pulse + colour shift when full |
 | Speed | Live numeric; no pulse (continuous change would be noisy) |
+| Location context | Live coarse orientation data; no pulse; no meter-level precision |
 
 **Pulse spec:** 150ms ease-out scale to 1.08 + brightness +20%, return over 300ms. Triggered on value change. Not triggered on page load.
 
-**Accessibility:** `role="status"`, `aria-live="polite"` on credits and hold % for screen reader announcements. Speed excluded from live region (too frequent).
+**Location formatting:** Designed for orientation, not exact tracking. Show sector identifier plus subsector-style bucket and rounded local coordinates (coarse granularity).
+
+**Accessibility:** `role="status"`, `aria-live="polite"` on credits and hold % for screen reader announcements. Speed and location context are excluded from live region (too frequent/noisy).
 
 ---
 

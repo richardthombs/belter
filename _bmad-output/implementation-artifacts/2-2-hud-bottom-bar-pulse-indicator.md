@@ -5,7 +5,7 @@ Status: ready-for-dev
 ## Story
 
 As a **player**,
-I want a persistent bottom bar showing my credits, cargo hold percentage, and speed at all times during flight,
+I want a persistent bottom bar showing my credits, cargo hold percentage, speed, and coarse location context (sector + approximate in-sector position) at all times during flight,
 so that I always have ambient situational awareness without any interaction required.
 
 ## Acceptance Criteria
@@ -34,11 +34,20 @@ so that I always have ambient situational awareness without any interaction requ
    **when** enabled,
    **then** pulse animations are suppressed; values update without animation.
 
+7. **Given** the player is in flight,
+   **when** the HUD renders location context,
+   **then** it displays sector identifier plus coarse in-sector position (subsector-style bucket and rounded local coordinates), not meter-level precision.
+
+8. **Given** location context values update during movement,
+   **when** the player crosses a coarse boundary,
+   **then** the location display updates without pulse animation and without `aria-live` announcements.
+
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Extend snapshot/state contracts for HUD data (AC: 1, 2, 3, 4)
+- [ ] Task 1 — Extend snapshot/state contracts for HUD data (AC: 1, 2, 3, 4, 7)
   - [ ] Add credits and cargo-hold fields to the server→client snapshot contract used by `WorldStateUpdate` (ship-level or companion payload) in `server/BelterLife.Shared/Contracts/Hubs/`.
   - [ ] Populate new fields in `server/BelterLife.Simulation/Physics/SimulationLoop.cs` from authoritative server state.
+  - [ ] Ensure sector identifier is available in HUD-consumed state (prefer ship-level `sectorId` to avoid ambiguity).
   - [ ] Mirror contract additions in `client/src/types/index.ts` and `client/src/state/WorldState.ts` while preserving wire-casing normalization.
 
 - [ ] Task 2 — Add HUD overlay scaffold and mounting lifecycle (AC: 1)
@@ -58,14 +67,19 @@ so that I always have ambient situational awareness without any interaction requ
   - [ ] Add `role="status"` + `aria-live="polite"` for hold updates.
   - [ ] Ensure full-state styling uses existing design tokens/theme primitives (no hardcoded new color system).
 
-- [ ] Task 5 — Implement live speed indicator (AC: 4)
+- [ ] Task 5 — Implement live speed and location indicators (AC: 4, 7, 8)
   - [ ] Compute or consume speed in a consistent unit (mm/s source; display conversion documented in UI component).
   - [ ] Update speed continuously without pulse animation.
   - [ ] Exclude speed from `aria-live` announcements to avoid excessive chatter.
+  - [ ] Add location formatter utility for coarse output (subsector bucket + rounded local coordinates).
+  - [ ] Ensure location display is orientation-focused, not precise tracking (no meter-level values).
+  - [ ] Update location quietly (no pulse animation, no `aria-live`).
 
 - [ ] Task 6 — Add motion/accessibility behavior and tests (AC: 2, 3, 5, 6)
   - [ ] Add client tests for pulse trigger conditions (change-only, intensity switching, reduced-motion suppression).
   - [ ] Add tests for accessibility attributes (`role`, `aria-live`) on credits and hold, and explicit absence on speed.
+  - [ ] Add tests for location quantization/bucketing and boundary-crossing updates.
+  - [ ] Add tests verifying location values are coarse and never rendered at meter-level precision.
   - [ ] Add tests verifying HUD remains visible through world updates and does not remount/reset on each tick.
 
 - [ ] Task 7 — Verify build/test gates
@@ -78,7 +92,7 @@ so that I always have ambient situational awareness without any interaction requ
 ### Story Foundation (Epic 2)
 
 - This story delivers the ambient HUD part of FR35 for Epic 2 and must align with UX spec behavior for bottom bar and pulse indicator.
-- Keep scope constrained to persistent awareness UI (credits, hold %, speed) plus change-driven pulse feedback.
+- Keep scope constrained to persistent awareness UI (credits, hold %, speed, and coarse location context) plus change-driven pulse feedback.
 - Scanning/mining/docking interactions remain in later Epic 2 stories; this story only surfaces values and reactive cues.
 
 ### Technical Requirements (Must Follow)
@@ -86,9 +100,11 @@ so that I always have ambient situational awareness without any interaction requ
 - Keep server-authoritative state model:
   - Credits/cargo values shown in HUD must come from authoritative server snapshots, not local speculative state.
   - Speed display can be derived from authoritative velocity (`sqrt(vx² + vy²)`) client-side if no explicit speed field is sent.
+  - Location context must be derived from authoritative sector and position data, then quantized for display.
 - Maintain int64/mm world model established in Story 2.0:
   - Position remains `long` in contracts; no coordinate model regression.
   - Velocity units remain mm/s.
+  - Location UI must round/quantize to coarse granularity (orientation-friendly, not exact tracking).
 - Preserve SignalR naming/casing rules:
   - Server contracts in PascalCase; client normalized to camelCase at entry point.
 
@@ -130,6 +146,8 @@ so that I always have ambient situational awareness without any interaction requ
   - Credits pulse triggers on change only.
   - Hold pulse subtle/emphatic behavior and full-state transition.
   - Speed updates with no pulse.
+  - Location context renders sector + coarse in-sector values only.
+  - Location updates are quiet (no pulse, no `aria-live`).
   - `prefers-reduced-motion` suppresses pulse animations.
   - Accessibility attributes and announcement scope (`credits`/`hold` only).
 - If server contracts are changed, add/adjust simulation-loop tests ensuring HUD values are included in outgoing snapshots.
@@ -189,3 +207,4 @@ GPT-5.3-Codex
 ## Change Log
 
 - 2026-03-01: Story created via BMAD create-story workflow; status set to `ready-for-dev`.
+- 2026-03-01: Correct-course refinement approved; added coarse location context (sector + approximate in-sector position) to Story 2.2 requirements, tasks, and test expectations.
