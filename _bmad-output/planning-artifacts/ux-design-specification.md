@@ -1,5 +1,6 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+lastStep: 14
 inputDocuments:
   - '_bmad-output/planning-artifacts/prd.md'
   - '_bmad-output/planning-artifacts/product-brief-xx-2026-02-19.md'
@@ -834,3 +835,164 @@ Appears in Flows 2 and 3 identically: sector resolves → quiet scan window → 
 - Expand Pulse Indicator coverage to all economic events
 - Beacon markers on Star Map (future phase)
 - Organisation dashboard components (Phase 2 gameplay)
+
+## UX Consistency Patterns
+
+### Button Hierarchy
+
+For world-object interaction panels:
+
+- **Primary action:** Highest-value action for current range tier (e.g., Set Course at far range, Scan at scan range, Mine at mining range)
+- **Secondary actions:** Supporting actions (e.g., Drill, Claim, Trade) in descending relevance
+- **Dismiss action:** Small, persistent `X` close button in panel header (top-right), always visible and always available
+- **No gesture-dismiss dependency:** Dismissal does not rely on swipe gestures
+- **No accidental toggle-close:** Re-tapping the currently selected object does not close the panel
+
+### Feedback Patterns
+
+For object selection and panel transitions:
+
+- **Selection confirmation:** Tapped object remains visually highlighted while selected
+- **Selection persistence:** Highlight and panel state persist until explicit close (`X`) or selection transfer
+- **Selection transfer:** Tapping a different object crossfades panel content (no hard swap), while highlight transfers to the new target
+- **Range feedback:** Actions unlock progressively by distance; out-of-range actions remain visible but disabled/greyed
+- **Unavailable target recovery:** If a selected target becomes invalid, show a brief “Target unavailable” message and clear selection gracefully
+
+### Form Patterns
+
+For this interaction slice, forms are minimal and action-first:
+
+- Use compact inline controls only where required (e.g., confirmation, quantity in later economy overlays)
+- Never block primary object interaction with unnecessary form friction
+- Keep single-step intent flows whenever possible (tap object → choose action)
+
+### Navigation Patterns
+
+#### World-Object Tap Navigation
+
+**When to Use:**  
+Whenever player taps/clicks an interactive world object (asteroid, station, beacon, wreck)
+
+**Visual Design:**  
+- Selected object gets immediate in-world highlight using interactive accent token
+- Context panel opens from right edge
+- Header includes object identity, distance, and persistent `X` close button
+
+**Behavior:**  
+- Tap object → select target + open panel
+- Tap same selected object → keep selected; keep panel open
+- Tap different object → transfer selection + crossfade panel content
+- Close only through explicit `X` control (or keyboard Escape on keyboard flows)
+- Selection cleared when panel is closed
+
+**Accessibility:**  
+- Keyboard support mirrors touch/mouse logic (target select, panel focus, Escape close)
+- Focus enters panel on open and returns appropriately on close
+- Selection state is announced in assistive tech-friendly terms
+
+**Mobile Considerations:**  
+- No required gesture to dismiss panel
+- `X` close target is touch-safe and always visible
+- Preserve thumb-friendly action placement for primary actions
+
+**Variants:**  
+- `selected-far`: info + Set Course
+- `selected-scan`: +Scan unlocked
+- `selected-mining`: +Mine / Drill / Claim unlocked
+- `selected-transfer`: crossfade between old and new target content
+- `selected-invalid`: target unavailable fallback
+
+### Additional Patterns
+
+#### Overlay Conflict Rules
+
+- If a full-screen overlay (Star Map, Marketplace) opens, object panel closes first to prevent stacked interaction ambiguity
+- Returning from full-screen overlay does not auto-restore old object selection; user intent should be fresh
+
+#### Motion & Transition Rules
+
+- Use subtle crossfade for target transfer; avoid dramatic motion that competes with world readability
+- Respect reduced-motion settings by shortening or removing transition effects while preserving state clarity
+
+## Responsive Design & Accessibility
+
+### Responsive Strategy
+
+Belter Life uses a **tablet-first canonical layout** with desktop enhancement, not divergence.  
+The touch model defines core interaction behavior; desktop adds convenience (keyboard/precision) without changing underlying flows.
+
+**Device strategy:**
+- **Tablet (primary):** canonical interaction density, touch-first controls, thumb-safe target spacing
+- **Desktop:** same interaction model with expanded peripheral context and keyboard enhancements
+- **Sub-768 screens:** unsupported for gameplay; show clear compatibility guidance and minimum-size requirement
+
+**Core principle:** one game interaction language across inputs (tap/click parity), with layout adaptation rather than behavior forks.
+
+### Breakpoint Strategy
+
+Belter Life uses standard breakpoints aligned with existing platform constraints:
+
+- **Tablet / base layout:** `768px–1023px` (canonical baseline)
+- **Desktop enhanced layout:** `1024px+`
+- **Unsupported gameplay range:** `<768px`
+
+**Breakpoint behavior:**
+- At `768+`, all core gameplay interactions are available
+- At `1024+`, additional spatial breathing room and secondary context are enabled
+- Below `768`, render a non-gameplay compatibility view with guidance to switch device/orientation
+
+### Accessibility Strategy
+
+Belter Life targets **WCAG 2.2 AA** compliance across gameplay overlays and supporting screens.
+
+**Key requirements:**
+- Contrast: minimum AA ratios (4.5:1 normal text, 3:1 large text)
+- Keyboard operability for all overlay UI interactions
+- Visible focus indicators on all focusable controls
+- Touch targets minimum 44×44px
+- Semantic roles/labels for contextual panels and controls
+- Reduced-motion support for all non-essential animation
+
+**Object interaction accessibility:**
+- Selected target state is perceivable beyond color-only encoding
+- Context panel includes explicit close control (`X`) and keyboard close (`Escape`)
+- Selection and state transitions are announced clearly for assistive tech where applicable
+
+### Testing Strategy
+
+**Responsive testing:**
+- Validate canonical flows on actual iPad-class devices
+- Validate desktop parity on Chrome, Firefox, Safari, Edge
+- Verify unsupported-state behavior for `<768px` viewports
+
+**Accessibility testing:**
+- Automated checks (axe/Lighthouse) on overlay and auth/navigation screens
+- Keyboard-only traversal for all panel and modal flows
+- Screen reader checks for panel semantics and state changes
+- Focus-order and focus-return validation on open/close transitions
+- Reduced-motion behavior verification
+
+**Regression priority tests:**
+- Tap/click parity for object selection
+- Selected highlight persistence and transfer behavior
+- Close behavior consistency (`X` and `Escape` only)
+
+### Implementation Guidelines
+
+**Responsive implementation:**
+- Build from tablet baseline upward (`min-width: 768px`)
+- Use desktop enhancement rules at `1024px+` without altering core interaction model
+- Keep action zones in thumb-reachable regions on tablet
+- Avoid introducing desktop-only critical paths
+
+**Accessibility implementation:**
+- Use semantic HTML + ARIA roles for overlays/panels
+- Maintain explicit close affordance (`X`) in panel header
+- Preserve focus management discipline on panel open/close
+- Ensure disabled action states communicate availability and reason
+- Respect `prefers-reduced-motion` for transitions, pulses, and crossfades
+
+**Unsupported-screen implementation (<768px):**
+- Show concise compatibility screen
+- Include required minimum width and suggested device/orientation
+- Avoid partial gameplay mode that compromises interaction clarity

@@ -35,8 +35,8 @@ so that I always know what I can do with any object at my current distance — w
    **then** the corresponding action greys out (not disappears) in the panel.
 
 7. **Given** the panel is open,
-   **when** the player taps outside the panel or swipes right,
-   **then** the panel dismisses.
+   **when** the player explicitly taps the panel close `X` button,
+   **then** the panel dismisses and the selected-object highlight is cleared.
 
 8. **Given** the panel on keyboard navigation,
    **when** open,
@@ -51,12 +51,14 @@ so that I always know what I can do with any object at my current distance — w
   - [ ] Extend world interaction handling so asteroid/object taps are captured in the Pixi canvas layer and converted to a selected target object.
   - [ ] Add a lightweight selection state module (selected object ID/type + last-known distance + available actions) that can be updated every world tick without reactive framework dependencies.
   - [ ] Add selected-object visual highlight state and rendering hook so highlight appears on select and clears on deselect/reselect.
-  - [ ] Wire deselection events for click-outside and swipe-right dismissal semantics.
+  - [ ] Ensure tapping the same selected object keeps it selected and does not close the panel.
+  - [ ] Ensure tapping a different object transfers selection and triggers panel content crossfade.
 
 - [ ] Task 2 — Implement contextual panel component scaffold and lifecycle (AC: 1, 6, 7, 8)
   - [ ] Replace the current `client/src/ui/ContextualPanel.ts` stub with a mounted HTML overlay component that opens from the right edge.
   - [ ] Mount/unmount panel lifecycle from `client/src/app.ts` (or equivalent orchestrator) without breaking existing HUD bottom bar lifecycle.
   - [ ] Implement semantic structure and accessibility baseline: `role="complementary"`, contextual `aria-label`, keyboard-focusable actions, Escape-to-dismiss.
+  - [ ] Add a persistent, touch-safe close `X` button in the panel header (top-right) that is always visible.
   - [ ] Ensure action hit areas are at least 44×44px and pointer/touch behavior is equivalent.
 
 - [ ] Task 3 — Implement distance-gated action model and live updates (AC: 2, 3, 4, 5)
@@ -68,6 +70,7 @@ so that I always know what I can do with any object at my current distance — w
 - [ ] Task 4 — Add transitions and panel behavior fidelity (AC: 1, 3, 6)
   - [ ] Implement right-edge slide-in/out panel transition that respects reduced-motion preference.
   - [ ] Add fade-in transition for newly unlocked actions (especially `[Scan]`) without forcing re-render churn.
+  - [ ] Add crossfade transition for panel content when selection transfers to another object.
   - [ ] Keep selected object persisted while player moves; do not require re-tap on threshold crossings.
 
 - [ ] Task 5 — Integrate object metadata and context rendering (AC: 1, 2)
@@ -78,7 +81,7 @@ so that I always know what I can do with any object at my current distance — w
 - [ ] Task 6 — Accessibility, keyboard, and interaction safety checks (AC: 7, 8, 9)
   - [ ] Add focus-trap behavior while panel is open and restore focus target when dismissed.
   - [ ] Add Escape key handler with deterministic teardown.
-  - [ ] Verify outside-click logic does not block or regress canvas interactions.
+  - [ ] Verify close behavior is explicit (`X` and Escape) and no gesture-based dismiss is required.
   - [ ] Validate minimum touch target dimensions in tests.
 
 - [ ] Task 7 — Testing and validation gates
@@ -141,12 +144,29 @@ so that I always know what I can do with any object at my current distance — w
 
 - Add client tests for:
   - Tap/click target selection opens panel with object metadata.
+  - Tap same selected object keeps panel open and selection unchanged.
+  - Tap a different object transfers selection and crossfades panel content.
   - Selected object gets an in-world highlight on selection and highlight is cleared on dismiss/reselect.
   - Range threshold crossings unlock actions live without re-tap.
   - Out-of-range regression greys out actions instead of removing them.
-  - Dismiss behavior: outside-click, swipe-right, Escape.
+  - Dismiss behavior: close `X` and Escape.
   - Accessibility semantics and focus management.
   - Minimum target dimensions and reduced-motion behavior.
+
+## Engineering Checklist (Dev-Ready)
+
+- [ ] `WorldLayer` emits object selection events with target identity (`objectType`, `objectId`) and world coordinates.
+- [ ] Selection state module stores: selected target, current distance, and current action availability tier.
+- [ ] Selected object highlight renders immediately and persists until explicit close or target transfer.
+- [ ] Re-tap same target is idempotent (no panel close, no selection reset).
+- [ ] Transfer to a different target updates highlight and crossfades panel content.
+- [ ] Context panel header includes object name/type/distance and persistent close `X` button.
+- [ ] Panel close via `X` clears selection + highlight and untraps focus.
+- [ ] Escape closes panel and mirrors `X` close behavior exactly.
+- [ ] Far/scan/mining range thresholds are centralized constants (no magic numbers).
+- [ ] Action rows remain visible but disabled/greyed when out of range.
+- [ ] Reduced-motion mode disables or simplifies slide/crossfade transitions.
+- [ ] Tests cover selection, transfer, close (`X`/Escape), highlighting, range gating, and reduced-motion paths.
 
 ### Previous Story Intelligence
 
