@@ -9,6 +9,7 @@ import type { SpawnResponse } from "../types";
 
 const TOKEN_KEY = "belter_jwt";
 const BASE = "/api/v1";
+const SPAWN_TIMEOUT_MS = 5000;
 
 export interface ProblemDetails {
     title: string;
@@ -24,6 +25,17 @@ export class AuthError extends Error {
         super(problem.detail ?? problem.title);
         this.status = status;
         this.problem = problem;
+    }
+}
+
+export class SpawnTimeoutError extends Error {
+    readonly timeoutMs: number;
+
+    constructor(timeoutMs: number) {
+        super(
+            `Gateway did not respond within ${Math.round(timeoutMs / 1000)} seconds.`,
+        );
+        this.timeoutMs = timeoutMs;
     }
 }
 
@@ -98,10 +110,30 @@ export function isAuthenticated(): boolean {
 /** Call the spawn endpoint to ensure the player's sector and ship are assigned. */
 export async function spawn(): Promise<SpawnResponse> {
     const token = getToken();
-    const res = await fetch(`${BASE}/players/me/spawn`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token ?? ""}` },
-    });
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(
+        () => controller.abort(),
+        SPAWN_TIMEOUT_MS,
+    );
+
+    let res: Response;
+    try {
+        res = await fetch(`${BASE}/players/me/spawn`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token ?? ""}` },
+            signal: controller.signal,
+        });
+    } catch (err) {
+        const isAbort =
+            err instanceof DOMException && err.name === "AbortError";
+        if (isAbort) {
+            throw new SpawnTimeoutError(SPAWN_TIMEOUT_MS);
+        }
+        throw err;
+    } finally {
+        window.clearTimeout(timeoutId);
+    }
+
     await throwIfError(res);
     return res.json() as Promise<SpawnResponse>;
 }

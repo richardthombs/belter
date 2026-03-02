@@ -24,7 +24,11 @@ export async function app(): Promise<void> {
 	}
 
 	const canvas = document.createElement("canvas");
-	document.getElementById("app")?.appendChild(canvas);
+	const appRoot = document.getElementById("app");
+	if (appRoot) {
+		appRoot.innerHTML = "";
+		appRoot.appendChild(canvas);
+	}
 
 	const renderer = new Renderer();
 	await renderer.init(canvas);

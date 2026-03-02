@@ -1,8 +1,18 @@
 import "./style.css";
 import "@radix-ui/themes/styles.css";
-import { isAuthenticated } from "./network/RestClient";
+import { isAuthenticated, SpawnTimeoutError } from "./network/RestClient";
 import { AuthScreen } from "./ui/AuthScreen";
 import { app } from "./app";
+
+function showStartupLoading(container: HTMLElement): void {
+    container.innerHTML = `
+        <div class="fixed inset-0 flex items-center justify-center bg-[#0a0a1a]">
+            <div class="text-center">
+                <h1 class="text-white text-xl font-semibold mb-2">Connecting…</h1>
+                <p class="text-zinc-400 text-sm">Contacting gateway server</p>
+            </div>
+        </div>`;
+}
 
 function showFatalError(container: HTMLElement, message: string): void {
     container.innerHTML = `
@@ -20,17 +30,29 @@ function showFatalError(container: HTMLElement, message: string): void {
 
 const container = document.getElementById("app")!;
 if (isAuthenticated()) {
+    showStartupLoading(container);
     app().catch((err: unknown) => {
         console.error(err);
-        const msg = err instanceof Error ? err.message : "Unknown error";
+        const msg =
+            err instanceof SpawnTimeoutError
+                ? "Gateway spawn request timed out after 5 seconds. Check the gateway server and retry."
+                : err instanceof Error
+                  ? err.message
+                  : "Unknown error";
         showFatalError(container, msg);
     });
 } else {
     const screen = new AuthScreen(async () => {
         screen.destroy();
+        showStartupLoading(container);
         await app().catch((err: unknown) => {
             console.error(err);
-            const msg = err instanceof Error ? err.message : "Unknown error";
+            const msg =
+                err instanceof SpawnTimeoutError
+                    ? "Gateway spawn request timed out after 5 seconds. Check the gateway server and retry."
+                    : err instanceof Error
+                      ? err.message
+                      : "Unknown error";
             showFatalError(container, msg);
         });
     });
