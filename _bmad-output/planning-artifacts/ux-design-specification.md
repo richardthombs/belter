@@ -436,6 +436,7 @@ The Ghost Ship and Navigator directions were noted as visually similar in practi
 
 - Bottom stats bar: persistent, edge-anchored, translucent overlay on game canvas
 - Context panel: slides in from right on tap/click, updates live as player moves
+- Selected object: visually highlighted in-world while selected, cleared on dismiss/reselect
 - Actions rendered in tiers within panel: always-available → range-gated (greyed until in range)
 - Shared Screens (catalogue map, marketplace) use the data density token system (`--data-dense`, `--data-sparse`, `--data-changed`, `--data-absent`) established in the Design System Foundation
 - Navigation Catalogue Map and Information Marketplace remain direction-independent and can be accessed from any HUD state

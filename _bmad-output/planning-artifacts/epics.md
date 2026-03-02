@@ -604,6 +604,10 @@ So that I always know what I can do with any object at my current distance — w
 **When** the tap registers,
 **Then** the context panel slides in from the right edge with the object's name, type icon, distance indicator, and distance-appropriate actions
 
+**Given** the player taps/clicks any interactive object on the canvas,
+**When** that object becomes selected,
+**Then** the selected object is visually highlighted in-world until the panel is dismissed or a different object is selected
+
 **Given** the player is at far range (object visible but out of scan range),
 **When** the panel is open,
 **Then** only `[Set Course]` and object info are shown; a "Get closer for more" footer is visible
