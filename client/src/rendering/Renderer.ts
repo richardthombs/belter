@@ -45,6 +45,10 @@ export class Renderer {
 		this.worldLayer.setLocalShipId(shipId);
 	}
 
+	setOnAsteroidSelected(handler: (asteroidId: number) => void): void {
+		this.worldLayer.setOnAsteroidSelected(handler);
+	}
+
 	initCameraAt(x: number, y: number): void {
 		this.cameraX = x;
 		this.cameraY = y;

@@ -17,16 +17,33 @@ function buildPolygonPoints(snapshot: AsteroidSnapshot): number[] {
 }
 
 export class AsteroidRenderer extends Container {
-    constructor(snapshot: AsteroidSnapshot) {
+    private readonly highlight: Graphics;
+
+    constructor(snapshot: AsteroidSnapshot, onSelect: (asteroidId: number) => void) {
         super();
         const g = new Graphics();
         const points = buildPolygonPoints(snapshot);
         g.poly(points).fill(0x000000).stroke({ color: 0xffffff, width: 1 });
         this.addChild(g);
-        this.cacheAsTexture(true);
+
+        const highlight = new Graphics();
+        const radius = toScreen(snapshot.radius) * 1.3;
+        highlight.circle(0, 0, radius).stroke({ color: 0x22d3ee, width: 2, alpha: 0.95 });
+        highlight.visible = false;
+        this.addChild(highlight);
+        this.highlight = highlight;
+
+        this.eventMode = "static";
+        this.cursor = "pointer";
+        this.on("pointertap", () => onSelect(snapshot.asteroidId));
+
     }
 
     update(snapshot: AsteroidSnapshot): void {
         this.position.set(toScreen(snapshot.x), toScreen(snapshot.y));
+    }
+
+    setSelected(selected: boolean): void {
+        this.highlight.visible = selected;
     }
 }

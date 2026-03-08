@@ -3,10 +3,17 @@
 import { Renderer } from "./rendering/Renderer";
 import { GameHubClient } from "./network/GameHubClient";
 import { InputManager } from "./input/InputManager";
-import { apply, getSectorId, getShips } from "./state/WorldState";
+import { apply, getAsteroids, getSectorId, getShips } from "./state/WorldState";
 import { spawn, AuthError, logout } from "./network/RestClient";
 import { showNotification } from "./ui/Notification";
 import { HudBottomBar } from "./ui/HudBottomBar";
+import { ContextualPanel } from "./ui/ContextualPanel";
+import {
+	clearSelection,
+	getSelectionViewState,
+	selectObject,
+	updateSelectionFromWorld,
+} from "./state/ObjectSelectionState";
 
 export async function app(): Promise<void> {
 	console.log("Belter Life initialising...");
@@ -43,6 +50,15 @@ export async function app(): Promise<void> {
 
 	const hudBottomBar = new HudBottomBar(spawnResponse.shipId);
 	hudBottomBar.mount(document.body);
+	const contextualPanel = new ContextualPanel(() => {
+		clearSelection();
+		contextualPanel.render(getSelectionViewState());
+	});
+	contextualPanel.mount(document.body);
+	renderer.setOnAsteroidSelected((asteroidId) => {
+		selectObject("asteroid", asteroidId);
+		contextualPanel.render(getSelectionViewState());
+	});
 
 	const hubClient = new GameHubClient();
 	await hubClient.start();
@@ -51,9 +67,12 @@ export async function app(): Promise<void> {
 
 	hubClient.onWorldStateUpdate((update) => {
 		apply(update);
-		hudBottomBar.update(getShips(), getSectorId());
+		const ships = getShips();
+		hudBottomBar.update(ships, getSectorId());
+		updateSelectionFromWorld(ships, getAsteroids(), spawnResponse.shipId);
+		contextualPanel.render(getSelectionViewState());
 		// Reconcile ~once/s when server includes input state in snapshot.
-		const ownShip = getShips().find(
+		const ownShip = ships.find(
 			(s) => s.shipId === spawnResponse.shipId,
 		);
 		if (ownShip && ownShip.thrust != null && ownShip.torque != null) {
@@ -66,6 +85,7 @@ export async function app(): Promise<void> {
 		() => {
 			input.stop();
 			hudBottomBar.unmount();
+			contextualPanel.unmount();
 		},
 		{ once: true },
 	);

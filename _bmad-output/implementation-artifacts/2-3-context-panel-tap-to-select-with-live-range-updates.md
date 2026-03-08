@@ -1,6 +1,6 @@
 # Story 2.3: Context Panel — Tap-to-Select with Live Range Updates
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -47,48 +47,48 @@ so that I always know what I can do with any object at my current distance — w
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Add selection intent pipeline from canvas to UI state (AC: 1, 2, 7)
-  - [ ] Extend world interaction handling so asteroid/object taps are captured in the Pixi canvas layer and converted to a selected target object.
-  - [ ] Add a lightweight selection state module (selected object ID/type + last-known distance + available actions) that can be updated every world tick without reactive framework dependencies.
-  - [ ] Add selected-object visual highlight state and rendering hook so highlight appears on select and clears on deselect/reselect.
-  - [ ] Ensure tapping the same selected object keeps it selected and does not close the panel.
-  - [ ] Ensure tapping a different object transfers selection and triggers panel content crossfade.
+- [x] Task 1 — Add selection intent pipeline from canvas to UI state (AC: 1, 2, 7)
+  - [x] Extend world interaction handling so asteroid/object taps are captured in the Pixi canvas layer and converted to a selected target object.
+  - [x] Add a lightweight selection state module (selected object ID/type + last-known distance + available actions) that can be updated every world tick without reactive framework dependencies.
+  - [x] Add selected-object visual highlight state and rendering hook so highlight appears on select and clears on deselect/reselect.
+  - [x] Ensure tapping the same selected object keeps it selected and does not close the panel.
+  - [x] Ensure tapping a different object transfers selection and triggers panel content crossfade.
 
-- [ ] Task 2 — Implement contextual panel component scaffold and lifecycle (AC: 1, 6, 7, 8)
-  - [ ] Replace the current `client/src/ui/ContextualPanel.ts` stub with a mounted HTML overlay component that opens from the right edge.
-  - [ ] Mount/unmount panel lifecycle from `client/src/app.ts` (or equivalent orchestrator) without breaking existing HUD bottom bar lifecycle.
-  - [ ] Implement semantic structure and accessibility baseline: `role="complementary"`, contextual `aria-label`, keyboard-focusable actions, Escape-to-dismiss.
-  - [ ] Add a persistent, touch-safe close `X` button in the panel header (top-right) that is always visible.
-  - [ ] Ensure action hit areas are at least 44×44px and pointer/touch behavior is equivalent.
+- [x] Task 2 — Implement contextual panel component scaffold and lifecycle (AC: 1, 6, 7, 8)
+  - [x] Replace the current `client/src/ui/ContextualPanel.ts` stub with a mounted HTML overlay component that opens from the right edge.
+  - [x] Mount/unmount panel lifecycle from `client/src/app.ts` (or equivalent orchestrator) without breaking existing HUD bottom bar lifecycle.
+  - [x] Implement semantic structure and accessibility baseline: `role="complementary"`, contextual `aria-label`, keyboard-focusable actions, Escape-to-dismiss.
+  - [x] Add a persistent, touch-safe close `X` button in the panel header (top-right) that is always visible.
+  - [x] Ensure action hit areas are at least 44×44px and pointer/touch behavior is equivalent.
 
-- [ ] Task 3 — Implement distance-gated action model and live updates (AC: 2, 3, 4, 5)
-  - [ ] Define deterministic range thresholds for far/scan/mining interaction states (as constants, not magic numbers).
-  - [ ] Recompute action availability continuously from authoritative ship/object positions in `WorldState` updates.
-  - [ ] Render always-available tier (`[Set Course]` + object info) and progressive action tiers (`[Scan]`, `[Mine]`, `[Drill]`, `[Claim]`) as range gates are crossed.
-  - [ ] Enforce degrade behavior when moving out of range: action becomes disabled/greyed, not removed.
+- [x] Task 3 — Implement distance-gated action model and live updates (AC: 2, 3, 4, 5)
+  - [x] Define deterministic range thresholds for far/scan/mining interaction states (as constants, not magic numbers).
+  - [x] Recompute action availability continuously from authoritative ship/object positions in `WorldState` updates.
+  - [x] Render always-available tier (`[Set Course]` + object info) and progressive action tiers (`[Scan]`, `[Mine]`, `[Drill]`, `[Claim]`) as range gates are crossed.
+  - [x] Enforce degrade behavior when moving out of range: action becomes disabled/greyed, not removed.
 
-- [ ] Task 4 — Add transitions and panel behavior fidelity (AC: 1, 3, 6)
-  - [ ] Implement right-edge slide-in/out panel transition that respects reduced-motion preference.
-  - [ ] Add fade-in transition for newly unlocked actions (especially `[Scan]`) without forcing re-render churn.
-  - [ ] Add crossfade transition for panel content when selection transfers to another object.
-  - [ ] Keep selected object persisted while player moves; do not require re-tap on threshold crossings.
+- [x] Task 4 — Add transitions and panel behavior fidelity (AC: 1, 3, 6)
+  - [x] Implement right-edge slide-in/out panel transition that respects reduced-motion preference.
+  - [x] Add fade-in transition for newly unlocked actions (especially `[Scan]`) without forcing re-render churn.
+  - [x] Add crossfade transition for panel content when selection transfers to another object.
+  - [x] Keep selected object persisted while player moves; do not require re-tap on threshold crossings.
 
-- [ ] Task 5 — Integrate object metadata and context rendering (AC: 1, 2)
-  - [ ] Surface object name, icon/type token, and live distance indicator in panel header/body.
-  - [ ] Show "Get closer for more" helper when only far-range actions are available.
-  - [ ] Remove helper copy when mining-range options become available.
+- [x] Task 5 — Integrate object metadata and context rendering (AC: 1, 2)
+  - [x] Surface object name, icon/type token, and live distance indicator in panel header/body.
+  - [x] Show "Get closer for more" helper when only far-range actions are available.
+  - [x] Remove helper copy when mining-range options become available.
 
-- [ ] Task 6 — Accessibility, keyboard, and interaction safety checks (AC: 7, 8, 9)
-  - [ ] Add focus-trap behavior while panel is open and restore focus target when dismissed.
-  - [ ] Add Escape key handler with deterministic teardown.
-  - [ ] Verify close behavior is explicit (`X` and Escape) and no gesture-based dismiss is required.
-  - [ ] Validate minimum touch target dimensions in tests.
+- [x] Task 6 — Accessibility, keyboard, and interaction safety checks (AC: 7, 8, 9)
+  - [x] Add focus-trap behavior while panel is open and restore focus target when dismissed.
+  - [x] Add Escape key handler with deterministic teardown.
+  - [x] Verify close behavior is explicit (`X` and Escape) and no gesture-based dismiss is required.
+  - [x] Validate minimum touch target dimensions in tests.
 
-- [ ] Task 7 — Testing and validation gates
-  - [ ] Add client unit tests for selection → panel open flow, distance threshold transitions, grey-out behavior, and dismiss interactions.
-  - [ ] Add tests for keyboard accessibility (focus trap, Escape close, role/label semantics).
-  - [ ] Add tests for reduced-motion behavior (no motion-heavy transitions).
-  - [ ] Run `npm run test` and `npm run build` in `client/`.
+- [x] Task 7 — Testing and validation gates
+  - [x] Add client unit tests for selection → panel open flow, distance threshold transitions, grey-out behavior, and dismiss interactions.
+  - [x] Add tests for keyboard accessibility (focus trap, Escape close, role/label semantics).
+  - [x] Add tests for reduced-motion behavior (no motion-heavy transitions).
+  - [x] Run `npm run test` and `npm run build` in `client/`.
 
 ## Dev Notes
 
@@ -214,12 +214,29 @@ GPT-5.3-Codex
 
 - Ultimate context engine analysis completed - comprehensive developer guide created.
 - Story prepared for implementation with explicit guardrails against interaction regressions, accessibility misses, and architecture drift.
+- Implemented asteroid selection pipeline from Pixi world interactions through `ObjectSelectionState` to HTML contextual panel updates.
+- Replaced `ContextualPanel` stub with accessible right-side overlay: explicit close `X`, `Escape` handling, focus trap, contextual aria labeling, and touch-safe action targets.
+- Added selected-asteroid in-world highlight rendering and persisted selection behavior across movement and range-threshold crossings.
+- Implemented deterministic far/scan/mining action gating with progressive action reveal and out-of-range grey-out behavior.
+- Added action unlock/crossfade transitions with reduced-motion fallbacks.
+- Added client unit tests for selection-state distance gating and contextual panel accessibility/interaction behavior.
+- Validated client quality gates: full `npm run test` suite pass and `npm run build` success.
 
 ### File List
 
 - _bmad-output/implementation-artifacts/2-3-context-panel-tap-to-select-with-live-range-updates.md
 - _bmad-output/implementation-artifacts/sprint-status.yaml
+- client/src/app.ts
+- client/src/style.css
+- client/src/rendering/Renderer.ts
+- client/src/rendering/entities/AsteroidRenderer.ts
+- client/src/rendering/layers/WorldLayer.ts
+- client/src/state/ObjectSelectionState.ts
+- client/src/state/ObjectSelectionState.test.ts
+- client/src/ui/ContextualPanel.ts
+- client/src/ui/ContextualPanel.test.ts
 
 ## Change Log
 
 - 2026-03-02: Story created via BMAD create-story workflow; status set to `ready-for-dev`.
+- 2026-03-02: Implemented contextual panel selection, highlighting, live distance-gated actions, accessibility behavior, and client tests; status moved to `review`.

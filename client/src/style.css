@@ -42,9 +42,41 @@
 	background-color: var(--color-amber-400);
 }
 
+@keyframes contextual-panel-unlock {
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
+@keyframes contextual-panel-crossfade {
+	0% {
+		opacity: 0.55;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
+.contextual-panel-action-unlock {
+	animation: contextual-panel-unlock 180ms ease-out;
+}
+
+.contextual-panel-crossfade {
+	animation: contextual-panel-crossfade 180ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.pulse-subtle,
-	.pulse-emphatic {
+	.pulse-emphatic,
+	.contextual-panel-action-unlock,
+	.contextual-panel-crossfade {
 		animation: none;
+	}
+
+	.contextual-panel {
+		transition: none !important;
 	}
 }

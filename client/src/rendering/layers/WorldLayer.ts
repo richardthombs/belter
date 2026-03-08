@@ -2,11 +2,13 @@ import { Container } from "pixi.js";
 import { getShips, getAsteroids } from "../../state/WorldState";
 import { ShipRenderer } from "../entities/ShipRenderer";
 import { AsteroidRenderer } from "../entities/AsteroidRenderer";
+import { getSelectedObjectId } from "../../state/ObjectSelectionState";
 
 export class WorldLayer extends Container {
     private shipMap = new Map<number, ShipRenderer>();
     private asteroidMap = new Map<number, AsteroidRenderer>();
     private localShipId: number | null = null;
+    private onAsteroidSelected: ((asteroidId: number) => void) | null = null;
 
     constructor() {
         super();
@@ -15,6 +17,10 @@ export class WorldLayer extends Container {
 
     setLocalShipId(id: number): void {
         this.localShipId = id;
+    }
+
+    setOnAsteroidSelected(handler: (asteroidId: number) => void): void {
+        this.onAsteroidSelected = handler;
     }
 
     /** Updates all entity renderers and returns the local ship's world position, or null if not yet known. */
@@ -56,12 +62,17 @@ export class WorldLayer extends Container {
         for (const asteroid of asteroids) {
             let r = this.asteroidMap.get(asteroid.asteroidId);
             if (!r) {
-                r = new AsteroidRenderer(asteroid);
+                r = new AsteroidRenderer(asteroid, (asteroidId) => this.onAsteroidSelected?.(asteroidId));
                 r.zIndex = 0;
                 this.addChild(r);
                 this.asteroidMap.set(asteroid.asteroidId, r);
             }
             r.update(asteroid);
+        }
+
+        const selectedObjectId = getSelectedObjectId();
+        for (const [asteroidId, renderer] of this.asteroidMap) {
+            renderer.setSelected(selectedObjectId !== null && asteroidId === selectedObjectId);
         }
 
         return localPos;
